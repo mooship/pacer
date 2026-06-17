@@ -1,4 +1,4 @@
-use pacer::compute::{compute, fmt_money, QUANTUM};
+use pacer::compute::{compute, cover_end, fmt_money, per_day, QUANTUM};
 use pacer::date::{fmt_dmy, fmt_range, today};
 use pacer::parse::{parse_amount, resolve_date};
 
@@ -234,8 +234,8 @@ impl App {
         let total = self.total.unwrap();
         let mut out = String::from("Pay date,Covers,Days,Amount,Per day\n");
         for i in 0..dates.len() {
-            let cover_end = dates[i] + seg_days[i] - 1;
-            let per_day = amounts[i] / seg_days[i];
+            let cover_end = cover_end(dates[i], seg_days[i]);
+            let per_day = per_day(amounts[i], seg_days[i]);
             out.push_str(&format!(
                 "\"{}\",\"{}\",{},\"{}\",\"{}\"\n",
                 fmt_dmy(dates[i]),

@@ -2,6 +2,14 @@ use crate::date::weekday;
 
 pub const QUANTUM: i64 = 5000;
 
+pub fn cover_end(date: i64, days: i64) -> i64 {
+    date + days - 1
+}
+
+pub fn per_day(amount: i64, days: i64) -> i64 {
+    amount / days
+}
+
 pub fn fmt_money(cents: i64) -> String {
     let neg = cents < 0;
     let cents = cents.abs();

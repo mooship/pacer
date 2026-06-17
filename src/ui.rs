@@ -1,5 +1,5 @@
 use crate::app::{App, Step};
-use pacer::compute::fmt_money;
+use pacer::compute::{cover_end, fmt_money, per_day};
 use pacer::date::{fmt_range, fmt_wd_dm};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -155,8 +155,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         .iter()
         .enumerate()
         .map(|(i, &d)| {
-            let cover_end = dates[i] + seg_days[i] - 1;
-            let per_day = amounts[i] / seg_days[i];
+            let cover_end = cover_end(dates[i], seg_days[i]);
+            let per_day = per_day(amounts[i], seg_days[i]);
             let pay_style = if i == 0 {
                 Style::default().fg(Color::Yellow)
             } else {

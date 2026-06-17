@@ -27,19 +27,11 @@ pub fn resolve_date(s: &str, base: i64) -> Result<i64, String> {
     if t.is_empty() || t.eq_ignore_ascii_case("today") {
         return Ok(base);
     }
-    if let Some(rest) = t.strip_prefix('+') {
-        let n: i64 = rest
-            .trim()
+    if t.starts_with(['+', '-']) {
+        let n: i64 = t
             .parse()
             .map_err(|_| format!("bad day offset in `{}`", s))?;
         return Ok(base + n);
-    }
-    if let Some(rest) = t.strip_prefix('-') {
-        let n: i64 = rest
-            .trim()
-            .parse()
-            .map_err(|_| format!("bad day offset in `{}`", s))?;
-        return Ok(base - n);
     }
     parse_date_days(t)
 }
@@ -69,12 +61,7 @@ pub fn parse_amount(s: &str) -> Result<i64, String> {
                     s
                 ));
             }
-            let padded = if f.len() == 1 {
-                format!("{}0", f)
-            } else {
-                f.to_string()
-            };
-            padded.parse().unwrap()
+            format!("{:0<2}", f).parse().unwrap()
         }
     };
     let total = rand
