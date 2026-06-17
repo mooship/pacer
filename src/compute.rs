@@ -1,6 +1,23 @@
 use crate::date::weekday;
 
-pub const QUANTUM: i64 = 50;
+pub const QUANTUM: i64 = 5000;
+
+pub fn fmt_money(cents: i64) -> String {
+    let neg = cents < 0;
+    let cents = cents.abs();
+    let rand = cents / 100;
+    let frac = cents % 100;
+    let digits = rand.to_string();
+    let len = digits.len();
+    let mut grouped = String::new();
+    for (i, ch) in digits.chars().enumerate() {
+        if i > 0 && (len - i).is_multiple_of(3) {
+            grouped.push(',');
+        }
+        grouped.push(ch);
+    }
+    format!("{}R{}.{:02}", if neg { "-" } else { "" }, grouped, frac)
+}
 
 pub fn compute(pay: i64, end: i64, total: i64, boost: i64) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
     let total_days = end - pay + 1;
@@ -61,15 +78,15 @@ mod tests {
     fn amounts_sum_to_total() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, amounts) = compute(pay, end, 5000, 0);
-        assert_eq!(amounts.iter().sum::<i64>(), 5000);
+        let (_, _, amounts) = compute(pay, end, 500000, 0);
+        assert_eq!(amounts.iter().sum::<i64>(), 500000);
     }
 
     #[test]
     fn weekly_amounts_are_multiples_of_quantum() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, amounts) = compute(pay, end, 5000, 0);
+        let (_, _, amounts) = compute(pay, end, 500000, 0);
         for &a in &amounts[1..] {
             assert_eq!(
                 a % QUANTUM,
@@ -83,25 +100,25 @@ mod tests {
     fn sub_quantum_remainder_goes_to_bridge() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, amounts) = compute(pay, end, 5025, 0);
+        let (_, _, amounts) = compute(pay, end, 502500, 0);
         for &a in &amounts[1..] {
             assert_eq!(a % QUANTUM, 0);
         }
-        assert_eq!(amounts.iter().sum::<i64>(), 5025);
+        assert_eq!(amounts.iter().sum::<i64>(), 502500);
     }
 
     #[test]
     fn boost_goes_to_bridge() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, base) = compute(pay, end, 5000, 0);
-        let (_, _, boosted) = compute(pay, end, 5000, 1000);
+        let (_, _, base) = compute(pay, end, 500000, 0);
+        let (_, _, boosted) = compute(pay, end, 500000, 100000);
         assert!(boosted[0] > base[0]);
-        assert!(boosted[0] - base[0] <= 1000);
+        assert!(boosted[0] - base[0] <= 100000);
         let base_weekly: i64 = base[1..].iter().sum();
         let boosted_weekly: i64 = boosted[1..].iter().sum();
         assert!(boosted_weekly < base_weekly);
-        assert_eq!(boosted.iter().sum::<i64>(), 5000);
+        assert_eq!(boosted.iter().sum::<i64>(), 500000);
         for &a in &boosted[1..] {
             assert_eq!(a % QUANTUM, 0);
         }
@@ -111,14 +128,14 @@ mod tests {
     fn out_of_range_boost_is_clamped() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, over) = compute(pay, end, 5000, 9000);
-        let (_, _, full) = compute(pay, end, 5000, 5000);
+        let (_, _, over) = compute(pay, end, 500000, 900000);
+        let (_, _, full) = compute(pay, end, 500000, 500000);
         assert_eq!(over, full);
-        assert_eq!(over.iter().sum::<i64>(), 5000);
+        assert_eq!(over.iter().sum::<i64>(), 500000);
         assert!(over.iter().all(|&a| a >= 0));
 
-        let (_, _, under) = compute(pay, end, 5000, -1000);
-        let (_, _, zero) = compute(pay, end, 5000, 0);
+        let (_, _, under) = compute(pay, end, 500000, -100000);
+        let (_, _, zero) = compute(pay, end, 500000, 0);
         assert_eq!(under, zero);
         assert!(under.iter().all(|&a| a >= 0));
     }
@@ -127,8 +144,8 @@ mod tests {
     fn boost_preserves_total_and_quantum() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (_, _, amounts) = compute(pay, end, 5025, 1000);
-        assert_eq!(amounts.iter().sum::<i64>(), 5025);
+        let (_, _, amounts) = compute(pay, end, 502500, 100000);
+        assert_eq!(amounts.iter().sum::<i64>(), 502500);
         for &a in &amounts[1..] {
             assert_eq!(a % QUANTUM, 0);
         }
@@ -138,7 +155,7 @@ mod tests {
     fn bridge_is_four_days_when_pay_is_thursday() {
         let pay = days_from_civil(2026, 6, 25);
         let end = days_from_civil(2026, 7, 24);
-        let (dates, seg_days, _) = compute(pay, end, 5000, 0);
+        let (dates, seg_days, _) = compute(pay, end, 500000, 0);
         assert_eq!(dates[0], pay);
         assert_eq!(seg_days[0], 4);
         assert_eq!(dates[1], days_from_civil(2026, 6, 29));
@@ -148,19 +165,27 @@ mod tests {
     fn bridge_is_seven_days_when_pay_is_monday() {
         let pay = days_from_civil(2026, 6, 22);
         let end = days_from_civil(2026, 7, 19);
-        let (dates, seg_days, amounts) = compute(pay, end, 4000, 0);
+        let (dates, seg_days, amounts) = compute(pay, end, 400000, 0);
         assert_eq!(dates[0], pay);
         assert_eq!(seg_days[0], 7);
         assert_eq!(dates[1], pay + 7);
-        assert_eq!(amounts.iter().sum::<i64>(), 4000);
+        assert_eq!(amounts.iter().sum::<i64>(), 400000);
     }
 
     #[test]
     fn single_day_cycle() {
         let pay = days_from_civil(2026, 6, 25);
-        let (dates, seg_days, amounts) = compute(pay, pay, 1000, 0);
+        let (dates, seg_days, amounts) = compute(pay, pay, 100000, 0);
         assert_eq!(dates.len(), 1);
         assert_eq!(seg_days[0], 1);
-        assert_eq!(amounts.iter().sum::<i64>(), 1000);
+        assert_eq!(amounts.iter().sum::<i64>(), 100000);
+    }
+
+    #[test]
+    fn fmt_money_groups_thousands_and_cents() {
+        assert_eq!(fmt_money(500000), "R5,000.00");
+        assert_eq!(fmt_money(502550), "R5,025.50");
+        assert_eq!(fmt_money(99), "R0.99");
+        assert_eq!(fmt_money(1234567), "R12,345.67");
     }
 }

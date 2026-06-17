@@ -22,18 +22,69 @@ pub fn parse_date_days(s: &str) -> Result<i64, String> {
     Ok(days_from_civil(y, m, d))
 }
 
+pub fn resolve_date(s: &str, base: i64) -> Result<i64, String> {
+    let t = s.trim();
+    if t.is_empty() || t.eq_ignore_ascii_case("today") {
+        return Ok(base);
+    }
+    if let Some(rest) = t.strip_prefix('+') {
+        let n: i64 = rest
+            .trim()
+            .parse()
+            .map_err(|_| format!("bad day offset in `{}`", s))?;
+        return Ok(base + n);
+    }
+    if let Some(rest) = t.strip_prefix('-') {
+        let n: i64 = rest
+            .trim()
+            .parse()
+            .map_err(|_| format!("bad day offset in `{}`", s))?;
+        return Ok(base - n);
+    }
+    parse_date_days(t)
+}
+
 pub fn parse_amount(s: &str) -> Result<i64, String> {
-    let cleaned: String = s
+    let t = s.trim();
+    let t = t.strip_prefix(['R', 'r']).unwrap_or(t).trim_start();
+    let mut parts = t.splitn(2, '.');
+    let int_raw = parts.next().unwrap_or("");
+    let frac_raw = parts.next();
+    let int_clean: String = int_raw
         .chars()
-        .filter(|c| !matches!(c, 'R' | 'r' | ',' | '_' | ' '))
+        .filter(|c| !matches!(c, ',' | '_' | ' '))
         .collect();
-    let v: i64 = cleaned
+    if int_clean.is_empty() || !int_clean.chars().all(|c| c.is_ascii_digit()) {
+        return Err(format!("amount must be a number of Rand, got `{}`", s));
+    }
+    let rand: i64 = int_clean
         .parse()
-        .map_err(|_| format!("amount must be a whole number of Rand, got `{}`", s))?;
-    if v <= 0 {
+        .map_err(|_| format!("amount is too large, got `{}`", s))?;
+    let cents = match frac_raw {
+        None => 0,
+        Some(f) => {
+            if f.is_empty() || f.len() > 2 || !f.chars().all(|c| c.is_ascii_digit()) {
+                return Err(format!(
+                    "amount can have at most 2 decimal places, got `{}`",
+                    s
+                ));
+            }
+            let padded = if f.len() == 1 {
+                format!("{}0", f)
+            } else {
+                f.to_string()
+            };
+            padded.parse().unwrap()
+        }
+    };
+    let total = rand
+        .checked_mul(100)
+        .and_then(|r| r.checked_add(cents))
+        .ok_or_else(|| format!("amount is too large, got `{}`", s))?;
+    if total <= 0 {
         return Err("amount must be positive".into());
     }
-    Ok(v)
+    Ok(total)
 }
 
 #[cfg(test)]
@@ -77,22 +128,43 @@ mod tests {
 
     #[test]
     fn amount_plain_integer() {
-        assert_eq!(parse_amount("5000"), Ok(5000));
+        assert_eq!(parse_amount("5000"), Ok(500000));
     }
 
     #[test]
     fn amount_with_r_prefix() {
-        assert_eq!(parse_amount("R5000"), Ok(5000));
+        assert_eq!(parse_amount("R5000"), Ok(500000));
     }
 
     #[test]
     fn amount_with_commas() {
-        assert_eq!(parse_amount("5,000"), Ok(5000));
+        assert_eq!(parse_amount("5,000"), Ok(500000));
     }
 
     #[test]
     fn amount_with_underscores() {
-        assert_eq!(parse_amount("5_000"), Ok(5000));
+        assert_eq!(parse_amount("5_000"), Ok(500000));
+    }
+
+    #[test]
+    fn amount_with_cents() {
+        assert_eq!(parse_amount("5000.50"), Ok(500050));
+        assert_eq!(parse_amount("R1,234.05"), Ok(123405));
+    }
+
+    #[test]
+    fn amount_single_decimal_is_tenths() {
+        assert_eq!(parse_amount("5000.5"), Ok(500050));
+    }
+
+    #[test]
+    fn amount_too_many_decimals_rejected() {
+        assert!(parse_amount("5000.567").is_err());
+    }
+
+    #[test]
+    fn amount_stray_letter_rejected() {
+        assert!(parse_amount("5R0").is_err());
     }
 
     #[test]
@@ -108,5 +180,34 @@ mod tests {
     #[test]
     fn amount_non_numeric_rejected() {
         assert!(parse_amount("abc").is_err());
+    }
+
+    #[test]
+    fn resolve_today_and_empty_return_base() {
+        let base = days_from_civil(2026, 6, 17);
+        assert_eq!(resolve_date("", base), Ok(base));
+        assert_eq!(resolve_date("today", base), Ok(base));
+        assert_eq!(resolve_date("  Today ", base), Ok(base));
+    }
+
+    #[test]
+    fn resolve_relative_offsets() {
+        let base = days_from_civil(2026, 6, 25);
+        assert_eq!(resolve_date("+30", base), Ok(base + 30));
+        assert_eq!(resolve_date("-5", base), Ok(base - 5));
+    }
+
+    #[test]
+    fn resolve_absolute_date() {
+        let base = days_from_civil(2026, 6, 17);
+        assert_eq!(
+            resolve_date("2026-07-24", base),
+            Ok(days_from_civil(2026, 7, 24))
+        );
+    }
+
+    #[test]
+    fn resolve_bad_offset_rejected() {
+        assert!(resolve_date("+abc", 0).is_err());
     }
 }
