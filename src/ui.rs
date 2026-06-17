@@ -1,5 +1,5 @@
 use crate::app::{App, Step};
-use paysplit::date::{fmt_range, fmt_wd_dm};
+use pacer::date::{fmt_range, fmt_wd_dm};
 use ratatui::{
     Frame,
     layout::{Constraint, Layout, Rect},
@@ -34,7 +34,7 @@ pub fn draw(frame: &mut Frame, app: &App) {
 
 fn render_title(frame: &mut Frame, area: Rect) {
     let title = Paragraph::new(Line::from(vec![Span::styled(
-        "Salary split",
+        "Pacer",
         Style::default()
             .fg(Color::Cyan)
             .add_modifier(Modifier::BOLD),

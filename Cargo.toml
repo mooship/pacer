@@ -1,14 +1,14 @@
 [package]
-name = "paysplit"
+name = "pacer"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "paysplit"
+name = "pacer"
 path = "src/main.rs"
 
 [lib]
-name = "paysplit"
+name = "pacer"
 path = "src/lib.rs"
 
 [dependencies]

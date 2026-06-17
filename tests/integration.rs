@@ -1,5 +1,5 @@
-use paysplit::compute::{compute, QUANTUM};
-use paysplit::parse::{parse_amount, parse_date_days};
+use pacer::compute::{compute, QUANTUM};
+use pacer::parse::{parse_amount, parse_date_days};
 
 #[test]
 fn full_cycle_june_2026() {

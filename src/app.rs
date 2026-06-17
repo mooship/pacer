@@ -1,5 +1,5 @@
-use paysplit::compute::compute;
-use paysplit::parse::{parse_amount, parse_date_days};
+use pacer::compute::compute;
+use pacer::parse::{parse_amount, parse_date_days};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
 pub enum Step {
