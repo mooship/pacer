@@ -48,11 +48,9 @@ pub fn weekday(days: i64) -> i64 {
 }
 
 pub fn today() -> i64 {
-    use std::time::{SystemTime, UNIX_EPOCH};
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map(|d| (d.as_secs() / 86_400) as i64)
-        .unwrap_or(0)
+    use chrono::{Datelike, Local};
+    let now = Local::now().date_naive();
+    days_from_civil(now.year() as i64, now.month() as i64, now.day() as i64)
 }
 
 pub const WD: [&str; 7] = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

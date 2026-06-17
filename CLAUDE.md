@@ -20,7 +20,7 @@ The project is split into a **lib crate** (pure logic, testable) and a **binary 
 All money is represented as `i64` **cents** throughout `compute`, `app`, and the parsed total.
 
 **Lib crate** (`src/lib.rs` re-exports):
-- `date.rs` — date math with no dependencies. Uses Hinnant's proleptic Gregorian algorithm. Days are represented as `i64` days-since-1970-01-01 throughout. `today()` reads the system clock (UTC).
+- `date.rs` — date math using Hinnant's proleptic Gregorian algorithm. Days are represented as `i64` days-since-1970-01-01 throughout. `today()` reads the local calendar date via `chrono::Local`, then converts it with `days_from_civil`; the rest of the module has no dependencies.
 - `parse.rs` — `parse_date_days`, `resolve_date` (handles blank/`today`/`+N`/`-N` relative to a base day, else an absolute date), and `parse_amount` (strips `R`/`,`/`_`/spaces, accepts up to 2 decimal places, returns cents).
 - `compute.rs` — `compute(pay, end, total, boost) -> (dates, seg_days, amounts)` plus `fmt_money(cents)`. Splits a salary into a bridge payment (pay day → first Monday) plus weekly Monday allowances. Amounts are rounded to `QUANTUM` (R50 = 5000 cents); sub-quantum remainder and the clamped `boost` go to the bridge. Uses largest-remainder method for proportional allocation.
 
