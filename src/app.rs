@@ -1,1 +1,124 @@
-// app state machine — implementation in Task 6
+use paysplit::compute::compute;
+use paysplit::parse::{parse_amount, parse_date_days};
+
+#[derive(Debug, PartialEq, Clone, Copy)]
+pub enum Step {
+    PayDate,
+    LastDay,
+    Amount,
+    Results,
+}
+
+pub struct App {
+    pub step: Step,
+    pub pay_input: String,
+    pub last_input: String,
+    pub amount_input: String,
+    pub error: Option<String>,
+    pub pay: Option<i64>,
+    pub last: Option<i64>,
+    pub total: Option<i64>,
+    pub results: Option<(Vec<i64>, Vec<i64>, Vec<i64>)>,
+    pub should_quit: bool,
+}
+
+impl App {
+    pub fn new() -> Self {
+        Self {
+            step: Step::PayDate,
+            pay_input: String::new(),
+            last_input: String::new(),
+            amount_input: String::new(),
+            error: None,
+            pay: None,
+            last: None,
+            total: None,
+            results: None,
+            should_quit: false,
+        }
+    }
+
+    pub fn push_char(&mut self, c: char) {
+        self.error = None;
+        match self.step {
+            Step::PayDate => self.pay_input.push(c),
+            Step::LastDay => self.last_input.push(c),
+            Step::Amount => self.amount_input.push(c),
+            Step::Results => {}
+        }
+    }
+
+    pub fn pop_char(&mut self) {
+        self.error = None;
+        match self.step {
+            Step::PayDate => {
+                self.pay_input.pop();
+            }
+            Step::LastDay => {
+                self.last_input.pop();
+            }
+            Step::Amount => {
+                self.amount_input.pop();
+            }
+            Step::Results => {}
+        }
+    }
+
+    pub fn confirm(&mut self) {
+        self.error = None;
+        match self.step {
+            Step::PayDate => match parse_date_days(&self.pay_input) {
+                Ok(v) => {
+                    self.pay = Some(v);
+                    self.step = Step::LastDay;
+                }
+                Err(e) => self.error = Some(e),
+            },
+            Step::LastDay => match parse_date_days(&self.last_input) {
+                Ok(v) => {
+                    if v < self.pay.unwrap() {
+                        self.error = Some("must be on or after the pay date".into());
+                    } else {
+                        self.last = Some(v);
+                        self.step = Step::Amount;
+                    }
+                }
+                Err(e) => self.error = Some(e),
+            },
+            Step::Amount => match parse_amount(&self.amount_input) {
+                Ok(v) => {
+                    self.total = Some(v);
+                    let (pay, last) = (self.pay.unwrap(), self.last.unwrap());
+                    self.results = Some(compute(pay, last, v));
+                    self.step = Step::Results;
+                }
+                Err(e) => self.error = Some(e),
+            },
+            Step::Results => {}
+        }
+    }
+
+    pub fn go_back(&mut self) {
+        self.error = None;
+        match self.step {
+            Step::PayDate => {}
+            Step::LastDay => {
+                self.pay = None;
+                self.step = Step::PayDate;
+            }
+            Step::Amount => {
+                self.last = None;
+                self.step = Step::LastDay;
+            }
+            Step::Results => {
+                self.total = None;
+                self.results = None;
+                self.step = Step::Amount;
+            }
+        }
+    }
+
+    pub fn quit(&mut self) {
+        self.should_quit = true;
+    }
+}
