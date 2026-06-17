@@ -69,7 +69,7 @@ fn full_cycle_with_bridge_boost() {
     let total = parse_amount("5000").unwrap();
 
     let (_, _, base) = compute(pay, last, total, 0);
-    let (_, _, boosted) = compute(pay, last, total, 1000);
+    let (_, _, boosted) = compute(pay, last, total, 100000);
 
     assert!(boosted[0] > base[0], "bridge grows with a boost");
     assert_eq!(boosted.iter().sum::<i64>(), total, "total is preserved");

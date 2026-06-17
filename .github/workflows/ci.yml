@@ -41,6 +41,7 @@ jobs:
       - name: Clippy
         run:
           cargo clippy
+          --all-targets
           --all-features
           --message-format=json -- -D warnings | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
 

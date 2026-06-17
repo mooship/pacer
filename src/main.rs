@@ -5,6 +5,8 @@ use app::{App, Step};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
 use std::io;
 
+const EXPORT_PATH: &str = "pacer-budget.csv";
+
 fn main() -> io::Result<()> {
     let mut terminal = ratatui::init();
     let result = run(&mut terminal);
@@ -28,6 +30,14 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                 }
                 match key.code {
                     KeyCode::Char('q') if app.step == Step::Results => app.quit(),
+                    KeyCode::Char('s') if app.step == Step::Results => {
+                        if let Some(content) = app.csv() {
+                            match std::fs::write(EXPORT_PATH, content) {
+                                Ok(_) => app.notice = Some(format!("saved to {}", EXPORT_PATH)),
+                                Err(e) => app.error = Some(format!("could not save: {}", e)),
+                            }
+                        }
+                    }
                     KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=')
                         if app.step == Step::Results =>
                     {
@@ -38,6 +48,11 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                     {
                         app.boost_down()
                     }
+                    KeyCode::Left => app.cursor_left(),
+                    KeyCode::Right => app.cursor_right(),
+                    KeyCode::Home => app.cursor_home(),
+                    KeyCode::End => app.cursor_end(),
+                    KeyCode::Delete => app.delete_char(),
                     KeyCode::Char(c) => app.push_char(c),
                     KeyCode::Backspace => app.pop_char(),
                     KeyCode::Enter => app.confirm(),

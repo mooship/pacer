@@ -1,4 +1,5 @@
 use crate::app::{App, Step};
+use pacer::compute::{cover_end, fmt_money, per_day};
 use pacer::date::{fmt_range, fmt_wd_dm};
 use ratatui::{
     layout::{Constraint, Layout, Rect},
@@ -48,7 +49,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         .add_modifier(Modifier::BOLD);
     let dim_style = Style::default().add_modifier(Modifier::DIM);
 
-    let field = |label: &str, input: &str, is_active: bool, is_done: bool| -> Line {
+    let field = |label: &str, input: &str, is_active: bool, is_done: bool, cursor: usize| -> Line {
         let (label_s, bracket_s, value_s) = if is_active {
             (Style::default(), active_style, active_style)
         } else if is_done {
@@ -56,21 +57,47 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         } else {
             (dim_style, dim_style, dim_style)
         };
-        let cursor = if is_active { "█" } else { "" };
-        Line::from(vec![
+        let mut spans = vec![
             Span::styled(format!("  {:<18}", label), label_s),
             Span::styled("[", bracket_s),
-            Span::styled(format!("{}{}", input, cursor), value_s),
-            Span::styled("]", bracket_s),
-        ])
+        ];
+        if is_active {
+            let chars: Vec<char> = input.chars().collect();
+            let at = cursor.min(chars.len());
+            let before: String = chars[..at].iter().collect();
+            let on: String = chars
+                .get(at)
+                .map(|c| c.to_string())
+                .unwrap_or_else(|| " ".into());
+            let after: String = chars
+                .get(at + 1..)
+                .map(|c| c.iter().collect())
+                .unwrap_or_default();
+            spans.push(Span::styled(before, value_s));
+            spans.push(Span::styled(
+                on,
+                active_style.add_modifier(Modifier::REVERSED),
+            ));
+            spans.push(Span::styled(after, value_s));
+        } else {
+            spans.push(Span::styled(input.to_string(), value_s));
+        }
+        spans.push(Span::styled("]", bracket_s));
+        Line::from(spans)
     };
 
-    let error_line = match &app.error {
-        Some(e) => Line::from(Span::styled(
+    let status_line = if let Some(n) = &app.notice {
+        Line::from(Span::styled(
+            format!("  ✓ {}", n),
+            Style::default().fg(Color::Green),
+        ))
+    } else if let Some(e) = &app.error {
+        Line::from(Span::styled(
             format!("  ✗ {}", e),
             Style::default().fg(Color::Red),
-        )),
-        None => Line::from(""),
+        ))
+    } else {
+        Line::from("")
     };
 
     let lines = vec![
@@ -79,21 +106,24 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             &app.pay_input,
             app.step == Step::PayDate,
             app.pay.is_some(),
+            app.cursor,
         ),
         field(
             "Last day",
             &app.last_input,
             app.step == Step::LastDay,
             app.last.is_some(),
+            app.cursor,
         ),
         field(
             "Amount (R)",
             &app.amount_input,
             app.step == Step::Amount,
             app.total.is_some(),
+            app.cursor,
         ),
         Line::from(""),
-        error_line,
+        status_line,
     ];
 
     frame.render_widget(Paragraph::new(lines), area);
@@ -112,6 +142,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Cell::from("Covers"),
         Cell::from("Days"),
         Cell::from("Amount"),
+        Cell::from("Per day"),
     ])
     .style(
         Style::default()
@@ -124,7 +155,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         .iter()
         .enumerate()
         .map(|(i, &d)| {
-            let cover_end = dates[i] + seg_days[i] - 1;
+            let cover_end = cover_end(dates[i], seg_days[i]);
+            let per_day = per_day(amounts[i], seg_days[i]);
             let pay_style = if i == 0 {
                 Style::default().fg(Color::Yellow)
             } else {
@@ -134,7 +166,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
                 Cell::from(fmt_wd_dm(d)).style(pay_style),
                 Cell::from(fmt_range(d, cover_end)),
                 Cell::from(seg_days[i].to_string()),
-                Cell::from(format!("R{}", amounts[i])).style(Style::default().fg(Color::Green)),
+                Cell::from(fmt_money(amounts[i])).style(Style::default().fg(Color::Green)),
+                Cell::from(fmt_money(per_day)).style(Style::default().add_modifier(Modifier::DIM)),
             ])
         })
         .collect();
@@ -144,11 +177,12 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
             Cell::from("Total").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from(""),
             Cell::from(total_days.to_string()).style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from(format!("R{}", total)).style(
+            Cell::from(fmt_money(total)).style(
                 Style::default()
                     .fg(Color::Green)
                     .add_modifier(Modifier::BOLD),
             ),
+            Cell::from(""),
         ])
         .style(Style::default().add_modifier(Modifier::BOLD)),
     );
@@ -157,7 +191,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Constraint::Length(13),
         Constraint::Length(16),
         Constraint::Length(6),
-        Constraint::Length(10),
+        Constraint::Length(12),
+        Constraint::Length(12),
     ];
 
     let table = Table::new(rows, widths)
@@ -169,9 +204,12 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
 
 fn render_hint(frame: &mut Frame, app: &App, area: Rect) {
     let hint = if app.step == Step::Results {
-        format!("  ↑/↓ staples (R{})   Esc → edit   q → quit", app.boost)
+        format!(
+            "  ↑/↓ extra to first pay ({})   s → save csv   Esc → edit   q → quit",
+            fmt_money(app.boost)
+        )
     } else {
-        "  Enter → confirm   Esc → back   Ctrl+C → quit".to_string()
+        "  Enter → confirm   Esc → back   ←/→ move cursor   Ctrl+C → quit".to_string()
     };
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
