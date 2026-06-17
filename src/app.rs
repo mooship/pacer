@@ -160,11 +160,12 @@ impl App {
                     self.error = Some("enter the last day (e.g. +30 or 2026-07-24)".into());
                     return;
                 }
-                match resolve_date(&self.last_input, self.pay.unwrap()) {
+                let pay = self.pay.unwrap();
+                match resolve_date(&self.last_input, pay) {
                     Ok(v) => {
-                        if v < self.pay.unwrap() {
+                        if v < pay {
                             self.error = Some("must be on or after the pay date".into());
-                        } else if v - self.pay.unwrap() + 1 > MAX_DAYS {
+                        } else if v - pay + 1 > MAX_DAYS {
                             self.error = Some("period can't be longer than a year".into());
                         } else {
                             self.last = Some(v);
