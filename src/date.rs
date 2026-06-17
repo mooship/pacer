@@ -6,31 +6,65 @@ pub fn days_in_month(y: i64, m: i64) -> i64 {
     match m {
         1 | 3 | 5 | 7 | 8 | 10 | 12 => 31,
         4 | 6 | 9 | 11 => 30,
-        2 => if is_leap(y) { 29 } else { 28 },
+        2 => {
+            if is_leap(y) {
+                29
+            } else {
+                28
+            }
+        }
         _ => 0,
     }
 }
 
 pub fn days_from_civil(y: i64, m: i64, d: i64) -> i64 {
-    let y = if m <= 2 { y - 1 } else { y };
-    let era = (if y >= 0 { y } else { y - 399 }) / 400;
+    let y = if m <= 2 {
+        y - 1
+    } else {
+        y
+    };
+    let era_base = if y >= 0 {
+        y
+    } else {
+        y - 399
+    };
+    let era = era_base / 400;
     let yoe = y - era * 400;
-    let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
+    let doy_mp = if m > 2 {
+        m - 3
+    } else {
+        m + 9
+    };
+    let doy = (153 * doy_mp + 2) / 5 + d - 1;
     let doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
     era * 146097 + doe - 719468
 }
 
 pub fn civil_from_days(z0: i64) -> (i64, i64, i64) {
     let z = z0 + 719468;
-    let era = (if z >= 0 { z } else { z - 146096 }) / 146097;
+    let era_base = if z >= 0 {
+        z
+    } else {
+        z - 146096
+    };
+    let era = era_base / 146097;
     let doe = z - era * 146097;
     let yoe = (doe - doe / 1460 + doe / 36524 - doe / 146096) / 365;
     let y = yoe + era * 400;
     let doy = doe - (365 * yoe + yoe / 4 - yoe / 100);
     let mp = (5 * doy + 2) / 153;
     let d = doy - (153 * mp + 2) / 5 + 1;
-    let m = if mp < 10 { mp + 3 } else { mp - 9 };
-    (if m <= 2 { y + 1 } else { y }, m, d)
+    let m = if mp < 10 {
+        mp + 3
+    } else {
+        mp - 9
+    };
+    let y_adj = if m <= 2 {
+        y + 1
+    } else {
+        y
+    };
+    (y_adj, m, d)
 }
 
 pub fn weekday(days: i64) -> i64 {
