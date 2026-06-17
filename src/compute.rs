@@ -4,6 +4,7 @@ pub const QUANTUM: i64 = 50;
 
 pub fn compute(pay: i64, end: i64, total: i64, boost: i64) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
     let total_days = end - pay + 1;
+    let boost = boost.clamp(0, total);
     let pool = total - boost;
 
     let mut dates = vec![pay];
@@ -104,6 +105,22 @@ mod tests {
         for &a in &boosted[1..] {
             assert_eq!(a % QUANTUM, 0);
         }
+    }
+
+    #[test]
+    fn out_of_range_boost_is_clamped() {
+        let pay = days_from_civil(2026, 6, 25);
+        let end = days_from_civil(2026, 7, 24);
+        let (_, _, over) = compute(pay, end, 5000, 9000);
+        let (_, _, full) = compute(pay, end, 5000, 5000);
+        assert_eq!(over, full);
+        assert_eq!(over.iter().sum::<i64>(), 5000);
+        assert!(over.iter().all(|&a| a >= 0));
+
+        let (_, _, under) = compute(pay, end, 5000, -1000);
+        let (_, _, zero) = compute(pay, end, 5000, 0);
+        assert_eq!(under, zero);
+        assert!(under.iter().all(|&a| a >= 0));
     }
 
     #[test]
