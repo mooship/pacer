@@ -28,12 +28,14 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                 }
                 match key.code {
                     KeyCode::Char('q') if app.step == Step::Results => app.quit(),
-                    KeyCode::Up if app.step == Step::Results => app.boost_up(),
-                    KeyCode::Down if app.step == Step::Results => app.boost_down(),
-                    KeyCode::Char('+') | KeyCode::Char('=') if app.step == Step::Results => {
+                    KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=')
+                        if app.step == Step::Results =>
+                    {
                         app.boost_up()
                     }
-                    KeyCode::Char('-') | KeyCode::Char('_') if app.step == Step::Results => {
+                    KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_')
+                        if app.step == Step::Results =>
+                    {
                         app.boost_down()
                     }
                     KeyCode::Char(c) => app.push_char(c),

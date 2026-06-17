@@ -125,18 +125,11 @@ impl App {
     }
 
     pub fn boost_up(&mut self) {
-        if self.step != Step::Results {
-            return;
-        }
-        let cap = (self.total.unwrap() / QUANTUM) * QUANTUM;
-        self.boost = (self.boost + QUANTUM).min(cap);
+        self.boost = (self.boost + QUANTUM).min(self.total.unwrap());
         self.recompute();
     }
 
     pub fn boost_down(&mut self) {
-        if self.step != Step::Results {
-            return;
-        }
         self.boost = (self.boost - QUANTUM).max(0);
         self.recompute();
     }
