@@ -33,6 +33,8 @@ impl Default for App {
     }
 }
 
+const MAX_DAYS: i64 = 366;
+
 fn byte_index(s: &str, char_idx: usize) -> usize {
     s.char_indices()
         .nth(char_idx)
@@ -162,6 +164,8 @@ impl App {
                     Ok(v) => {
                         if v < self.pay.unwrap() {
                             self.error = Some("must be on or after the pay date".into());
+                        } else if v - self.pay.unwrap() + 1 > MAX_DAYS {
+                            self.error = Some("period can't be longer than a year".into());
                         } else {
                             self.last = Some(v);
                             self.step = Step::Amount;
@@ -225,24 +229,18 @@ impl App {
         self.recompute();
     }
 
-    pub fn export(&mut self) {
-        self.clear_msgs();
-        let (dates, seg_days, amounts) = match &self.results {
-            Some(r) => r,
-            None => return,
-        };
-        let total = self.total.unwrap();
+    pub fn csv(&self) -> Option<String> {
+        let (dates, seg_days, amounts) = self.results.as_ref()?;
+        let total = self.total?;
         let mut out = String::from("Pay date,Covers,Days,Amount,Per day\n");
         for i in 0..dates.len() {
-            let cover_end = cover_end(dates[i], seg_days[i]);
-            let per_day = per_day(amounts[i], seg_days[i]);
             out.push_str(&format!(
                 "\"{}\",\"{}\",{},\"{}\",\"{}\"\n",
                 fmt_dmy(dates[i]),
-                fmt_range(dates[i], cover_end),
+                fmt_range(dates[i], cover_end(dates[i], seg_days[i])),
                 seg_days[i],
                 fmt_money(amounts[i]),
-                fmt_money(per_day),
+                fmt_money(per_day(amounts[i], seg_days[i])),
             ));
         }
         let total_days: i64 = seg_days.iter().sum();
@@ -251,11 +249,7 @@ impl App {
             total_days,
             fmt_money(total)
         ));
-        let path = "pacer-budget.csv";
-        match std::fs::write(path, out) {
-            Ok(_) => self.notice = Some(format!("saved to {}", path)),
-            Err(e) => self.error = Some(format!("could not save: {}", e)),
-        }
+        Some(out)
     }
 
     pub fn quit(&mut self) {
@@ -368,5 +362,49 @@ mod tests {
             a.boost_down();
         }
         assert_eq!(a.boost, 0);
+    }
+
+    #[test]
+    fn over_long_period_is_rejected() {
+        let mut a = app_at(days_from_civil(2026, 6, 17));
+        a.pay_input = "2026-06-25".into();
+        a.confirm();
+        a.last_input = "+400".into();
+        a.confirm();
+        assert_eq!(a.step, Step::LastDay);
+        assert!(a.error.is_some());
+    }
+
+    #[test]
+    fn full_year_period_is_accepted() {
+        let mut a = app_at(days_from_civil(2026, 6, 17));
+        a.pay_input = "2026-06-25".into();
+        a.confirm();
+        a.last_input = "+365".into();
+        a.confirm();
+        assert_eq!(a.step, Step::Amount);
+    }
+
+    #[test]
+    fn csv_has_header_row_per_segment_and_total() {
+        let mut a = app_at(days_from_civil(2026, 6, 17));
+        a.pay_input = "2026-06-25".into();
+        a.confirm();
+        a.last_input = "2026-07-24".into();
+        a.confirm();
+        a.amount_input = "5000".into();
+        a.confirm();
+        let csv = a.csv().unwrap();
+        let lines: Vec<&str> = csv.lines().collect();
+        let segments = a.results.as_ref().unwrap().0.len();
+        assert_eq!(lines[0], "Pay date,Covers,Days,Amount,Per day");
+        assert_eq!(lines.len(), segments + 2);
+        assert!(lines.last().unwrap().starts_with("\"Total\""));
+    }
+
+    #[test]
+    fn csv_is_none_before_results() {
+        let a = app_at(days_from_civil(2026, 6, 17));
+        assert!(a.csv().is_none());
     }
 }

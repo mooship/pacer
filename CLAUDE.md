@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 cargo run          # launch the TUI
-cargo test         # run all tests (48 unit + 5 integration)
+cargo test         # run all tests (52 unit + 5 integration)
 cargo test --lib   # unit tests only
 cargo test --lib date::tests::round_trip_common_dates  # single test by path
 cargo test --test integration  # integration tests only
@@ -25,9 +25,9 @@ All money is represented as `i64` **cents** throughout `compute`, `app`, and the
 - `compute.rs` — `compute(pay, end, total, boost) -> (dates, seg_days, amounts)` plus `fmt_money(cents)`. Splits a salary into a bridge payment (pay day → first Monday) plus weekly Monday allowances. Amounts are rounded to `QUANTUM` (R50 = 5000 cents); sub-quantum remainder and the clamped `boost` go to the bridge. Uses largest-remainder method for proportional allocation.
 
 **Binary crate** (private to `src/main.rs`):
-- `app.rs` — `App` struct and `Step` enum (`PayDate → LastDay → Amount → Results`). `confirm()` validates and advances; `go_back()` retreats and clears the parsed value for the step being left. Tracks a `cursor` into the active field for inline editing, `today` for relative date resolution, and a `notice` for the CSV `export()`. `active_input()` returns `&mut String` for the current step.
+- `app.rs` — `App` struct and `Step` enum (`PayDate → LastDay → Amount → Results`). `confirm()` validates and advances (rejecting periods longer than `MAX_DAYS`); `go_back()` retreats and clears the parsed value for the step being left. Tracks a `cursor` into the active field for inline editing and `today` for relative date resolution. `csv()` builds the export string (the file write lives in `main.rs`). `active_input()` returns `&mut String` for the current step.
 - `ui.rs` — Ratatui rendering. `draw()` lays out title / form / results table / hint. The form renders the cursor inside the active field and a green notice / red error line. The results table (hidden until `Step::Results`) has a per-day column; `cover_end` for each row is `dates[i] + seg_days[i] - 1`.
-- `main.rs` — `ratatui::init()` / event loop / `ratatui::restore()`. Arrow/Home/End/Delete edit the active field. Ctrl+C exits from any screen; on Results `q` quits and `s` saves a CSV.
+- `main.rs` — `ratatui::init()` / event loop / `ratatui::restore()`. Arrow/Home/End/Delete edit the active field. Ctrl+C exits from any screen; on Results `q` quits and `s` writes `app.csv()` to `EXPORT_PATH`.
 
 ## Code Style
 
