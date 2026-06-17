@@ -38,29 +38,26 @@ impl App {
         }
     }
 
+    fn active_input(&mut self) -> Option<&mut String> {
+        match self.step {
+            Step::PayDate => Some(&mut self.pay_input),
+            Step::LastDay => Some(&mut self.last_input),
+            Step::Amount => Some(&mut self.amount_input),
+            Step::Results => None,
+        }
+    }
+
     pub fn push_char(&mut self, c: char) {
         self.error = None;
-        match self.step {
-            Step::PayDate => self.pay_input.push(c),
-            Step::LastDay => self.last_input.push(c),
-            Step::Amount => self.amount_input.push(c),
-            Step::Results => {}
+        if let Some(input) = self.active_input() {
+            input.push(c);
         }
     }
 
     pub fn pop_char(&mut self) {
         self.error = None;
-        match self.step {
-            Step::PayDate => {
-                self.pay_input.pop();
-            }
-            Step::LastDay => {
-                self.last_input.pop();
-            }
-            Step::Amount => {
-                self.amount_input.pop();
-            }
-            Step::Results => {}
+        if let Some(input) = self.active_input() {
+            input.pop();
         }
     }
 

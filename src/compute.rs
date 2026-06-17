@@ -6,11 +6,9 @@ pub fn compute(pay: i64, end: i64, total: i64) -> (Vec<i64>, Vec<i64>, Vec<i64>)
     let total_days = end - pay + 1;
 
     let mut dates = vec![pay];
-    let d = (1 - weekday(pay)).rem_euclid(7);
-    let to_mon = if d == 0 {
-        7
-    } else {
-        d
+    let to_mon = match (1 - weekday(pay)).rem_euclid(7) {
+        0 => 7,
+        d => d,
     };
     let mut m = pay + to_mon;
     while m <= end {

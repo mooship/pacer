@@ -11,15 +11,10 @@ use ratatui::{
 pub fn draw(frame: &mut Frame, app: &App) {
     let area = frame.area();
 
-    let results_height: u16 = if app.step == Step::Results {
-        if let Some((dates, _, _)) = &app.results {
-            dates.len() as u16 + 5
-        } else {
-            0
-        }
-    } else {
-        0
-    };
+    let results_height: u16 = app
+        .results
+        .as_ref()
+        .map_or(0, |(dates, _, _)| dates.len() as u16 + 5);
 
     let chunks = Layout::vertical([
         Constraint::Length(2),
@@ -69,7 +64,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         Line::from(vec![
             Span::styled(format!("  {:<18}", label), label_s),
             Span::styled("[", bracket_s),
-            Span::styled(format!(" {}{}", input, cursor), value_s),
+            Span::styled(format!("{}{}", input, cursor), value_s),
             Span::styled("]", bracket_s),
         ])
     };
@@ -113,9 +108,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Some(r) => r,
         None => return,
     };
-    let last = app.last.unwrap();
     let total = app.total.unwrap();
-    let total_days = last - app.pay.unwrap() + 1;
+    let total_days: i64 = seg_days.iter().sum();
 
     let header = Row::new(vec![
         Cell::from("Pay"),
@@ -134,11 +128,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         .iter()
         .enumerate()
         .map(|(i, &d)| {
-            let cover_end = if i + 1 < dates.len() {
-                dates[i + 1] - 1
-            } else {
-                last
-            };
+            let cover_end = dates[i] + seg_days[i] - 1;
             let pay_style = if i == 0 {
                 Style::default().fg(Color::Yellow)
             } else {

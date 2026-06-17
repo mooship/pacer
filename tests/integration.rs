@@ -1,4 +1,4 @@
-use paysplit::compute::compute;
+use paysplit::compute::{compute, QUANTUM};
 use paysplit::parse::{parse_amount, parse_date_days};
 
 #[test]
@@ -54,6 +54,6 @@ fn full_cycle_exact_quantum() {
     let (_, _, amounts) = compute(pay, last, total);
 
     for &a in &amounts {
-        assert_eq!(a % 50, 0);
+        assert_eq!(a % QUANTUM, 0);
     }
 }
