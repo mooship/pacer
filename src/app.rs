@@ -1,4 +1,4 @@
-use pacer::compute::compute;
+use pacer::compute::{compute, QUANTUM};
 use pacer::parse::{parse_amount, parse_date_days};
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -18,6 +18,7 @@ pub struct App {
     pub pay: Option<i64>,
     pub last: Option<i64>,
     pub total: Option<i64>,
+    pub boost: i64,
     pub results: Option<(Vec<i64>, Vec<i64>, Vec<i64>)>,
     pub should_quit: bool,
 }
@@ -33,6 +34,7 @@ impl App {
             pay: None,
             last: None,
             total: None,
+            boost: 0,
             results: None,
             should_quit: false,
         }
@@ -85,8 +87,8 @@ impl App {
             Step::Amount => match parse_amount(&self.amount_input) {
                 Ok(v) => {
                     self.total = Some(v);
-                    let (pay, last) = (self.pay.unwrap(), self.last.unwrap());
-                    self.results = Some(compute(pay, last, v));
+                    self.boost = 0;
+                    self.recompute();
                     self.step = Step::Results;
                 }
                 Err(e) => self.error = Some(e),
@@ -109,10 +111,34 @@ impl App {
             }
             Step::Results => {
                 self.total = None;
+                self.boost = 0;
                 self.results = None;
                 self.step = Step::Amount;
             }
         }
+    }
+
+    fn recompute(&mut self) {
+        let (pay, last) = (self.pay.unwrap(), self.last.unwrap());
+        let total = self.total.unwrap();
+        self.results = Some(compute(pay, last, total, self.boost));
+    }
+
+    pub fn boost_up(&mut self) {
+        if self.step != Step::Results {
+            return;
+        }
+        let cap = (self.total.unwrap() / QUANTUM) * QUANTUM;
+        self.boost = (self.boost + QUANTUM).min(cap);
+        self.recompute();
+    }
+
+    pub fn boost_down(&mut self) {
+        if self.step != Step::Results {
+            return;
+        }
+        self.boost = (self.boost - QUANTUM).max(0);
+        self.recompute();
     }
 
     pub fn quit(&mut self) {

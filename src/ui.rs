@@ -169,9 +169,9 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
 
 fn render_hint(frame: &mut Frame, app: &App, area: Rect) {
     let hint = if app.step == Step::Results {
-        "  Esc → edit   q → quit"
+        format!("  ↑/↓ staples (R{})   Esc → edit   q → quit", app.boost)
     } else {
-        "  Enter → confirm   Esc → back   Ctrl+C → quit"
+        "  Enter → confirm   Esc → back   Ctrl+C → quit".to_string()
     };
     frame.render_widget(
         Paragraph::new(Line::from(Span::styled(
