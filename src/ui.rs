@@ -1,11 +1,11 @@
 use crate::app::{App, Step};
 use pacer::date::{fmt_range, fmt_wd_dm};
 use ratatui::{
-    Frame,
     layout::{Constraint, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Line, Span},
     widgets::{Block, Borders, Cell, Paragraph, Row, Table},
+    Frame,
 };
 
 pub fn draw(frame: &mut Frame, app: &App) {
@@ -56,11 +56,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         } else {
             (dim_style, dim_style, dim_style)
         };
-        let cursor = if is_active {
-            "█"
-        } else {
-            ""
-        };
+        let cursor = if is_active { "█" } else { "" };
         Line::from(vec![
             Span::styled(format!("  {:<18}", label), label_s),
             Span::styled("[", bracket_s),
@@ -138,8 +134,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
                 Cell::from(fmt_wd_dm(d)).style(pay_style),
                 Cell::from(fmt_range(d, cover_end)),
                 Cell::from(seg_days[i].to_string()),
-                Cell::from(format!("R{}", amounts[i]))
-                    .style(Style::default().fg(Color::Green)),
+                Cell::from(format!("R{}", amounts[i])).style(Style::default().fg(Color::Green)),
             ])
         })
         .collect();
@@ -148,8 +143,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Row::new(vec![
             Cell::from("Total").style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from(""),
-            Cell::from(total_days.to_string())
-                .style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from(total_days.to_string()).style(Style::default().add_modifier(Modifier::BOLD)),
             Cell::from(format!("R{}", total)).style(
                 Style::default()
                     .fg(Color::Green)

@@ -19,18 +19,17 @@ pub fn compute(pay: i64, end: i64, total: i64) -> (Vec<i64>, Vec<i64>, Vec<i64>)
     let n = dates.len();
     let seg_days: Vec<i64> = (0..n)
         .map(|i| {
-            let next = if i + 1 < n {
-                dates[i + 1]
-            } else {
-                end + 1
-            };
+            let next = if i + 1 < n { dates[i + 1] } else { end + 1 };
             next - dates[i]
         })
         .collect();
 
     let quanta = total / QUANTUM;
     let sub = total % QUANTUM;
-    let mut base: Vec<i64> = seg_days.iter().map(|&days| days * quanta / total_days).collect();
+    let mut base: Vec<i64> = seg_days
+        .iter()
+        .map(|&days| days * quanta / total_days)
+        .collect();
     let mut fracs: Vec<(i64, usize)> = seg_days
         .iter()
         .enumerate()
@@ -70,7 +69,11 @@ mod tests {
         let end = days_from_civil(2026, 7, 24);
         let (_, _, amounts) = compute(pay, end, 5000);
         for &a in &amounts[1..] {
-            assert_eq!(a % QUANTUM, 0, "weekly amount {a} is not a multiple of {QUANTUM}");
+            assert_eq!(
+                a % QUANTUM,
+                0,
+                "weekly amount {a} is not a multiple of {QUANTUM}"
+            );
         }
     }
 

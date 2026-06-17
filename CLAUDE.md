@@ -30,4 +30,4 @@ The project is split into a **lib crate** (pure logic, testable) and a **binary 
 ## Code Style
 
 - No comments anywhere in source files.
-- No single-line `if` statements or `if` expressions — every body on its own indented line. Match arms are fine on one line.
+- Formatting is enforced by `cargo fmt` (default rustfmt settings) and checked in CI.

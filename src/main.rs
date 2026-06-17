@@ -23,9 +23,7 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                 if key.kind != KeyEventKind::Press {
                     continue;
                 }
-                if key.code == KeyCode::Char('c')
-                    && key.modifiers.contains(KeyModifiers::CONTROL)
-                {
+                if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
                     break;
                 }
                 match key.code {

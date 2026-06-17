@@ -10,7 +10,11 @@ fn full_cycle_june_2026() {
     let (dates, seg_days, amounts) = compute(pay, last, total);
 
     assert_eq!(dates[0], pay, "first payment must be on pay day");
-    assert_eq!(amounts.iter().sum::<i64>(), total, "amounts must sum to total");
+    assert_eq!(
+        amounts.iter().sum::<i64>(),
+        total,
+        "amounts must sum to total"
+    );
     assert_eq!(
         seg_days.iter().sum::<i64>(),
         last - pay + 1,
