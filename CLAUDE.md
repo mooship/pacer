@@ -33,4 +33,4 @@ All money is represented as `i64` **cents** throughout `compute`, `app`, and the
 ## Code Style
 
 - No comments anywhere in source files.
-- Formatting is enforced by `cargo fmt` (default rustfmt settings) and checked in CI.
+- Formatting is enforced by `cargo fmt` (default rustfmt settings) and checked in CI. Locally, a cargo-husky pre-commit hook (`.cargo-husky/hooks/pre-commit`, installed on `cargo test`) runs `cargo fmt` and re-stages changed Rust files.

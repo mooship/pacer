@@ -40,3 +40,7 @@ Press **F2** to open the settings screen and change:
 Use **↑/↓** to move between fields, **Enter** to save, **Esc** to cancel.
 
 Settings are saved to `config.toml` in your platform's config directory (e.g. `~/.config/pacer/config.toml` on Linux) and loaded on every launch. The `quantum` value is stored in cents (R50 is `5000`).
+
+## Development
+
+A git pre-commit hook (managed by [cargo-husky](https://github.com/rhysd/cargo-husky)) runs `cargo fmt` and re-stages your changed Rust files, so commits are always formatted to match CI. The hook installs itself the first time you run `cargo test` after cloning — run it once to set things up.
