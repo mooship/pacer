@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+staged=$(git diff --name-only --cached --diff-filter=ACMR -- '*.rs')
+[ -z "$staged" ] && exit 0
+
+cargo fmt --all
+
+echo "$staged" | while IFS= read -r file; do
+    [ -f "$file" ] && git add -- "$file"
+done

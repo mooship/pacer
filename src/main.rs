@@ -3,6 +3,7 @@ mod ui;
 
 use app::{App, Step};
 use crossterm::event::{self, Event, KeyCode, KeyEventKind, KeyModifiers};
+use pacer::config::Config;
 use std::io;
 
 const EXPORT_PATH: &str = "pacer-budget.csv";
@@ -15,7 +16,7 @@ fn main() -> io::Result<()> {
 }
 
 fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
-    let mut app = App::new();
+    let mut app = App::new(Config::load());
 
     loop {
         terminal.draw(|frame| ui::draw(frame, &app))?;
@@ -27,6 +28,22 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                 }
                 if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
                     break;
+                }
+                if key.code == KeyCode::F(2) {
+                    app.open_settings();
+                    continue;
+                }
+                if app.step == Step::Settings {
+                    match key.code {
+                        KeyCode::Up => app.settings_up(),
+                        KeyCode::Down => app.settings_down(),
+                        KeyCode::Left if app.settings_cursor == 1 => app.payday_prev(),
+                        KeyCode::Right if app.settings_cursor == 1 => app.payday_next(),
+                        KeyCode::Enter => app.save_settings(),
+                        KeyCode::Esc => app.go_back(),
+                        other => handle_edit_key(&mut app, other),
+                    }
+                    continue;
                 }
                 match key.code {
                     KeyCode::Char('q') if app.step == Step::Results => app.quit(),
@@ -48,16 +65,9 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                     {
                         app.boost_down()
                     }
-                    KeyCode::Left => app.cursor_left(),
-                    KeyCode::Right => app.cursor_right(),
-                    KeyCode::Home => app.cursor_home(),
-                    KeyCode::End => app.cursor_end(),
-                    KeyCode::Delete => app.delete_char(),
-                    KeyCode::Char(c) => app.push_char(c),
-                    KeyCode::Backspace => app.pop_char(),
                     KeyCode::Enter => app.confirm(),
                     KeyCode::Esc => app.go_back(),
-                    _ => {}
+                    other => handle_edit_key(&mut app, other),
                 }
             }
         }
@@ -68,4 +78,17 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn handle_edit_key(app: &mut App, code: KeyCode) {
+    match code {
+        KeyCode::Left => app.cursor_left(),
+        KeyCode::Right => app.cursor_right(),
+        KeyCode::Home => app.cursor_home(),
+        KeyCode::End => app.cursor_end(),
+        KeyCode::Delete => app.delete_char(),
+        KeyCode::Char(c) => app.push_char(c),
+        KeyCode::Backspace => app.pop_char(),
+        _ => {}
+    }
 }

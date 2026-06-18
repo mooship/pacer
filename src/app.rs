@@ -1,4 +1,5 @@
-use pacer::compute::{compute, cover_end, fmt_money, per_day, QUANTUM};
+use pacer::compute::{compute, cover_end, fmt_money, per_day};
+use pacer::config::Config;
 use pacer::date::{fmt_dmy, fmt_range, today};
 use pacer::parse::{parse_amount, resolve_date};
 
@@ -8,6 +9,7 @@ pub enum Step {
     LastDay,
     Amount,
     Results,
+    Settings,
 }
 
 pub struct App {
@@ -25,11 +27,16 @@ pub struct App {
     pub boost: i64,
     pub results: Option<(Vec<i64>, Vec<i64>, Vec<i64>)>,
     pub should_quit: bool,
+    pub config: Config,
+    pub settings_cursor: usize,
+    pub quantum_input: String,
+    pub interval_input: String,
+    settings_return: Step,
 }
 
 impl Default for App {
     fn default() -> Self {
-        Self::new()
+        Self::new(Config::default())
     }
 }
 
@@ -43,7 +50,7 @@ fn byte_index(s: &str, char_idx: usize) -> usize {
 }
 
 impl App {
-    pub fn new() -> Self {
+    pub fn new(config: Config) -> Self {
         Self {
             step: Step::PayDate,
             pay_input: String::new(),
@@ -59,6 +66,11 @@ impl App {
             boost: 0,
             results: None,
             should_quit: false,
+            config,
+            settings_cursor: 0,
+            quantum_input: String::new(),
+            interval_input: String::new(),
+            settings_return: Step::PayDate,
         }
     }
 
@@ -67,6 +79,11 @@ impl App {
             Step::PayDate => Some(&mut self.pay_input),
             Step::LastDay => Some(&mut self.last_input),
             Step::Amount => Some(&mut self.amount_input),
+            Step::Settings => match self.settings_cursor {
+                0 => Some(&mut self.quantum_input),
+                2 => Some(&mut self.interval_input),
+                _ => None,
+            },
             Step::Results => None,
         }
     }
@@ -76,6 +93,11 @@ impl App {
             Step::PayDate => self.pay_input.chars().count(),
             Step::LastDay => self.last_input.chars().count(),
             Step::Amount => self.amount_input.chars().count(),
+            Step::Settings => match self.settings_cursor {
+                0 => self.quantum_input.chars().count(),
+                2 => self.interval_input.chars().count(),
+                _ => 0,
+            },
             Step::Results => 0,
         }
     }
@@ -187,6 +209,7 @@ impl App {
                 Err(e) => self.error = Some(e),
             },
             Step::Results => {}
+            Step::Settings => {}
         }
     }
 
@@ -208,6 +231,7 @@ impl App {
                 self.results = None;
                 self.step = Step::Amount;
             }
+            Step::Settings => self.close_settings(),
         }
         self.cursor = self.active_len();
     }
@@ -215,19 +239,92 @@ impl App {
     fn recompute(&mut self) {
         let (pay, last) = (self.pay.unwrap(), self.last.unwrap());
         let total = self.total.unwrap();
-        self.results = Some(compute(pay, last, total, self.boost));
+        self.results = Some(compute(pay, last, total, self.boost, &self.config));
     }
 
     pub fn boost_up(&mut self) {
         self.clear_msgs();
-        self.boost = (self.boost + QUANTUM).min(self.total.unwrap());
+        self.boost = (self.boost + self.config.quantum).min(self.total.unwrap());
         self.recompute();
     }
 
     pub fn boost_down(&mut self) {
         self.clear_msgs();
-        self.boost = (self.boost - QUANTUM).max(0);
+        self.boost = (self.boost - self.config.quantum).max(0);
         self.recompute();
+    }
+
+    pub fn open_settings(&mut self) {
+        if self.step == Step::Settings {
+            return;
+        }
+        self.clear_msgs();
+        self.settings_return = self.step;
+        self.settings_cursor = 0;
+        self.quantum_input = fmt_money(self.config.quantum)
+            .trim_start_matches('R')
+            .to_string();
+        self.interval_input = self.config.interval.to_string();
+        self.step = Step::Settings;
+        self.cursor = self.active_len();
+    }
+
+    fn close_settings(&mut self) {
+        self.step = self.settings_return;
+    }
+
+    pub fn settings_up(&mut self) {
+        self.clear_msgs();
+        self.settings_cursor = self.settings_cursor.saturating_sub(1);
+        self.cursor = self.active_len();
+    }
+
+    pub fn settings_down(&mut self) {
+        self.clear_msgs();
+        self.settings_cursor = (self.settings_cursor + 1).min(2);
+        self.cursor = self.active_len();
+    }
+
+    pub fn payday_prev(&mut self) {
+        self.clear_msgs();
+        self.config.payday = (self.config.payday - 1).rem_euclid(7);
+    }
+
+    pub fn payday_next(&mut self) {
+        self.clear_msgs();
+        self.config.payday = (self.config.payday + 1).rem_euclid(7);
+    }
+
+    pub fn save_settings(&mut self) {
+        self.clear_msgs();
+        let quantum = match parse_amount(&self.quantum_input) {
+            Ok(v) => v,
+            Err(e) => {
+                self.error = Some(e);
+                return;
+            }
+        };
+        let interval: i64 = match self.interval_input.trim().parse() {
+            Ok(v) if v >= 1 => v,
+            _ => {
+                self.error = Some("interval must be a whole number of days".into());
+                return;
+            }
+        };
+        let config = Config {
+            quantum,
+            payday: self.config.payday,
+            interval,
+        }
+        .sanitized();
+        match config.save() {
+            Ok(()) => {
+                self.config = config;
+                self.notice = Some("settings saved".into());
+                self.close_settings();
+            }
+            Err(e) => self.error = Some(format!("could not save settings: {}", e)),
+        }
     }
 
     pub fn csv(&self) -> Option<String> {
@@ -264,7 +361,7 @@ mod tests {
     use pacer::date::days_from_civil;
 
     fn app_at(today: i64) -> App {
-        let mut a = App::new();
+        let mut a = App::new(Config::default());
         a.today = today;
         a
     }
