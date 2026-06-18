@@ -1,4 +1,5 @@
-use pacer::compute::{compute, QUANTUM};
+use pacer::compute::compute;
+use pacer::config::{Config, DEFAULT_QUANTUM};
 use pacer::parse::{parse_amount, parse_date_days};
 
 #[test]
@@ -7,7 +8,7 @@ fn full_cycle_june_2026() {
     let last = parse_date_days("2026-07-24").unwrap();
     let total = parse_amount("5000").unwrap();
 
-    let (dates, seg_days, amounts) = compute(pay, last, total, 0);
+    let (dates, seg_days, amounts) = compute(pay, last, total, 0, &Config::default());
 
     assert_eq!(dates[0], pay, "first payment must be on pay day");
     assert_eq!(
@@ -29,7 +30,7 @@ fn full_cycle_month_boundary() {
     let last = parse_date_days("2026-02-27").unwrap();
     let total = parse_amount("R6,000").unwrap();
 
-    let (dates, seg_days, amounts) = compute(pay, last, total, 0);
+    let (dates, seg_days, amounts) = compute(pay, last, total, 0, &Config::default());
 
     assert_eq!(dates[0], pay);
     assert_eq!(amounts.iter().sum::<i64>(), total);
@@ -43,7 +44,7 @@ fn full_cycle_short_period() {
     let last = parse_date_days("2026-07-08").unwrap();
     let total = parse_amount("2500").unwrap();
 
-    let (_, _, amounts) = compute(pay, last, total, 0);
+    let (_, _, amounts) = compute(pay, last, total, 0, &Config::default());
 
     assert_eq!(amounts.iter().sum::<i64>(), total);
     assert!(amounts.iter().all(|&a| a >= 0));
@@ -55,10 +56,10 @@ fn full_cycle_exact_quantum() {
     let last = parse_date_days("2026-07-24").unwrap();
     let total = parse_amount("5000").unwrap();
 
-    let (_, _, amounts) = compute(pay, last, total, 0);
+    let (_, _, amounts) = compute(pay, last, total, 0, &Config::default());
 
     for &a in &amounts {
-        assert_eq!(a % QUANTUM, 0);
+        assert_eq!(a % DEFAULT_QUANTUM, 0);
     }
 }
 
@@ -68,13 +69,13 @@ fn full_cycle_with_bridge_boost() {
     let last = parse_date_days("2026-07-24").unwrap();
     let total = parse_amount("5000").unwrap();
 
-    let (_, _, base) = compute(pay, last, total, 0);
-    let (_, _, boosted) = compute(pay, last, total, 100000);
+    let (_, _, base) = compute(pay, last, total, 0, &Config::default());
+    let (_, _, boosted) = compute(pay, last, total, 100000, &Config::default());
 
     assert!(boosted[0] > base[0], "bridge grows with a boost");
     assert_eq!(boosted.iter().sum::<i64>(), total, "total is preserved");
     assert!(boosted.iter().all(|&a| a >= 0));
     for &a in &boosted[1..] {
-        assert_eq!(a % QUANTUM, 0, "weeklies stay quantum-aligned");
+        assert_eq!(a % DEFAULT_QUANTUM, 0, "weeklies stay quantum-aligned");
     }
 }
