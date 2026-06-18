@@ -39,16 +39,9 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                         KeyCode::Down => app.settings_down(),
                         KeyCode::Left if app.settings_cursor == 1 => app.payday_prev(),
                         KeyCode::Right if app.settings_cursor == 1 => app.payday_next(),
-                        KeyCode::Left => app.cursor_left(),
-                        KeyCode::Right => app.cursor_right(),
-                        KeyCode::Home => app.cursor_home(),
-                        KeyCode::End => app.cursor_end(),
-                        KeyCode::Delete => app.delete_char(),
-                        KeyCode::Char(c) => app.push_char(c),
-                        KeyCode::Backspace => app.pop_char(),
                         KeyCode::Enter => app.save_settings(),
                         KeyCode::Esc => app.go_back(),
-                        _ => {}
+                        other => handle_edit_key(&mut app, other),
                     }
                     continue;
                 }
@@ -72,16 +65,9 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
                     {
                         app.boost_down()
                     }
-                    KeyCode::Left => app.cursor_left(),
-                    KeyCode::Right => app.cursor_right(),
-                    KeyCode::Home => app.cursor_home(),
-                    KeyCode::End => app.cursor_end(),
-                    KeyCode::Delete => app.delete_char(),
-                    KeyCode::Char(c) => app.push_char(c),
-                    KeyCode::Backspace => app.pop_char(),
                     KeyCode::Enter => app.confirm(),
                     KeyCode::Esc => app.go_back(),
-                    _ => {}
+                    other => handle_edit_key(&mut app, other),
                 }
             }
         }
@@ -92,4 +78,17 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn handle_edit_key(app: &mut App, code: KeyCode) {
+    match code {
+        KeyCode::Left => app.cursor_left(),
+        KeyCode::Right => app.cursor_right(),
+        KeyCode::Home => app.cursor_home(),
+        KeyCode::End => app.cursor_end(),
+        KeyCode::Delete => app.delete_char(),
+        KeyCode::Char(c) => app.push_char(c),
+        KeyCode::Backspace => app.pop_char(),
+        _ => {}
+    }
 }

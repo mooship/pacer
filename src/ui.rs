@@ -47,50 +47,56 @@ fn render_title(frame: &mut Frame, area: Rect) {
     frame.render_widget(title, area);
 }
 
-fn render_form(frame: &mut Frame, app: &App, area: Rect) {
+fn field(
+    label_width: usize,
+    label: &str,
+    input: &str,
+    is_active: bool,
+    is_done: bool,
+    cursor: usize,
+) -> Line<'static> {
     let active_style = Style::default()
         .fg(Color::Cyan)
         .add_modifier(Modifier::BOLD);
     let dim_style = Style::default().add_modifier(Modifier::DIM);
-
-    let field = |label: &str, input: &str, is_active: bool, is_done: bool, cursor: usize| -> Line {
-        let (label_s, bracket_s, value_s) = if is_active {
-            (Style::default(), active_style, active_style)
-        } else if is_done {
-            (dim_style, dim_style, Style::default())
-        } else {
-            (dim_style, dim_style, dim_style)
-        };
-        let mut spans = vec![
-            Span::styled(format!("  {:<18}", label), label_s),
-            Span::styled("[", bracket_s),
-        ];
-        if is_active {
-            let chars: Vec<char> = input.chars().collect();
-            let at = cursor.min(chars.len());
-            let before: String = chars[..at].iter().collect();
-            let on: String = chars
-                .get(at)
-                .map(|c| c.to_string())
-                .unwrap_or_else(|| " ".into());
-            let after: String = chars
-                .get(at + 1..)
-                .map(|c| c.iter().collect())
-                .unwrap_or_default();
-            spans.push(Span::styled(before, value_s));
-            spans.push(Span::styled(
-                on,
-                active_style.add_modifier(Modifier::REVERSED),
-            ));
-            spans.push(Span::styled(after, value_s));
-        } else {
-            spans.push(Span::styled(input.to_string(), value_s));
-        }
-        spans.push(Span::styled("]", bracket_s));
-        Line::from(spans)
+    let (label_s, bracket_s, value_s) = if is_active {
+        (Style::default(), active_style, active_style)
+    } else if is_done {
+        (dim_style, dim_style, Style::default())
+    } else {
+        (dim_style, dim_style, dim_style)
     };
+    let mut spans = vec![
+        Span::styled(format!("  {:<width$}", label, width = label_width), label_s),
+        Span::styled("[", bracket_s),
+    ];
+    if is_active {
+        let chars: Vec<char> = input.chars().collect();
+        let at = cursor.min(chars.len());
+        let before: String = chars[..at].iter().collect();
+        let on: String = chars
+            .get(at)
+            .map(|c| c.to_string())
+            .unwrap_or_else(|| " ".into());
+        let after: String = chars
+            .get(at + 1..)
+            .map(|c| c.iter().collect())
+            .unwrap_or_default();
+        spans.push(Span::styled(before, value_s));
+        spans.push(Span::styled(
+            on,
+            active_style.add_modifier(Modifier::REVERSED),
+        ));
+        spans.push(Span::styled(after, value_s));
+    } else {
+        spans.push(Span::styled(input.to_string(), value_s));
+    }
+    spans.push(Span::styled("]", bracket_s));
+    Line::from(spans)
+}
 
-    let status_line = if let Some(n) = &app.notice {
+fn status_line(app: &App) -> Line<'static> {
+    if let Some(n) = &app.notice {
         Line::from(Span::styled(
             format!("  ✓ {}", n),
             Style::default().fg(Color::Green),
@@ -102,10 +108,13 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         ))
     } else {
         Line::from("")
-    };
+    }
+}
 
+fn render_form(frame: &mut Frame, app: &App, area: Rect) {
     let lines = vec![
         field(
+            18,
             "Pay date",
             &app.pay_input,
             app.step == Step::PayDate,
@@ -113,6 +122,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             app.cursor,
         ),
         field(
+            18,
             "Last day",
             &app.last_input,
             app.step == Step::LastDay,
@@ -120,6 +130,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             app.cursor,
         ),
         field(
+            18,
             "Amount (R)",
             &app.amount_input,
             app.step == Step::Amount,
@@ -127,7 +138,7 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             app.cursor,
         ),
         Line::from(""),
-        status_line,
+        status_line(app),
     ];
 
     frame.render_widget(Paragraph::new(lines), area);
@@ -138,41 +149,6 @@ fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
         .fg(Color::Cyan)
         .add_modifier(Modifier::BOLD);
     let dim_style = Style::default().add_modifier(Modifier::DIM);
-
-    let text_field = |label: &str, input: &str, is_active: bool, cursor: usize| -> Line {
-        let (label_s, bracket_s, value_s) = if is_active {
-            (Style::default(), active_style, active_style)
-        } else {
-            (dim_style, dim_style, Style::default())
-        };
-        let mut spans = vec![
-            Span::styled(format!("  {:<14}", label), label_s),
-            Span::styled("[", bracket_s),
-        ];
-        if is_active {
-            let chars: Vec<char> = input.chars().collect();
-            let at = cursor.min(chars.len());
-            let before: String = chars[..at].iter().collect();
-            let on: String = chars
-                .get(at)
-                .map(|c| c.to_string())
-                .unwrap_or_else(|| " ".into());
-            let after: String = chars
-                .get(at + 1..)
-                .map(|c| c.iter().collect())
-                .unwrap_or_default();
-            spans.push(Span::styled(before, value_s));
-            spans.push(Span::styled(
-                on,
-                active_style.add_modifier(Modifier::REVERSED),
-            ));
-            spans.push(Span::styled(after, value_s));
-        } else {
-            spans.push(Span::styled(input.to_string(), value_s));
-        }
-        spans.push(Span::styled("]", bracket_s));
-        Line::from(spans)
-    };
 
     let payday_active = app.settings_cursor == 1;
     let (p_label_s, p_value_s) = if payday_active {
@@ -185,35 +161,25 @@ fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
         Span::styled(format!("‹ {} ›", WD[app.config.payday as usize]), p_value_s),
     ]);
 
-    let status_line = if let Some(n) = &app.notice {
-        Line::from(Span::styled(
-            format!("  ✓ {}", n),
-            Style::default().fg(Color::Green),
-        ))
-    } else if let Some(e) = &app.error {
-        Line::from(Span::styled(
-            format!("  ✗ {}", e),
-            Style::default().fg(Color::Red),
-        ))
-    } else {
-        Line::from("")
-    };
-
     let lines = vec![
-        text_field(
+        field(
+            14,
             "Quantum (R)",
             &app.quantum_input,
             app.settings_cursor == 0,
+            app.settings_cursor != 0,
             app.cursor,
         ),
         payday_line,
-        text_field(
+        field(
+            14,
             "Every (days)",
             &app.interval_input,
             app.settings_cursor == 2,
+            app.settings_cursor != 2,
             app.cursor,
         ),
-        status_line,
+        status_line(app),
     ];
 
     frame.render_widget(Paragraph::new(lines), area);
