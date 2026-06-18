@@ -10,6 +10,11 @@ use ratatui::{
     Frame,
 };
 
+const ACCENT: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
+const DIM: Style = Style::new().add_modifier(Modifier::DIM);
+const BOLD: Style = Style::new().add_modifier(Modifier::BOLD);
+const GREEN: Style = Style::new().fg(Color::Green);
+
 pub fn draw(frame: &mut Frame, app: &App) {
     let area = frame.area();
 
@@ -41,19 +46,13 @@ pub fn draw(frame: &mut Frame, app: &App) {
 }
 
 fn render_title(frame: &mut Frame, area: Rect) {
-    let title = Paragraph::new(Line::from(vec![Span::styled(
-        "Pacer",
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
-    )]));
+    let title = Paragraph::new(Line::from(vec![Span::styled("Pacer", ACCENT)]));
     frame.render_widget(title, area);
 }
 
 fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
-    let dim = Style::default().add_modifier(Modifier::DIM);
     if app.step == Step::Settings {
-        let line = Line::from(Span::styled("  Settings", dim));
+        let line = Line::from(Span::styled("  Settings", DIM));
         frame.render_widget(Paragraph::new(line), area);
         return;
     }
@@ -67,24 +66,17 @@ fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
     let mut spans = vec![Span::raw("  ")];
     for (i, name) in names.iter().enumerate() {
         if i > 0 {
-            spans.push(Span::styled(" › ", dim));
+            spans.push(Span::styled(" › ", DIM));
         }
         if i < current {
             spans.push(Span::styled(
                 format!("✓ {}", name),
-                Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::DIM),
+                GREEN.add_modifier(Modifier::DIM),
             ));
         } else if i == current {
-            spans.push(Span::styled(
-                name.to_string(),
-                Style::default()
-                    .fg(Color::Cyan)
-                    .add_modifier(Modifier::BOLD),
-            ));
+            spans.push(Span::styled(name.to_string(), ACCENT));
         } else {
-            spans.push(Span::styled(name.to_string(), dim));
+            spans.push(Span::styled(name.to_string(), DIM));
         }
     }
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
@@ -100,16 +92,12 @@ fn field(
     placeholder: &str,
     preview: &str,
 ) -> Line<'static> {
-    let active_style = Style::default()
-        .fg(Color::Cyan)
-        .add_modifier(Modifier::BOLD);
-    let dim_style = Style::default().add_modifier(Modifier::DIM);
     let (label_s, bracket_s, value_s) = if is_active {
-        (Style::default(), active_style, active_style)
+        (Style::default(), ACCENT, ACCENT)
     } else if is_done {
-        (dim_style, dim_style, Style::default())
+        (DIM, DIM, Style::default())
     } else {
-        (dim_style, dim_style, dim_style)
+        (DIM, DIM, DIM)
     };
     let mut spans = vec![
         Span::styled(format!("  {:<width$}", label, width = label_width), label_s),
@@ -119,11 +107,11 @@ fn field(
         if is_active {
             spans.push(Span::styled(
                 " ".to_string(),
-                active_style.add_modifier(Modifier::REVERSED),
+                ACCENT.add_modifier(Modifier::REVERSED),
             ));
         }
         if !placeholder.is_empty() {
-            spans.push(Span::styled(placeholder.to_string(), dim_style));
+            spans.push(Span::styled(placeholder.to_string(), DIM));
         }
     } else if is_active {
         let chars: Vec<char> = input.chars().collect();
@@ -138,10 +126,7 @@ fn field(
             .map(|c| c.iter().collect())
             .unwrap_or_default();
         spans.push(Span::styled(before, value_s));
-        spans.push(Span::styled(
-            on,
-            active_style.add_modifier(Modifier::REVERSED),
-        ));
+        spans.push(Span::styled(on, ACCENT.add_modifier(Modifier::REVERSED)));
         spans.push(Span::styled(after, value_s));
     } else {
         spans.push(Span::styled(input.to_string(), value_s));
@@ -149,11 +134,9 @@ fn field(
     spans.push(Span::styled("]", bracket_s));
     if !preview.is_empty() {
         let preview_style = if is_active {
-            Style::default().fg(Color::Green)
+            GREEN
         } else {
-            Style::default()
-                .fg(Color::Green)
-                .add_modifier(Modifier::DIM)
+            GREEN.add_modifier(Modifier::DIM)
         };
         spans.push(Span::styled(format!("  → {}", preview), preview_style));
     }
@@ -162,10 +145,7 @@ fn field(
 
 fn status_line(app: &App) -> Line<'static> {
     if let Some(n) = &app.notice {
-        Line::from(Span::styled(
-            format!("  ✓ {}", n),
-            Style::default().fg(Color::Green),
-        ))
+        Line::from(Span::styled(format!("  ✓ {}", n), GREEN))
     } else if let Some(e) = &app.error {
         Line::from(Span::styled(
             format!("  ✗ {}", e),
@@ -238,16 +218,11 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
 }
 
 fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
-    let active_style = Style::default()
-        .fg(Color::Cyan)
-        .add_modifier(Modifier::BOLD);
-    let dim_style = Style::default().add_modifier(Modifier::DIM);
-
     let payday_active = app.settings_cursor == 1;
     let (p_label_s, p_value_s) = if payday_active {
-        (Style::default(), active_style)
+        (Style::default(), ACCENT)
     } else {
-        (dim_style, Style::default())
+        (DIM, Style::default())
     };
     let payday_line = Line::from(vec![
         Span::styled(format!("  {:<14}", "Payout day"), p_label_s),
@@ -293,20 +268,14 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
     let parts = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(area);
 
     let info = Line::from(vec![
-        Span::styled(
-            "  Bridge top-up  ",
-            Style::default().add_modifier(Modifier::DIM),
-        ),
+        Span::styled("  Bridge top-up  ", DIM),
         Span::styled(
             fmt_money(app.boost),
             Style::default()
                 .fg(Color::Yellow)
                 .add_modifier(Modifier::BOLD),
         ),
-        Span::styled(
-            "   ↑/↓ to move money into the first, shorter payment",
-            Style::default().add_modifier(Modifier::DIM),
-        ),
+        Span::styled("   ↑/↓ to move money into the first, shorter payment", DIM),
     ]);
     frame.render_widget(Paragraph::new(info), parts[0]);
 
@@ -317,11 +286,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Cell::from("Amount"),
         Cell::from("Per day"),
     ])
-    .style(
-        Style::default()
-            .fg(Color::Cyan)
-            .add_modifier(Modifier::BOLD),
-    )
+    .style(ACCENT)
     .height(1);
 
     let mut rows: Vec<Row> = dates
@@ -344,8 +309,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
                 Cell::from(fmt_wd_dm(d)).style(pay_style),
                 Cell::from(fmt_range(d, cover_end)),
                 Cell::from(seg_days[i].to_string()),
-                Cell::from(fmt_money(amounts[i])).style(Style::default().fg(Color::Green)),
-                Cell::from(fmt_money(per_day)).style(Style::default().add_modifier(Modifier::DIM)),
+                Cell::from(fmt_money(amounts[i])).style(GREEN),
+                Cell::from(fmt_money(per_day)).style(DIM),
             ])
             .style(row_style)
         })
@@ -353,17 +318,13 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
 
     rows.push(
         Row::new(vec![
-            Cell::from("Total").style(Style::default().add_modifier(Modifier::BOLD)),
+            Cell::from("Total").style(BOLD),
             Cell::from(""),
-            Cell::from(total_days.to_string()).style(Style::default().add_modifier(Modifier::BOLD)),
-            Cell::from(fmt_money(total)).style(
-                Style::default()
-                    .fg(Color::Green)
-                    .add_modifier(Modifier::BOLD),
-            ),
+            Cell::from(total_days.to_string()).style(BOLD),
+            Cell::from(fmt_money(total)).style(GREEN.add_modifier(Modifier::BOLD)),
             Cell::from(""),
         ])
-        .style(Style::default().add_modifier(Modifier::BOLD)),
+        .style(BOLD),
     );
 
     let widths = [
@@ -389,11 +350,5 @@ fn render_hint(frame: &mut Frame, app: &App, area: Rect) {
     } else {
         "  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit"
     };
-    frame.render_widget(
-        Paragraph::new(Line::from(Span::styled(
-            hint,
-            Style::default().add_modifier(Modifier::DIM),
-        ))),
-        area,
-    );
+    frame.render_widget(Paragraph::new(Line::from(Span::styled(hint, DIM))), area);
 }
