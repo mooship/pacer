@@ -300,11 +300,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
             } else {
                 Style::default()
             };
-            let row_style = if i % 2 == 1 {
-                Style::default().bg(Color::Indexed(236))
-            } else {
-                Style::default()
-            };
+            let row_style = if i % 2 == 1 { DIM } else { Style::default() };
             Row::new(vec![
                 Cell::from(fmt_wd_dm(d)).style(pay_style),
                 Cell::from(fmt_range(d, cover_end)),
