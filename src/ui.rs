@@ -82,6 +82,7 @@ fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
+#[derive(Default, Clone, Copy)]
 struct Field<'a> {
     label_width: usize,
     label: &'a str,
@@ -184,36 +185,38 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             .unwrap_or_default()
     };
 
+    let base = Field {
+        label_width: 18,
+        cursor: app.cursor,
+        ..Field::default()
+    };
     let lines = vec![
         field(Field {
-            label_width: 18,
             label: "Pay date",
             input: &app.pay_input,
             is_active: app.step == Step::PayDate,
             is_done: app.pay.is_some(),
-            cursor: app.cursor,
             placeholder: "today, +7, or 2026-07-25",
             preview: &pay_preview,
+            ..base
         }),
         field(Field {
-            label_width: 18,
             label: "Last day",
             input: &app.last_input,
             is_active: app.step == Step::LastDay,
             is_done: app.last.is_some(),
-            cursor: app.cursor,
             placeholder: "+30 or 2026-07-25",
             preview: &last_preview,
+            ..base
         }),
         field(Field {
-            label_width: 18,
             label: "Amount (R)",
             input: &app.amount_input,
             is_active: app.step == Step::Amount,
             is_done: app.total.is_some(),
-            cursor: app.cursor,
             placeholder: "e.g. 18500",
             preview: &amount_preview,
+            ..base
         }),
         Line::from(""),
         status_line(app),
@@ -234,27 +237,26 @@ fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
         Span::styled(format!("‹ {} ›", WD[app.config.payday as usize]), p_value_s),
     ]);
 
+    let base = Field {
+        label_width: 14,
+        cursor: app.cursor,
+        ..Field::default()
+    };
     let lines = vec![
         field(Field {
-            label_width: 14,
             label: "Quantum (R)",
             input: &app.quantum_input,
             is_active: app.settings_cursor == 0,
             is_done: app.settings_cursor != 0,
-            cursor: app.cursor,
-            placeholder: "",
-            preview: "",
+            ..base
         }),
         payday_line,
         field(Field {
-            label_width: 14,
             label: "Every (days)",
             input: &app.interval_input,
             is_active: app.settings_cursor == 2,
             is_done: app.settings_cursor != 2,
-            cursor: app.cursor,
-            placeholder: "",
-            preview: "",
+            ..base
         }),
         status_line(app),
     ];

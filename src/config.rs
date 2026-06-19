@@ -37,19 +37,13 @@ impl Config {
         Some(dirs::config_dir()?.join("pacer").join("config.toml"))
     }
 
-    pub fn load() -> (Config, Option<String>) {
-        let Some(path) = Config::path() else {
-            return (Config::default(), None);
-        };
-        let Ok(body) = std::fs::read_to_string(&path) else {
-            return (Config::default(), None);
+    pub fn load() -> (Config, bool) {
+        let Some(body) = Config::path().and_then(|p| std::fs::read_to_string(p).ok()) else {
+            return (Config::default(), false);
         };
         match toml::from_str::<Config>(&body) {
-            Ok(parsed) => (parsed.sanitized(), None),
-            Err(_) => (
-                Config::default(),
-                Some("config.toml is invalid; using defaults".into()),
-            ),
+            Ok(parsed) => (parsed.sanitized(), false),
+            Err(_) => (Config::default(), true),
         }
     }
 

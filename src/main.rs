@@ -16,9 +16,11 @@ fn main() -> io::Result<()> {
 }
 
 fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
-    let (config, warning) = Config::load();
+    let (config, invalid) = Config::load();
     let mut app = App::new(config);
-    app.notice = warning;
+    if invalid {
+        app.notice = Some("config.toml is invalid; using defaults".into());
+    }
 
     loop {
         terminal.draw(|frame| ui::draw(frame, &app))?;
