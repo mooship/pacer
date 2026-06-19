@@ -8,7 +8,45 @@ use std::io;
 
 const EXPORT_PATH: &str = "pacer-budget.csv";
 
+const HELP: &str = "\
+pacer — split a salary into a bridge payment plus recurring allowances
+
+Usage:
+  pacer            launch the interactive TUI
+  pacer --help     show this help and exit
+  pacer --version  show the version and exit
+
+In the TUI:
+  Pay date   YYYY-MM-DD, blank or `today`
+  Last day   YYYY-MM-DD or a relative offset like +30
+  Amount     Rand, optional cents: 5000, R5,000, 5000.50
+
+Keys:
+  Enter confirm   Esc back   ←/→ move cursor   F2 settings   Ctrl+C quit
+  Results: ↑/↓ move money into the bridge   PgUp/PgDn ×10   Home/End min/max
+           s save csv   q quit
+
+Set NO_COLOR to disable colored output.
+";
+
 fn main() -> io::Result<()> {
+    if let Some(arg) = std::env::args().nth(1) {
+        match arg.as_str() {
+            "-h" | "--help" => {
+                print!("{}", HELP);
+                return Ok(());
+            }
+            "-V" | "--version" => {
+                println!("pacer {}", env!("CARGO_PKG_VERSION"));
+                return Ok(());
+            }
+            other => {
+                eprintln!("pacer: unknown argument `{}`; try `pacer --help`", other);
+                std::process::exit(2);
+            }
+        }
+    }
+
     let mut terminal = ratatui::init();
     let result = run(&mut terminal);
     ratatui::restore();
@@ -18,6 +56,7 @@ fn main() -> io::Result<()> {
 fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
     let (config, invalid) = Config::load();
     let mut app = App::new(config);
+    app.color = std::env::var_os("NO_COLOR").is_none_or(|v| v.is_empty());
     if invalid {
         app.notice = Some("config.toml is invalid; using defaults".into());
     }
@@ -50,31 +89,35 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
             }
             continue;
         }
-        match key.code {
-            KeyCode::Char('q') if app.step == Step::Results => app.quit(),
-            KeyCode::Char('s') if app.step == Step::Results => {
-                if let Some(content) = app.csv() {
-                    match std::fs::write(EXPORT_PATH, content) {
-                        Ok(_) => app.notice = Some(format!("saved to {}", export_location())),
-                        Err(e) => app.error = Some(format!("could not save: {}", e)),
+        if app.step == Step::Results {
+            match key.code {
+                KeyCode::Char('q') => app.quit(),
+                KeyCode::Char('s') => {
+                    if let Some(content) = app.csv() {
+                        match std::fs::write(EXPORT_PATH, content) {
+                            Ok(_) => app.notice = Some(format!("saved to {}", export_location())),
+                            Err(e) => app.error = Some(format!("could not save: {}", e)),
+                        }
                     }
                 }
+                KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=') => app.boost_up(),
+                KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_') => app.boost_down(),
+                KeyCode::PageUp => app.boost_up_coarse(),
+                KeyCode::PageDown => app.boost_down_coarse(),
+                KeyCode::Home => app.boost_to_min(),
+                KeyCode::End => app.boost_to_max(),
+                KeyCode::Esc => app.go_back(),
+                _ => {}
             }
-            KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=') if app.step == Step::Results => {
-                app.boost_up()
+            if app.should_quit {
+                break;
             }
-            KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_')
-                if app.step == Step::Results =>
-            {
-                app.boost_down()
-            }
+            continue;
+        }
+        match key.code {
             KeyCode::Enter => app.confirm(),
             KeyCode::Esc => app.go_back(),
             other => handle_edit_key(&mut app, other),
-        }
-
-        if app.should_quit {
-            break;
         }
     }
 

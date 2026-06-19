@@ -10,12 +10,38 @@ use ratatui::{
     Frame,
 };
 
-const ACCENT: Style = Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD);
 const DIM: Style = Style::new().add_modifier(Modifier::DIM);
 const BOLD: Style = Style::new().add_modifier(Modifier::BOLD);
-const GREEN: Style = Style::new().fg(Color::Green);
+
+struct Theme {
+    accent: Style,
+    green: Style,
+    yellow: Style,
+    red: Style,
+}
+
+impl Theme {
+    fn new(color: bool) -> Self {
+        if color {
+            Self {
+                accent: Style::new().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+                green: Style::new().fg(Color::Green),
+                yellow: Style::new().fg(Color::Yellow),
+                red: Style::new().fg(Color::Red),
+            }
+        } else {
+            Self {
+                accent: Style::new().add_modifier(Modifier::BOLD),
+                green: Style::new(),
+                yellow: Style::new(),
+                red: Style::new(),
+            }
+        }
+    }
+}
 
 pub fn draw(frame: &mut Frame, app: &App) {
+    let theme = Theme::new(app.color);
     let area = frame.area();
 
     let results_height: u16 = app
@@ -32,25 +58,25 @@ pub fn draw(frame: &mut Frame, app: &App) {
     ])
     .split(area);
 
-    render_title(frame, chunks[0]);
-    render_breadcrumb(frame, app, chunks[1]);
+    render_title(frame, &theme, chunks[0]);
+    render_breadcrumb(frame, app, &theme, chunks[1]);
     if app.step == Step::Settings {
-        render_settings(frame, app, chunks[2]);
+        render_settings(frame, app, &theme, chunks[2]);
     } else {
-        render_form(frame, app, chunks[2]);
+        render_form(frame, app, &theme, chunks[2]);
     }
     if app.step == Step::Results {
-        render_results(frame, app, chunks[3]);
+        render_results(frame, app, &theme, chunks[3]);
     }
     render_hint(frame, app, chunks[4]);
 }
 
-fn render_title(frame: &mut Frame, area: Rect) {
-    let title = Paragraph::new(Line::from(vec![Span::styled("Pacer", ACCENT)]));
+fn render_title(frame: &mut Frame, theme: &Theme, area: Rect) {
+    let title = Paragraph::new(Line::from(vec![Span::styled("Pacer", theme.accent)]));
     frame.render_widget(title, area);
 }
 
-fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
+fn render_breadcrumb(frame: &mut Frame, app: &App, theme: &Theme, area: Rect) {
     if app.step == Step::Settings {
         let line = Line::from(Span::styled("  Settings", DIM));
         frame.render_widget(Paragraph::new(line), area);
@@ -71,10 +97,10 @@ fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
         if i < current {
             spans.push(Span::styled(
                 format!("✓ {}", name),
-                GREEN.add_modifier(Modifier::DIM),
+                theme.green.add_modifier(Modifier::DIM),
             ));
         } else if i == current {
-            spans.push(Span::styled(name.to_string(), ACCENT));
+            spans.push(Span::styled(name.to_string(), theme.accent));
         } else {
             spans.push(Span::styled(name.to_string(), DIM));
         }
@@ -94,9 +120,9 @@ struct Field<'a> {
     preview: &'a str,
 }
 
-fn field(f: Field) -> Line<'static> {
+fn field(f: Field, theme: &Theme) -> Line<'static> {
     let (label_s, bracket_s, value_s) = if f.is_active {
-        (Style::default(), ACCENT, ACCENT)
+        (Style::default(), theme.accent, theme.accent)
     } else if f.is_done {
         (DIM, DIM, Style::default())
     } else {
@@ -113,7 +139,7 @@ fn field(f: Field) -> Line<'static> {
         if f.is_active {
             spans.push(Span::styled(
                 " ".to_string(),
-                ACCENT.add_modifier(Modifier::REVERSED),
+                theme.accent.add_modifier(Modifier::REVERSED),
             ));
         }
         if !f.placeholder.is_empty() {
@@ -132,7 +158,10 @@ fn field(f: Field) -> Line<'static> {
             .map(|c| c.iter().collect())
             .unwrap_or_default();
         spans.push(Span::styled(before, value_s));
-        spans.push(Span::styled(on, ACCENT.add_modifier(Modifier::REVERSED)));
+        spans.push(Span::styled(
+            on,
+            theme.accent.add_modifier(Modifier::REVERSED),
+        ));
         spans.push(Span::styled(after, value_s));
     } else {
         spans.push(Span::styled(f.input.to_string(), value_s));
@@ -140,29 +169,26 @@ fn field(f: Field) -> Line<'static> {
     spans.push(Span::styled("]", bracket_s));
     if !f.preview.is_empty() {
         let preview_style = if f.is_active {
-            GREEN
+            theme.green
         } else {
-            GREEN.add_modifier(Modifier::DIM)
+            theme.green.add_modifier(Modifier::DIM)
         };
         spans.push(Span::styled(format!("  → {}", f.preview), preview_style));
     }
     Line::from(spans)
 }
 
-fn status_line(app: &App) -> Line<'static> {
+fn status_line(app: &App, theme: &Theme) -> Line<'static> {
     if let Some(n) = &app.notice {
-        Line::from(Span::styled(format!("  ✓ {}", n), GREEN))
+        Line::from(Span::styled(format!("  ✓ {}", n), theme.green))
     } else if let Some(e) = &app.error {
-        Line::from(Span::styled(
-            format!("  ✗ {}", e),
-            Style::default().fg(Color::Red),
-        ))
+        Line::from(Span::styled(format!("  ✗ {}", e), theme.red))
     } else {
         Line::from("")
     }
 }
 
-fn render_form(frame: &mut Frame, app: &App, area: Rect) {
+fn render_form(frame: &mut Frame, app: &App, theme: &Theme, area: Rect) {
     let pay_preview = resolve_date(&app.pay_input, app.today)
         .ok()
         .map(fmt_wd_dmy)
@@ -191,44 +217,53 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
         ..Field::default()
     };
     let lines = vec![
-        field(Field {
-            label: "Pay date",
-            input: &app.pay_input,
-            is_active: app.step == Step::PayDate,
-            is_done: app.pay.is_some(),
-            placeholder: "today, +7, or 2026-07-25",
-            preview: &pay_preview,
-            ..base
-        }),
-        field(Field {
-            label: "Last day",
-            input: &app.last_input,
-            is_active: app.step == Step::LastDay,
-            is_done: app.last.is_some(),
-            placeholder: "+30 or 2026-07-25",
-            preview: &last_preview,
-            ..base
-        }),
-        field(Field {
-            label: "Amount (R)",
-            input: &app.amount_input,
-            is_active: app.step == Step::Amount,
-            is_done: app.total.is_some(),
-            placeholder: "e.g. 18500",
-            preview: &amount_preview,
-            ..base
-        }),
+        field(
+            Field {
+                label: "Pay date",
+                input: &app.pay_input,
+                is_active: app.step == Step::PayDate,
+                is_done: app.pay.is_some(),
+                placeholder: "today, +7, or 2026-07-25",
+                preview: &pay_preview,
+                ..base
+            },
+            theme,
+        ),
+        field(
+            Field {
+                label: "Last day",
+                input: &app.last_input,
+                is_active: app.step == Step::LastDay,
+                is_done: app.last.is_some(),
+                placeholder: "+30 or 2026-07-25",
+                preview: &last_preview,
+                ..base
+            },
+            theme,
+        ),
+        field(
+            Field {
+                label: "Amount (R)",
+                input: &app.amount_input,
+                is_active: app.step == Step::Amount,
+                is_done: app.total.is_some(),
+                placeholder: "e.g. 18500",
+                preview: &amount_preview,
+                ..base
+            },
+            theme,
+        ),
         Line::from(""),
-        status_line(app),
+        status_line(app, theme),
     ];
 
     frame.render_widget(Paragraph::new(lines), area);
 }
 
-fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
+fn render_settings(frame: &mut Frame, app: &App, theme: &Theme, area: Rect) {
     let payday_active = app.settings_cursor == 1;
     let (p_label_s, p_value_s) = if payday_active {
-        (Style::default(), ACCENT)
+        (Style::default(), theme.accent)
     } else {
         (DIM, Style::default())
     };
@@ -243,28 +278,34 @@ fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
         ..Field::default()
     };
     let lines = vec![
-        field(Field {
-            label: "Quantum (R)",
-            input: &app.quantum_input,
-            is_active: app.settings_cursor == 0,
-            is_done: app.settings_cursor != 0,
-            ..base
-        }),
+        field(
+            Field {
+                label: "Quantum (R)",
+                input: &app.quantum_input,
+                is_active: app.settings_cursor == 0,
+                is_done: app.settings_cursor != 0,
+                ..base
+            },
+            theme,
+        ),
         payday_line,
-        field(Field {
-            label: "Every (days)",
-            input: &app.interval_input,
-            is_active: app.settings_cursor == 2,
-            is_done: app.settings_cursor != 2,
-            ..base
-        }),
-        status_line(app),
+        field(
+            Field {
+                label: "Every (days)",
+                input: &app.interval_input,
+                is_active: app.settings_cursor == 2,
+                is_done: app.settings_cursor != 2,
+                ..base
+            },
+            theme,
+        ),
+        status_line(app, theme),
     ];
 
     frame.render_widget(Paragraph::new(lines), area);
 }
 
-fn render_results(frame: &mut Frame, app: &App, area: Rect) {
+fn render_results(frame: &mut Frame, app: &App, theme: &Theme, area: Rect) {
     let (dates, seg_days, amounts) = match &app.results {
         Some(r) => r,
         None => return,
@@ -278,9 +319,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Span::styled("  Bridge top-up  ", DIM),
         Span::styled(
             fmt_money(app.boost),
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
+            theme.yellow.add_modifier(Modifier::BOLD),
         ),
         Span::styled("   ↑/↓ to move money into the first, shorter payment", DIM),
     ]);
@@ -293,7 +332,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Cell::from("Amount"),
         Cell::from("Per day"),
     ])
-    .style(ACCENT)
+    .style(theme.accent)
     .height(1);
 
     let mut rows: Vec<Row> = dates
@@ -303,7 +342,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
             let cover_end = cover_end(dates[i], seg_days[i]);
             let per_day = per_day(amounts[i], seg_days[i]);
             let pay_style = if i == 0 {
-                Style::default().fg(Color::Yellow)
+                theme.yellow
             } else {
                 Style::default()
             };
@@ -312,7 +351,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
                 Cell::from(fmt_wd_dm(d)).style(pay_style),
                 Cell::from(fmt_range(d, cover_end)),
                 Cell::from(seg_days[i].to_string()),
-                Cell::from(fmt_money(amounts[i])).style(GREEN),
+                Cell::from(fmt_money(amounts[i])).style(theme.green),
                 Cell::from(fmt_money(per_day)).style(DIM),
             ])
             .style(row_style)
@@ -324,8 +363,8 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
             Cell::from("Total").style(BOLD),
             Cell::from(""),
             Cell::from(total_days.to_string()).style(BOLD),
-            Cell::from(fmt_money(total)).style(GREEN.add_modifier(Modifier::BOLD)),
-            Cell::from(""),
+            Cell::from(fmt_money(total)).style(theme.green.add_modifier(Modifier::BOLD)),
+            Cell::from(fmt_money(per_day(total, total_days))).style(DIM),
         ])
         .style(BOLD),
     );
@@ -349,7 +388,7 @@ fn render_hint(frame: &mut Frame, app: &App, area: Rect) {
     let hint = if app.step == Step::Settings {
         "  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel"
     } else if app.step == Step::Results {
-        "  s → save csv   Esc → edit   q → quit   F2 → settings"
+        "  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   Esc → edit   q → quit"
     } else {
         "  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit"
     };

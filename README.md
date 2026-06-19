@@ -11,8 +11,12 @@ The results table shows a per-day rate for each segment so you can see what you 
 ## Usage
 
 ```bash
-cargo run
+cargo run            # launch the TUI
+cargo run -- --help  # usage and key bindings
+cargo run -- --version
 ```
+
+Set the `NO_COLOR` environment variable to disable colored output.
 
 ### Entering values
 
@@ -25,7 +29,7 @@ Edit fields with the arrow keys, Home/End, Backspace and Delete.
 ### Keys
 
 - **Enter** — confirm   **Esc** — go back   **←/→** — move the cursor
-- On the results screen: **↑/↓** move extra money into the first pay, **s** saves the plan to `pacer-budget.csv`, **q** quits.
+- On the results screen: **↑/↓** move money into the first pay one quantum at a time, **PgUp/PgDn** move in steps of ten, **Home/End** snap to the minimum/maximum, **s** saves the plan to `pacer-budget.csv`, **q** quits.
 - **F2** opens settings from any screen.
 - **Ctrl+C** quits from anywhere.
 

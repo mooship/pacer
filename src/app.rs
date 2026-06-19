@@ -25,8 +25,10 @@ pub struct App {
     pub last: Option<i64>,
     pub total: Option<i64>,
     pub boost: i64,
+    pub boost_max: i64,
     pub results: Option<(Vec<i64>, Vec<i64>, Vec<i64>)>,
     pub should_quit: bool,
+    pub color: bool,
     pub config: Config,
     pub settings_cursor: usize,
     pub quantum_input: String,
@@ -64,8 +66,10 @@ impl App {
             last: None,
             total: None,
             boost: 0,
+            boost_max: 0,
             results: None,
             should_quit: false,
+            color: true,
             config,
             settings_cursor: 0,
             quantum_input: String::new(),
@@ -201,8 +205,7 @@ impl App {
             Step::Amount => match parse_amount(&self.amount_input) {
                 Ok(v) => {
                     self.total = Some(v);
-                    self.boost = 0;
-                    self.recompute();
+                    self.enter_results();
                     self.step = Step::Results;
                     self.cursor = 0;
                 }
@@ -243,17 +246,43 @@ impl App {
         self.results = Some(compute(pay, last, total, self.boost, &self.config));
     }
 
-    pub fn boost_up(&mut self) {
+    fn enter_results(&mut self) {
+        self.boost = 0;
+        self.recompute();
+        self.boost_max = self
+            .results
+            .as_ref()
+            .map_or(0, |(_, _, a)| a[1..].iter().sum());
+    }
+
+    fn set_boost(&mut self, boost: i64) {
         self.clear_msgs();
-        let Some(total) = self.total else { return };
-        self.boost = (self.boost + self.config.quantum).min(total);
+        self.boost = boost.clamp(0, self.boost_max);
         self.recompute();
     }
 
+    pub fn boost_up(&mut self) {
+        self.set_boost(self.boost + self.config.quantum);
+    }
+
     pub fn boost_down(&mut self) {
-        self.clear_msgs();
-        self.boost = (self.boost - self.config.quantum).max(0);
-        self.recompute();
+        self.set_boost(self.boost - self.config.quantum);
+    }
+
+    pub fn boost_up_coarse(&mut self) {
+        self.set_boost(self.boost + 10 * self.config.quantum);
+    }
+
+    pub fn boost_down_coarse(&mut self) {
+        self.set_boost(self.boost - 10 * self.config.quantum);
+    }
+
+    pub fn boost_to_max(&mut self) {
+        self.set_boost(self.boost_max);
+    }
+
+    pub fn boost_to_min(&mut self) {
+        self.set_boost(0);
     }
 
     pub fn open_settings(&mut self) {
@@ -324,6 +353,9 @@ impl App {
                 self.config = config;
                 self.notice = Some("settings saved".into());
                 self.close_settings();
+                if self.step == Step::Results {
+                    self.enter_results();
+                }
             }
             Err(e) => self.error = Some(format!("could not save settings: {}", e)),
         }
@@ -345,9 +377,10 @@ impl App {
         }
         let total_days: i64 = seg_days.iter().sum();
         out.push_str(&format!(
-            "\"Total\",,{},\"{}\",\n",
+            "\"Total\",,{},\"{}\",\"{}\"\n",
             total_days,
-            fmt_money(total)
+            fmt_money(total),
+            fmt_money(per_day(total, total_days)),
         ));
         Some(out)
     }
@@ -444,8 +477,7 @@ mod tests {
         assert_eq!(a.cursor, 0);
     }
 
-    #[test]
-    fn boost_is_clamped_to_total() {
+    fn results_app() -> App {
         let mut a = app_at(days_from_civil(2026, 6, 17));
         a.pay_input = "2026-06-25".into();
         a.confirm();
@@ -453,14 +485,38 @@ mod tests {
         a.confirm();
         a.amount_input = "5000".into();
         a.confirm();
+        a
+    }
+
+    #[test]
+    fn boost_is_clamped_to_recurring_total() {
+        let mut a = results_app();
         assert_eq!(a.step, Step::Results);
+        let recurring: i64 = a.results.as_ref().unwrap().2[1..].iter().sum();
+        assert_eq!(a.boost_max, recurring);
+        assert!(a.boost_max < a.total.unwrap());
         for _ in 0..1000 {
             a.boost_up();
         }
-        assert_eq!(a.boost, a.total.unwrap());
+        assert_eq!(a.boost, a.boost_max);
+        a.boost_up();
+        assert_eq!(a.boost, a.boost_max);
         for _ in 0..2000 {
             a.boost_down();
         }
+        assert_eq!(a.boost, 0);
+    }
+
+    #[test]
+    fn coarse_and_jump_boost() {
+        let mut a = results_app();
+        a.boost_up_coarse();
+        assert_eq!(a.boost, (10 * a.config.quantum).min(a.boost_max));
+        a.boost_down_coarse();
+        assert_eq!(a.boost, 0);
+        a.boost_to_max();
+        assert_eq!(a.boost, a.boost_max);
+        a.boost_to_min();
         assert_eq!(a.boost, 0);
     }
 

@@ -8,6 +8,9 @@ pub fn parse_date(s: &str) -> Result<(i64, i64, i64), String> {
     let y: i64 = p[0].parse().map_err(|_| format!("bad year in `{}`", s))?;
     let m: i64 = p[1].parse().map_err(|_| format!("bad month in `{}`", s))?;
     let d: i64 = p[2].parse().map_err(|_| format!("bad day in `{}`", s))?;
+    if !(1..=9999).contains(&y) {
+        return Err(format!("year out of range in `{}`", s));
+    }
     if !(1..=12).contains(&m) {
         return Err(format!("month out of range in `{}`", s));
     }
@@ -113,6 +116,13 @@ mod tests {
     #[test]
     fn day_out_of_range_rejected() {
         assert!(parse_date("2026-06-31").is_err());
+    }
+
+    #[test]
+    fn year_out_of_range_rejected() {
+        assert!(parse_date("0000-01-01").is_err());
+        assert!(parse_date("10000-01-01").is_err());
+        assert!(parse_date("0001-01-01").is_ok());
     }
 
     #[test]
