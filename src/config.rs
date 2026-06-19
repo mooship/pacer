@@ -37,12 +37,14 @@ impl Config {
         Some(dirs::config_dir()?.join("pacer").join("config.toml"))
     }
 
-    pub fn load() -> Config {
-        let parsed: Config = Config::path()
-            .and_then(|p| std::fs::read_to_string(p).ok())
-            .and_then(|s| toml::from_str(&s).ok())
-            .unwrap_or_default();
-        parsed.sanitized()
+    pub fn load() -> (Config, bool) {
+        let Some(body) = Config::path().and_then(|p| std::fs::read_to_string(p).ok()) else {
+            return (Config::default(), false);
+        };
+        match toml::from_str::<Config>(&body) {
+            Ok(parsed) => (parsed.sanitized(), false),
+            Err(_) => (Config::default(), true),
+        }
     }
 
     pub fn save(&self) -> io::Result<()> {
@@ -97,5 +99,11 @@ mod tests {
         assert_eq!(back.payday, 5);
         assert_eq!(back.quantum, DEFAULT_QUANTUM);
         assert_eq!(back.interval, DEFAULT_INTERVAL);
+    }
+
+    #[test]
+    fn invalid_toml_warns_and_uses_defaults() {
+        let parsed: Config = toml::from_str("payday = \"oops\"\n").unwrap_or_default();
+        assert_eq!(parsed, Config::default());
     }
 }

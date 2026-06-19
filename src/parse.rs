@@ -31,7 +31,9 @@ pub fn resolve_date(s: &str, base: i64) -> Result<i64, String> {
         let n: i64 = t
             .parse()
             .map_err(|_| format!("bad day offset in `{}`", s))?;
-        return Ok(base + n);
+        return base
+            .checked_add(n)
+            .ok_or_else(|| format!("day offset out of range in `{}`", s));
     }
     parse_date_days(t)
 }
@@ -196,5 +198,11 @@ mod tests {
     #[test]
     fn resolve_bad_offset_rejected() {
         assert!(resolve_date("+abc", 0).is_err());
+    }
+
+    #[test]
+    fn resolve_offset_overflow_rejected() {
+        assert!(resolve_date("+1", i64::MAX).is_err());
+        assert!(resolve_date("-1", i64::MIN).is_err());
     }
 }

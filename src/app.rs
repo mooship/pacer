@@ -182,7 +182,7 @@ impl App {
                     self.error = Some("enter the last day (e.g. +30 or 2026-07-24)".into());
                     return;
                 }
-                let pay = self.pay.unwrap();
+                let Some(pay) = self.pay else { return };
                 match resolve_date(&self.last_input, pay) {
                     Ok(v) => {
                         if v < pay {
@@ -237,14 +237,16 @@ impl App {
     }
 
     fn recompute(&mut self) {
-        let (pay, last) = (self.pay.unwrap(), self.last.unwrap());
-        let total = self.total.unwrap();
+        let (Some(pay), Some(last), Some(total)) = (self.pay, self.last, self.total) else {
+            return;
+        };
         self.results = Some(compute(pay, last, total, self.boost, &self.config));
     }
 
     pub fn boost_up(&mut self) {
         self.clear_msgs();
-        self.boost = (self.boost + self.config.quantum).min(self.total.unwrap());
+        let Some(total) = self.total else { return };
+        self.boost = (self.boost + self.config.quantum).min(total);
         self.recompute();
     }
 
@@ -504,5 +506,14 @@ mod tests {
     fn csv_is_none_before_results() {
         let a = app_at(days_from_civil(2026, 6, 17));
         assert!(a.csv().is_none());
+    }
+
+    #[test]
+    fn boost_before_results_is_noop() {
+        let mut a = app_at(days_from_civil(2026, 6, 17));
+        a.boost_up();
+        a.boost_down();
+        assert_eq!(a.boost, 0);
+        assert!(a.results.is_none());
     }
 }

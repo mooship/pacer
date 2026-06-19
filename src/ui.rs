@@ -82,40 +82,46 @@ fn render_breadcrumb(frame: &mut Frame, app: &App, area: Rect) {
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
 
-fn field(
+#[derive(Default, Clone, Copy)]
+struct Field<'a> {
     label_width: usize,
-    label: &str,
-    input: &str,
+    label: &'a str,
+    input: &'a str,
     is_active: bool,
     is_done: bool,
     cursor: usize,
-    placeholder: &str,
-    preview: &str,
-) -> Line<'static> {
-    let (label_s, bracket_s, value_s) = if is_active {
+    placeholder: &'a str,
+    preview: &'a str,
+}
+
+fn field(f: Field) -> Line<'static> {
+    let (label_s, bracket_s, value_s) = if f.is_active {
         (Style::default(), ACCENT, ACCENT)
-    } else if is_done {
+    } else if f.is_done {
         (DIM, DIM, Style::default())
     } else {
         (DIM, DIM, DIM)
     };
     let mut spans = vec![
-        Span::styled(format!("  {:<width$}", label, width = label_width), label_s),
+        Span::styled(
+            format!("  {:<width$}", f.label, width = f.label_width),
+            label_s,
+        ),
         Span::styled("[", bracket_s),
     ];
-    if input.is_empty() {
-        if is_active {
+    if f.input.is_empty() {
+        if f.is_active {
             spans.push(Span::styled(
                 " ".to_string(),
                 ACCENT.add_modifier(Modifier::REVERSED),
             ));
         }
-        if !placeholder.is_empty() {
-            spans.push(Span::styled(placeholder.to_string(), DIM));
+        if !f.placeholder.is_empty() {
+            spans.push(Span::styled(f.placeholder.to_string(), DIM));
         }
-    } else if is_active {
-        let chars: Vec<char> = input.chars().collect();
-        let at = cursor.min(chars.len());
+    } else if f.is_active {
+        let chars: Vec<char> = f.input.chars().collect();
+        let at = f.cursor.min(chars.len());
         let before: String = chars[..at].iter().collect();
         let on: String = chars
             .get(at)
@@ -129,16 +135,16 @@ fn field(
         spans.push(Span::styled(on, ACCENT.add_modifier(Modifier::REVERSED)));
         spans.push(Span::styled(after, value_s));
     } else {
-        spans.push(Span::styled(input.to_string(), value_s));
+        spans.push(Span::styled(f.input.to_string(), value_s));
     }
     spans.push(Span::styled("]", bracket_s));
-    if !preview.is_empty() {
-        let preview_style = if is_active {
+    if !f.preview.is_empty() {
+        let preview_style = if f.is_active {
             GREEN
         } else {
             GREEN.add_modifier(Modifier::DIM)
         };
-        spans.push(Span::styled(format!("  → {}", preview), preview_style));
+        spans.push(Span::styled(format!("  → {}", f.preview), preview_style));
     }
     Line::from(spans)
 }
@@ -179,37 +185,39 @@ fn render_form(frame: &mut Frame, app: &App, area: Rect) {
             .unwrap_or_default()
     };
 
+    let base = Field {
+        label_width: 18,
+        cursor: app.cursor,
+        ..Field::default()
+    };
     let lines = vec![
-        field(
-            18,
-            "Pay date",
-            &app.pay_input,
-            app.step == Step::PayDate,
-            app.pay.is_some(),
-            app.cursor,
-            "today, +7, or 2026-07-25",
-            &pay_preview,
-        ),
-        field(
-            18,
-            "Last day",
-            &app.last_input,
-            app.step == Step::LastDay,
-            app.last.is_some(),
-            app.cursor,
-            "+30 or 2026-07-25",
-            &last_preview,
-        ),
-        field(
-            18,
-            "Amount (R)",
-            &app.amount_input,
-            app.step == Step::Amount,
-            app.total.is_some(),
-            app.cursor,
-            "e.g. 18500",
-            &amount_preview,
-        ),
+        field(Field {
+            label: "Pay date",
+            input: &app.pay_input,
+            is_active: app.step == Step::PayDate,
+            is_done: app.pay.is_some(),
+            placeholder: "today, +7, or 2026-07-25",
+            preview: &pay_preview,
+            ..base
+        }),
+        field(Field {
+            label: "Last day",
+            input: &app.last_input,
+            is_active: app.step == Step::LastDay,
+            is_done: app.last.is_some(),
+            placeholder: "+30 or 2026-07-25",
+            preview: &last_preview,
+            ..base
+        }),
+        field(Field {
+            label: "Amount (R)",
+            input: &app.amount_input,
+            is_active: app.step == Step::Amount,
+            is_done: app.total.is_some(),
+            placeholder: "e.g. 18500",
+            preview: &amount_preview,
+            ..base
+        }),
         Line::from(""),
         status_line(app),
     ];
@@ -229,28 +237,27 @@ fn render_settings(frame: &mut Frame, app: &App, area: Rect) {
         Span::styled(format!("‹ {} ›", WD[app.config.payday as usize]), p_value_s),
     ]);
 
+    let base = Field {
+        label_width: 14,
+        cursor: app.cursor,
+        ..Field::default()
+    };
     let lines = vec![
-        field(
-            14,
-            "Quantum (R)",
-            &app.quantum_input,
-            app.settings_cursor == 0,
-            app.settings_cursor != 0,
-            app.cursor,
-            "",
-            "",
-        ),
+        field(Field {
+            label: "Quantum (R)",
+            input: &app.quantum_input,
+            is_active: app.settings_cursor == 0,
+            is_done: app.settings_cursor != 0,
+            ..base
+        }),
         payday_line,
-        field(
-            14,
-            "Every (days)",
-            &app.interval_input,
-            app.settings_cursor == 2,
-            app.settings_cursor != 2,
-            app.cursor,
-            "",
-            "",
-        ),
+        field(Field {
+            label: "Every (days)",
+            input: &app.interval_input,
+            is_active: app.settings_cursor == 2,
+            is_done: app.settings_cursor != 2,
+            ..base
+        }),
         status_line(app),
     ];
 
@@ -262,7 +269,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Some(r) => r,
         None => return,
     };
-    let total = app.total.unwrap();
+    let Some(total) = app.total else { return };
     let total_days: i64 = seg_days.iter().sum();
 
     let parts = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(area);

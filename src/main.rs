@@ -16,60 +16,61 @@ fn main() -> io::Result<()> {
 }
 
 fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
-    let mut app = App::new(Config::load());
+    let (config, invalid) = Config::load();
+    let mut app = App::new(config);
+    if invalid {
+        app.notice = Some("config.toml is invalid; using defaults".into());
+    }
 
     loop {
         terminal.draw(|frame| ui::draw(frame, &app))?;
 
-        if event::poll(std::time::Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                if key.kind != KeyEventKind::Press {
-                    continue;
-                }
-                if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
-                    break;
-                }
-                if key.code == KeyCode::F(2) {
-                    app.open_settings();
-                    continue;
-                }
-                if app.step == Step::Settings {
-                    match key.code {
-                        KeyCode::Up => app.settings_up(),
-                        KeyCode::Down => app.settings_down(),
-                        KeyCode::Left if app.settings_cursor == 1 => app.payday_prev(),
-                        KeyCode::Right if app.settings_cursor == 1 => app.payday_next(),
-                        KeyCode::Enter => app.save_settings(),
-                        KeyCode::Esc => app.go_back(),
-                        other => handle_edit_key(&mut app, other),
+        let Event::Key(key) = event::read()? else {
+            continue;
+        };
+        if key.kind != KeyEventKind::Press {
+            continue;
+        }
+        if key.code == KeyCode::Char('c') && key.modifiers.contains(KeyModifiers::CONTROL) {
+            break;
+        }
+        if key.code == KeyCode::F(2) {
+            app.open_settings();
+            continue;
+        }
+        if app.step == Step::Settings {
+            match key.code {
+                KeyCode::Up => app.settings_up(),
+                KeyCode::Down => app.settings_down(),
+                KeyCode::Left if app.settings_cursor == 1 => app.payday_prev(),
+                KeyCode::Right if app.settings_cursor == 1 => app.payday_next(),
+                KeyCode::Enter => app.save_settings(),
+                KeyCode::Esc => app.go_back(),
+                other => handle_edit_key(&mut app, other),
+            }
+            continue;
+        }
+        match key.code {
+            KeyCode::Char('q') if app.step == Step::Results => app.quit(),
+            KeyCode::Char('s') if app.step == Step::Results => {
+                if let Some(content) = app.csv() {
+                    match std::fs::write(EXPORT_PATH, content) {
+                        Ok(_) => app.notice = Some(format!("saved to {}", export_location())),
+                        Err(e) => app.error = Some(format!("could not save: {}", e)),
                     }
-                    continue;
-                }
-                match key.code {
-                    KeyCode::Char('q') if app.step == Step::Results => app.quit(),
-                    KeyCode::Char('s') if app.step == Step::Results => {
-                        if let Some(content) = app.csv() {
-                            match std::fs::write(EXPORT_PATH, content) {
-                                Ok(_) => app.notice = Some(format!("saved to {}", EXPORT_PATH)),
-                                Err(e) => app.error = Some(format!("could not save: {}", e)),
-                            }
-                        }
-                    }
-                    KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=')
-                        if app.step == Step::Results =>
-                    {
-                        app.boost_up()
-                    }
-                    KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_')
-                        if app.step == Step::Results =>
-                    {
-                        app.boost_down()
-                    }
-                    KeyCode::Enter => app.confirm(),
-                    KeyCode::Esc => app.go_back(),
-                    other => handle_edit_key(&mut app, other),
                 }
             }
+            KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=') if app.step == Step::Results => {
+                app.boost_up()
+            }
+            KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_')
+                if app.step == Step::Results =>
+            {
+                app.boost_down()
+            }
+            KeyCode::Enter => app.confirm(),
+            KeyCode::Esc => app.go_back(),
+            other => handle_edit_key(&mut app, other),
         }
 
         if app.should_quit {
@@ -78,6 +79,12 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
     }
 
     Ok(())
+}
+
+fn export_location() -> String {
+    std::fs::canonicalize(EXPORT_PATH)
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| EXPORT_PATH.to_string())
 }
 
 fn handle_edit_key(app: &mut App, code: KeyCode) {
