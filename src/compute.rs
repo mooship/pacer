@@ -81,7 +81,7 @@ pub fn compute(
 
     let mut amounts = vec![0i64; n];
     if n > 1 {
-        let weekly_days: i64 = seg_days[1..].iter().sum();
+        let weekly_days = total_days - seg_days[0];
         let weekly = distribute(weekly_quanta - boost_quanta, &seg_days[1..], weekly_days);
         for (i, q) in weekly.into_iter().enumerate() {
             amounts[i + 1] = q * cfg.quantum;
