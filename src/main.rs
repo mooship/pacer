@@ -89,35 +89,35 @@ fn run(terminal: &mut ratatui::DefaultTerminal) -> io::Result<()> {
             }
             continue;
         }
-        match key.code {
-            KeyCode::Char('q') if app.step == Step::Results => app.quit(),
-            KeyCode::Char('s') if app.step == Step::Results => {
-                if let Some(content) = app.csv() {
-                    match std::fs::write(EXPORT_PATH, content) {
-                        Ok(_) => app.notice = Some(format!("saved to {}", export_location())),
-                        Err(e) => app.error = Some(format!("could not save: {}", e)),
+        if app.step == Step::Results {
+            match key.code {
+                KeyCode::Char('q') => app.quit(),
+                KeyCode::Char('s') => {
+                    if let Some(content) = app.csv() {
+                        match std::fs::write(EXPORT_PATH, content) {
+                            Ok(_) => app.notice = Some(format!("saved to {}", export_location())),
+                            Err(e) => app.error = Some(format!("could not save: {}", e)),
+                        }
                     }
                 }
+                KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=') => app.boost_up(),
+                KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_') => app.boost_down(),
+                KeyCode::PageUp => app.boost_up_coarse(),
+                KeyCode::PageDown => app.boost_down_coarse(),
+                KeyCode::Home => app.boost_to_min(),
+                KeyCode::End => app.boost_to_max(),
+                KeyCode::Esc => app.go_back(),
+                _ => {}
             }
-            KeyCode::Up | KeyCode::Char('+') | KeyCode::Char('=') if app.step == Step::Results => {
-                app.boost_up()
+            if app.should_quit {
+                break;
             }
-            KeyCode::Down | KeyCode::Char('-') | KeyCode::Char('_')
-                if app.step == Step::Results =>
-            {
-                app.boost_down()
-            }
-            KeyCode::PageUp if app.step == Step::Results => app.boost_up_coarse(),
-            KeyCode::PageDown if app.step == Step::Results => app.boost_down_coarse(),
-            KeyCode::Home if app.step == Step::Results => app.boost_to_min(),
-            KeyCode::End if app.step == Step::Results => app.boost_to_max(),
+            continue;
+        }
+        match key.code {
             KeyCode::Enter => app.confirm(),
             KeyCode::Esc => app.go_back(),
             other => handle_edit_key(&mut app, other),
-        }
-
-        if app.should_quit {
-            break;
         }
     }
 
