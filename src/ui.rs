@@ -267,7 +267,7 @@ fn render_results(frame: &mut Frame, app: &App, area: Rect) {
         Some(r) => r,
         None => return,
     };
-    let total = app.total.unwrap();
+    let Some(total) = app.total else { return };
     let total_days: i64 = seg_days.iter().sum();
 
     let parts = Layout::vertical([Constraint::Length(1), Constraint::Min(0)]).split(area);
