@@ -26,6 +26,25 @@ pub fn fmt_money(cents: i64) -> String {
     format!("{}R{}.{:02}", if neg { "-" } else { "" }, grouped, frac)
 }
 
+fn distribute(quanta: i64, weights: &[i64], total_weight: i64) -> Vec<i64> {
+    let mut base: Vec<i64> = weights.iter().map(|&w| w * quanta / total_weight).collect();
+    let mut fracs: Vec<(i64, usize)> = weights
+        .iter()
+        .enumerate()
+        .map(|(i, &w)| (w * quanta % total_weight, i))
+        .collect();
+    let mut leftover = quanta - base.iter().sum::<i64>();
+    fracs.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
+    for &(_, i) in &fracs {
+        if leftover == 0 {
+            break;
+        }
+        base[i] += 1;
+        leftover -= 1;
+    }
+    base
+}
+
 pub fn compute(
     pay: i64,
     end: i64,
@@ -35,7 +54,6 @@ pub fn compute(
 ) -> (Vec<i64>, Vec<i64>, Vec<i64>) {
     let total_days = end - pay + 1;
     let boost = boost.clamp(0, total);
-    let pool = total - boost;
 
     let mut dates = vec![pay];
     let to_first = match (cfg.payday - weekday(pay)).rem_euclid(7) {
@@ -56,28 +74,20 @@ pub fn compute(
         })
         .collect();
 
-    let quanta = pool / cfg.quantum;
-    let sub = pool % cfg.quantum;
-    let mut base: Vec<i64> = seg_days
-        .iter()
-        .map(|&days| days * quanta / total_days)
-        .collect();
-    let mut fracs: Vec<(i64, usize)> = seg_days
-        .iter()
-        .enumerate()
-        .map(|(i, &days)| (days * quanta % total_days, i))
-        .collect();
-    let mut leftover = quanta - base.iter().sum::<i64>();
-    fracs.sort_by(|a, b| b.0.cmp(&a.0).then(a.1.cmp(&b.1)));
-    for &(_, i) in &fracs {
-        if leftover == 0 {
-            break;
+    let quanta = total / cfg.quantum;
+    let bridge_quanta = distribute(quanta, &seg_days, total_days)[0];
+    let weekly_quanta = quanta - bridge_quanta;
+    let boost_quanta = (boost / cfg.quantum).min(weekly_quanta);
+
+    let mut amounts = vec![0i64; n];
+    if n > 1 {
+        let weekly_days: i64 = seg_days[1..].iter().sum();
+        let weekly = distribute(weekly_quanta - boost_quanta, &seg_days[1..], weekly_days);
+        for (i, q) in weekly.into_iter().enumerate() {
+            amounts[i + 1] = q * cfg.quantum;
         }
-        base[i] += 1;
-        leftover -= 1;
     }
-    let mut amounts: Vec<i64> = base.iter().map(|q| q * cfg.quantum).collect();
-    amounts[0] += sub + boost;
+    amounts[0] = total - amounts[1..].iter().sum::<i64>();
 
     (dates, seg_days, amounts)
 }
@@ -139,6 +149,35 @@ mod tests {
         assert_eq!(boosted.iter().sum::<i64>(), 500000);
         for &a in &boosted[1..] {
             assert_eq!(a % DEFAULT_QUANTUM, 0);
+        }
+    }
+
+    #[test]
+    fn single_quantum_boost_moves_money() {
+        let pay = days_from_civil(2026, 6, 25);
+        let end = days_from_civil(2026, 7, 24);
+        let (_, _, base) = compute(pay, end, 500000, 0, &cfg());
+        let (_, _, step) = compute(pay, end, 500000, DEFAULT_QUANTUM, &cfg());
+        let base_weekly: i64 = base[1..].iter().sum();
+        let step_weekly: i64 = step[1..].iter().sum();
+        assert_eq!(base_weekly - step_weekly, DEFAULT_QUANTUM);
+        assert_eq!(step[0] - base[0], DEFAULT_QUANTUM);
+        assert_eq!(step.iter().sum::<i64>(), 500000);
+    }
+
+    #[test]
+    fn each_boost_step_shifts_one_quantum() {
+        let pay = days_from_civil(2026, 6, 25);
+        let end = days_from_civil(2026, 7, 24);
+        let mut prev = i64::MIN;
+        for k in 0..=20 {
+            let (_, _, a) = compute(pay, end, 500000, k * DEFAULT_QUANTUM, &cfg());
+            assert!(a[0] >= prev);
+            if k > 0 {
+                assert_eq!(a[0] - prev, DEFAULT_QUANTUM);
+            }
+            prev = a[0];
+            assert_eq!(a.iter().sum::<i64>(), 500000);
         }
     }
 
