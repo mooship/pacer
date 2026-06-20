@@ -1,4 +1,4 @@
-import { type Step, previews } from '@pacer/core';
+import { previews, type Step } from '@pacer/core';
 import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';

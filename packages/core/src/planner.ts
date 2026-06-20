@@ -4,7 +4,7 @@ import { MAX_DAYS } from './constants.js';
 import { fmtWdDmy } from './date.js';
 import { clamp, remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
-import { type Result, err, ok } from './result.js';
+import { err, ok, type Result } from './result.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 

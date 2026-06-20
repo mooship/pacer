@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HELP, VERSION, classifyArg, unknownArgMessage } from './args.js';
+import { classifyArg, HELP, unknownArgMessage, VERSION } from './args.js';
 
 describe('classifyArg', () => {
   it('recognises help flags', () => {

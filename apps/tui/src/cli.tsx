@@ -1,6 +1,6 @@
 import { render } from 'ink';
 import { App } from './app.js';
-import { HELP, VERSION, classifyArg, unknownArgMessage } from './args.js';
+import { classifyArg, HELP, unknownArgMessage, VERSION } from './args.js';
 import { loadConfig } from './config-store.js';
 
 const arg = process.argv[2];

@@ -1,5 +1,5 @@
 import { daysFromCivil, daysInMonth } from './date.js';
-import { type Result, err, ok } from './result.js';
+import { err, ok, type Result } from './result.js';
 
 const isAsciiDigits = (s: string): boolean => s.length > 0 && /^[0-9]+$/.test(s);
 

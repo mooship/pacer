@@ -25,7 +25,9 @@
   background: var(--surface-sunk);
   border: 2px solid var(--border);
   border-radius: var(--radius-sm);
-  transition: border-color 0.15s ease, background 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
 }
 
 .input::placeholder {

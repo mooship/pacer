@@ -1,11 +1,11 @@
 import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import {
-  type Config,
-  type PlannerState,
   breadcrumb,
   buildCsv,
+  type Config,
   initialState,
+  type PlannerState,
   parseSettings,
   previews,
   reducer,
@@ -17,7 +17,7 @@ import { Form } from './components/Form.js';
 import { Results } from './components/Results.js';
 import { Settings } from './components/Settings.js';
 import { saveConfig } from './config-store.js';
-import { type Theme, colorEnabled, makeTheme } from './theme.js';
+import { colorEnabled, makeTheme, type Theme } from './theme.js';
 
 const EXPORT_PATH = 'pacer-budget.csv';
 

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from './config.js';
 import { buildCsv } from './csv.js';
 import { daysFromCivil } from './date.js';
-import { type Action, type PlannerState, initialState, parseSettings, reducer } from './planner.js';
+import { type Action, initialState, type PlannerState, parseSettings, reducer } from './planner.js';
 
 const start = (today = daysFromCivil(2026, 6, 17)): PlannerState =>
   initialState(defaultConfig(), today);
