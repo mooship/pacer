@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_DAYS } from './constants.js';
 import { daysFromCivil } from './date.js';
-import { decodePlan, encodePlan, type PlanSnapshot } from './snapshot.js';
+import { decodePlan, encodePlan, type PlanSnapshot, parsePlan, samePlan } from './snapshot.js';
 
 const sample: PlanSnapshot = {
   pay: daysFromCivil(2026, 6, 25),
@@ -49,5 +49,17 @@ describe('snapshot', () => {
   it('rejects a negative boost', () => {
     const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total, b: -1 });
     expect(decoded.ok).toBe(false);
+  });
+
+  it('parsePlan reads a stored snapshot by its own field names', () => {
+    expect(parsePlan({ ...sample })).toEqual(sample);
+    expect(parsePlan({ pay: sample.pay, last: sample.last })).toBeNull();
+  });
+
+  it('samePlan compares snapshots by value and handles null', () => {
+    expect(samePlan(sample, { ...sample })).toBe(true);
+    expect(samePlan(sample, { ...sample, boost: 0 })).toBe(false);
+    expect(samePlan(null, null)).toBe(true);
+    expect(samePlan(sample, null)).toBe(false);
   });
 });

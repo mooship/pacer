@@ -11,9 +11,11 @@ import {
   initialState,
   type PlannerState,
   type PlanSnapshot,
+  parsePlan,
   parseStoredConfig,
   planSnapshot,
   reducer,
+  samePlan,
   saveSettingsAction,
   today,
 } from '@pacer/core';
@@ -48,12 +50,7 @@ function loadUrlPlan(): PlanSnapshot | null {
 function loadStoredPlan(): PlanSnapshot | null {
   try {
     const raw = localStorage.getItem(PLAN_KEY);
-    if (!raw) {
-      return null;
-    }
-    const parsed = JSON.parse(raw) as Record<string, unknown>;
-    const decoded = decodePlan({ p: parsed.pay, l: parsed.last, t: parsed.total, b: parsed.boost });
-    return decoded.ok ? decoded.value : null;
+    return raw ? parsePlan(JSON.parse(raw)) : null;
   } catch {
     return null;
   }
@@ -73,11 +70,27 @@ function clearStoredPlan(): void {
   } catch {}
 }
 
+function downloadBlob(content: string, type: string, filename: string): void {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
 function syncPlan(prev: PlannerState, next: PlannerState): void {
-  const snap = planSnapshot(next);
-  if (snap) {
-    persistPlan(snap);
-  } else if (planSnapshot(prev)) {
+  const prevSnap = planSnapshot(prev);
+  const nextSnap = planSnapshot(next);
+  if (samePlan(prevSnap, nextSnap)) {
+    return;
+  }
+  if (nextSnap) {
+    persistPlan(nextSnap);
+  } else {
     clearStoredPlan();
   }
 }
@@ -138,15 +151,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       return;
     }
     const csv = buildCsv(state.results, state.total);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'pacer-budget.csv';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(csv, 'text/csv;charset=utf-8', 'pacer-budget.csv');
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'plan downloaded' }) }));
   },
 
@@ -156,15 +161,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       return;
     }
     const ics = buildIcs(state.results, state.total, { now: today() });
-    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'pacer-paydays.ics';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadBlob(ics, 'text/calendar;charset=utf-8', 'pacer-paydays.ics');
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'calendar exported' }) }));
   },
 

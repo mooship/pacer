@@ -90,9 +90,12 @@ export function boostMax(amounts: number[]): number {
   return amounts.slice(1).reduce((a, b) => a + b, 0);
 }
 
+function isOnResults(s: PlannerState): boolean {
+  return (s.step === 'settings' ? s.settingsReturn : s.step) === 'results';
+}
+
 export function planSnapshot(s: PlannerState): PlanSnapshot | null {
-  const onResults = (s.step === 'settings' ? s.settingsReturn : s.step) === 'results';
-  if (!onResults || s.pay === null || s.last === null || s.total === null) {
+  if (!isOnResults(s) || s.pay === null || s.last === null || s.total === null) {
     return null;
   }
   return { pay: s.pay, last: s.last, total: s.total, boost: s.boost };
@@ -351,11 +354,10 @@ export function previews(s: PlannerState): Previews {
 export type Mood = 'idle' | 'success' | 'error';
 
 export function mood(s: PlannerState): Mood {
-  const baseStep = s.step === 'settings' ? s.settingsReturn : s.step;
   if (s.error && s.step !== 'settings') {
     return 'error';
   }
-  return baseStep === 'results' ? 'success' : 'idle';
+  return isOnResults(s) ? 'success' : 'idle';
 }
 
 export type StepStatus = 'done' | 'current' | 'todo';

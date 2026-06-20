@@ -3,9 +3,9 @@ import { dirname, join } from 'node:path';
 import {
   type Config,
   type ConfigLoad,
-  decodePlan,
   defaultConfig,
   type PlanSnapshot,
+  parsePlan,
   parseStoredConfig,
 } from '@pacer/core';
 import envPaths from 'env-paths';
@@ -50,9 +50,7 @@ export function loadPlan(path = planPath()): PlanSnapshot | null {
     return null;
   }
   try {
-    const raw = parseToml(body) as Record<string, unknown>;
-    const decoded = decodePlan({ p: raw.pay, l: raw.last, t: raw.total, b: raw.boost });
-    return decoded.ok ? decoded.value : null;
+    return parsePlan(parseToml(body) as Record<string, unknown>);
   } catch {
     return null;
   }

@@ -39,6 +39,18 @@ export function encodePlan(s: PlanSnapshot): string {
   }).toString();
 }
 
+export function parsePlan(input: Record<string, unknown>): PlanSnapshot | null {
+  const decoded = decodePlan({ p: input.pay, l: input.last, t: input.total, b: input.boost });
+  return decoded.ok ? decoded.value : null;
+}
+
+export function samePlan(a: PlanSnapshot | null, b: PlanSnapshot | null): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return a.pay === b.pay && a.last === b.last && a.total === b.total && a.boost === b.boost;
+}
+
 export function decodePlan(params: Params): Result<PlanSnapshot> {
   const pay = intField(params, 'p');
   const last = intField(params, 'l');
