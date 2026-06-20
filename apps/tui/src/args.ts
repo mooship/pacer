@@ -8,8 +8,8 @@ Usage:
   pacer --version  show the version and exit
 
 In the TUI:
-  Pay date   YYYY-MM-DD, blank or \`today\`
-  Last day   YYYY-MM-DD or a relative offset like +30
+  Pay date   YYYY-MM-DD, MM-DD, blank or \`today\`
+  Last day   YYYY-MM-DD, MM-DD, or a relative offset like +30
   Amount     Rand, optional cents: 5000, R5,000, 5000.50
 
 Keys:

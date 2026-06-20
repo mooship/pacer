@@ -111,6 +111,40 @@ describe('resolveDate', () => {
     expect(value(resolveDate('2026-07-24', base))).toBe(daysFromCivil(2026, 7, 24));
   });
 
+  it('month-day defaults to current year when still upcoming', () => {
+    const base = daysFromCivil(2026, 6, 17);
+    expect(value(resolveDate('06-26', base))).toBe(daysFromCivil(2026, 6, 26));
+    expect(value(resolveDate('12-25', base))).toBe(daysFromCivil(2026, 12, 25));
+  });
+
+  it('month-day rolls over to next year once it has passed', () => {
+    const base = daysFromCivil(2026, 12, 1);
+    expect(value(resolveDate('01-25', base))).toBe(daysFromCivil(2027, 1, 25));
+  });
+
+  it('month-day equal to base stays in the base year', () => {
+    const base = daysFromCivil(2026, 6, 26);
+    expect(value(resolveDate('06-26', base))).toBe(base);
+  });
+
+  it('month-day single digits accepted', () => {
+    const base = daysFromCivil(2026, 6, 17);
+    expect(value(resolveDate('6-26', base))).toBe(daysFromCivil(2026, 6, 26));
+  });
+
+  it('month-day Feb 29 rolls to next leap year', () => {
+    const base = daysFromCivil(2026, 6, 17);
+    expect(value(resolveDate('02-29', base))).toBe(daysFromCivil(2028, 2, 29));
+  });
+
+  it('month-day month out of range rejected', () => {
+    expect(resolveDate('13-01', daysFromCivil(2026, 6, 17)).ok).toBe(false);
+  });
+
+  it('month-day day out of range rejected', () => {
+    expect(resolveDate('02-30', daysFromCivil(2026, 6, 17)).ok).toBe(false);
+  });
+
   it('bad offset rejected', () => {
     expect(resolveDate('+abc', 0).ok).toBe(false);
   });

@@ -48,8 +48,8 @@ node apps/tui/dist/cli.js            # or `pacer` once linked
 node apps/tui/dist/cli.js --help
 ```
 
-- **Pay date** — `YYYY-MM-DD`, or leave it blank / type `today`.
-- **Last day** — `YYYY-MM-DD`, or a relative offset like `+30`.
+- **Pay date** — `YYYY-MM-DD`, `MM-DD` (year inferred), or leave it blank / type `today`.
+- **Last day** — `YYYY-MM-DD`, `MM-DD` (year inferred), or a relative offset like `+30`.
 - **Amount** — Rand, with optional cents: `5000`, `R5,000`, or `5000.50`.
 
 Keys: **Enter** confirm · **Esc** back · **←/→** move cursor · **F2** settings ·
