@@ -54,6 +54,8 @@ function parseDateDays(s: string): Result<number> {
   return ok(daysFromCivil(y, m, d));
 }
 
+// Gregorian leap years recur at least every 8 years (the longest gap, caused
+// by the century rule), so searching that far forward always finds Feb 29.
 const MAX_LEAP_GAP_YEARS = 8;
 
 function resolveMonthDay(s: string, m: number, d: number, base: number): Result<number> {
