@@ -20,7 +20,10 @@ export function BoostControl() {
           {fmtMoney(boost)}
         </output>
       </div>
-      <p className={styles.help}>Move money into the first, shorter payment.</p>
+      <p className={styles.help}>
+        Extra cash added to the <strong>Bridge</strong> payment below — the first, often shorter
+        payment that covers you until your regular pay cycle kicks in.
+      </p>
       <div className={styles.row}>
         <button
           type="button"

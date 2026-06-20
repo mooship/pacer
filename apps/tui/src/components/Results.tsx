@@ -23,7 +23,12 @@ export function Results({ results, total, boost, theme }: ResultsProps) {
         <Text color={theme.yellow} bold>
           {fmtMoney(boost)}
         </Text>
-        <Text dimColor>{'   ↑/↓ to move money into the first, shorter payment'}</Text>
+        <Text dimColor>{'   ↑/↓ to move money into the Bridge payment below'}</Text>
+      </Box>
+      <Box>
+        <Text dimColor>{'  '}</Text>
+        <Text color={theme.yellow}>{'■'}</Text>
+        <Text dimColor>{' = Bridge payment, the first and often shorter one'}</Text>
       </Box>
       <Box borderStyle="round" flexDirection="column" paddingX={1}>
         <Box>

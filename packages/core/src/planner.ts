@@ -40,6 +40,7 @@ export type Action =
   | { type: 'setAmountInput'; value: string }
   | { type: 'confirm' }
   | { type: 'back' }
+  | { type: 'reset' }
   | { type: 'setBoost'; value: number }
   | { type: 'boostUp' }
   | { type: 'boostDown' }
@@ -217,6 +218,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       }
       return s;
     }
+
+    case 'reset':
+      return initialState(s.config, s.today);
 
     case 'setBoost':
       setBoost(s, action.value);

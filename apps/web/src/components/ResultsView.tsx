@@ -1,6 +1,6 @@
 import { coverEnd, fmtMoney, fmtRange, fmtWdDm, fmtWdDmy, perDay } from '@pacer/core';
 import { clsx } from 'clsx';
-import { Download, Pencil } from 'lucide-react';
+import { Download, Pencil, RotateCcw } from 'lucide-react';
 import { usePacerStore } from '../store.js';
 import { BoostControl } from './BoostControl.js';
 import styles from './ResultsView.module.css';
@@ -48,7 +48,10 @@ export function ResultsView() {
           <tbody>
             {dates.map((d, i) => (
               <tr key={d} className={clsx(i === 0 && styles.bridge)}>
-                <th scope="row">{fmtWdDm(d)}</th>
+                <th scope="row">
+                  {fmtWdDm(d)}
+                  {i === 0 ? <span className={styles.bridgeTag}>Bridge</span> : null}
+                </th>
                 <td>{fmtRange(d, coverEnd(d, segDays[i]))}</td>
                 <td className={styles.num}>{segDays[i]}</td>
                 <td className={clsx(styles.num, styles.amount)}>{fmtMoney(amounts[i])}</td>
@@ -86,6 +89,14 @@ export function ResultsView() {
           Download CSV
         </button>
       </div>
+      <button
+        type="button"
+        className={styles.startOver}
+        onClick={() => dispatch({ type: 'reset' })}
+      >
+        <RotateCcw size={16} aria-hidden />
+        Start over
+      </button>
     </div>
   );
 }

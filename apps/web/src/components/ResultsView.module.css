@@ -68,6 +68,19 @@
   font-weight: 800;
 }
 
+.bridgeTag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-onMango);
+  background: var(--mango-deep);
+  border-radius: 999px;
+}
+
 .table tfoot th,
 .table tfoot td {
   border-top: 2px solid var(--border);
@@ -110,4 +123,17 @@
 .primary:hover {
   transform: translateY(-1px);
   box-shadow: var(--shadow);
+}
+
+.startOver {
+  align-self: center;
+  color: var(--text-soft);
+  font-size: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.startOver:hover {
+  color: var(--text);
 }
