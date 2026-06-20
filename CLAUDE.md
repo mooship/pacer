@@ -2,35 +2,87 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Overview
+
+Pacer is a **pnpm-workspace monorepo**. One shared core package holds all the
+logic; two apps render it. Money is represented as `number` **cents** throughout.
+
+```
+packages/core   # @pacer/core — pure logic, no UI, fully tested
+apps/tui        # @pacer/tui  — Ink (React for the terminal)
+apps/web        # @pacer/web  — React SPA, Cloudflare Workers
+```
+
+Both apps are thin layers over `@pacer/core`; calculation logic lives only in
+core so the terminal and the web stay in lock-step.
+
 ## Commands
 
 ```bash
-cargo run          # launch the TUI
-cargo test         # run all tests (58 unit + 5 integration)
-cargo test --lib   # unit tests only
-cargo test --lib date::tests::round_trip_common_dates  # single test by path
-cargo test --test integration  # integration tests only
-cargo build        # compile without running
+pnpm install         # install the workspace + git hooks
+pnpm test            # run every package's tests (Vitest)
+pnpm typecheck       # tsc --noEmit across all packages
+pnpm lint            # Biome lint + format check
+pnpm build           # build core, tui, web
+pnpm tui             # run the Ink app (tsx)
+pnpm web             # run the Vite dev server
+
+pnpm --filter @pacer/core test         # one package's tests
+pnpm --filter @pacer/web dev           # one app
 ```
 
 ## Architecture
 
-The project is split into a **lib crate** (pure logic, testable) and a **binary crate** (TUI; `app.rs` carries its own unit tests).
+### `@pacer/core` (`packages/core/src`)
 
-All money is represented as `i64` **cents** throughout `compute`, `app`, and the parsed total.
+- `date.ts` — date math via Hinnant's proleptic Gregorian algorithm. Days are
+  `number` days-since-1970-01-01. `today()` reads the local calendar date.
+- `parse.ts` — `parseDate`, `parseDateDays`, `resolveDate` (blank/`today`/`+N`/
+  `-N`/absolute), and `parseAmount` (→ cents). All return a `Result<T>` =
+  `{ ok: true; value } | { ok: false; error }`.
+- `compute.ts` — `compute(pay, end, total, boost, cfg)` → `{ dates, segDays,
+  amounts }`, plus `fmtMoney`, `coverEnd`, `perDay`. Splits a salary into a
+  bridge payment (pay day → first payout) plus recurring allowances rounded to
+  `cfg.quantum` (default R50); the remainder and clamped `boost` go to the
+  bridge. Uses the largest-remainder method.
+- `config.ts` — `Config { quantum, payday, interval }`, `sanitize()`, and a Zod
+  `ConfigSchema` / `parseConfig` for validating persisted config. No file/storage
+  I/O (that lives in the apps).
+- `csv.ts` — `buildCsv(result, total)`; shared by TUI file export and SPA
+  download.
+- `planner.ts` — the framework-agnostic state machine: `PlannerState`,
+  `initialState`, `reducer(state, action)`, `parseSettings`, and selectors
+  (`previews`, `breadcrumb`, `boostMax`). This is the shared brain of both UIs;
+  persistence is performed by the apps, which then dispatch `settingsSaved`.
 
-**Lib crate** (`src/lib.rs` re-exports):
-- `date.rs` — date math using Hinnant's proleptic Gregorian algorithm. Days are represented as `i64` days-since-1970-01-01 throughout. `today()` reads the local calendar date via `chrono::Local`, then converts it with `days_from_civil`; the rest of the module has no dependencies.
-- `parse.rs` — `parse_date_days`, `resolve_date` (handles blank/`today`/`+N`/`-N` relative to a base day, else an absolute date), and `parse_amount` (strips `R`/`,`/`_`/spaces, accepts up to 2 decimal places, returns cents).
-- `compute.rs` — `compute(pay, end, total, boost, cfg: &Config) -> (dates, seg_days, amounts)` plus `fmt_money(cents)`. Splits a salary into a bridge payment (pay day → first payout day) plus recurring allowances. Amounts are rounded to `cfg.quantum` (default R50 = 5000 cents); sub-quantum remainder and the clamped `boost` go to the bridge. The first payout lands on the next `cfg.payday` weekday and recurs every `cfg.interval` days. Uses largest-remainder method for proportional allocation.
-- `config.rs` — `Config { quantum, payday, interval }` (serde). `quantum` is cents, `payday` is a weekday `0=Sun..6=Sat`, `interval` is days between payouts; defaults are R50 / Monday / 7. `sanitized()` clamps to safe ranges. `load()` reads `config.toml` under `dirs::config_dir()/pacer/` and returns `(Config, bool)`: a missing/unreadable file falls back to defaults with `false`, while a present-but-invalid file falls back with `true`, which `main` surfaces as a notice. `save()` writes `config.toml`.
+Every Rust-era test was ported to Vitest (`*.test.ts`) against the same
+fixtures — this is the parity guarantee for the logic.
 
-**Binary crate** (private to `src/main.rs`):
-- `app.rs` — `App` struct (holds the loaded `Config`) and `Step` enum (`PayDate → LastDay → Amount → Results`, plus `Settings`). `confirm()` validates and advances (rejecting periods longer than `MAX_DAYS`); `go_back()` retreats and clears the parsed value for the step being left. Tracks a `cursor` into the active field for inline editing and `today` for relative date resolution. `csv()` builds the export string (the file write lives in `main.rs`). `active_input()` returns `&mut String` for the current step. The `Settings` step edits `quantum_input` / `interval_input` and cycles `config.payday`; `save_settings()` validates, persists via `Config::save`, and returns to the prior step.
-- `ui.rs` — Ratatui rendering. `draw()` lays out title / form (or settings) / results table / hint. The form renders the cursor inside the active field and a green notice / red error line. `render_settings()` draws the quantum / payout-day / interval fields. The results table (hidden until `Step::Results`) has a per-day column; `cover_end` for each row is `dates[i] + seg_days[i] - 1`.
-- `main.rs` — loads `Config` (surfacing any load warning as the initial notice) then `ratatui::init()` / blocking event loop (`event::read()`) / `ratatui::restore()`. Arrow/Home/End/Delete edit the active field; `F2` opens settings from any screen. Ctrl+C exits from any screen; on Results `q` quits and `s` writes `app.csv()` to `EXPORT_PATH` (reporting the canonical path).
+### `@pacer/tui` (`apps/tui/src`)
+
+Ink + `ink-text-input` over the core reducer (`useReducer`). `cli.tsx` parses
+`--help`/`--version` then renders `app.tsx`, which maps keys to actions and owns
+config/CSV file I/O. `config-store.ts` reads/writes `config.toml` under the
+platform config dir (`env-paths` + `smol-toml`). Built with `tsup` to
+`dist/cli.js` (bin: `pacer`). Honors `NO_COLOR`.
+
+### `@pacer/web` (`apps/web/src`)
+
+Vite + React. `store.ts` is a Zustand store wrapping the core reducer and
+persisting `Config` to `localStorage` (validated with Zod). Components use CSS
+Modules; icons are `lucide-react`; the font is Fontsource Nunito. `App.tsx`
+renders the stepped form, the results table, the boost slider, and a settings
+`<dialog>`. Mobile-first and accessible (labels, `aria-live`, focus management,
+keyboard support, reduced-motion). Deploys via Cloudflare Workers Static Assets
+(`wrangler.jsonc`).
 
 ## Code Style
 
-- No comments anywhere in source files.
-- Formatting is enforced by `cargo fmt` (default rustfmt settings) and checked in CI. Locally, a cargo-husky pre-commit hook (`.cargo-husky/hooks/pre-commit`, installed on `cargo test`) runs `cargo fmt` and re-stages changed Rust files.
+- No explanatory comments in source. `biome-ignore` pragmas are allowed where a
+  rule genuinely needs suppressing.
+- Formatting and linting are enforced by **Biome** and checked in CI. A
+  **Lefthook** pre-commit hook runs `biome check --write` on staged files and
+  re-stages them, so commits always match CI. The hook installs on `pnpm
+  install`.
+- TypeScript is strict (`tsconfig.base.json`); prefer `Result<T>` over throwing
+  in core logic.

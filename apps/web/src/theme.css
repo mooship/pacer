@@ -1,0 +1,47 @@
+:root {
+  --font-body: "Nunito Variable", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --mango: #ffb703;
+  --mango-deep: #fb8500;
+  --coral: #ff5d73;
+  --sky: #2a9d8f;
+
+  --bg: #fff7e6;
+  --bg-pattern: #fff0d4;
+  --surface: #ffffff;
+  --surface-sunk: #fff4e0;
+  --border: #f0d9a8;
+
+  --text: #2b2118;
+  --text-soft: #6b5d4a;
+  --text-onMango: #2b2118;
+
+  --ok: #2f7a3e;
+  --danger: #c92a2a;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 10px 30px -12px rgba(120, 80, 0, 0.35);
+  --shadow-sm: 0 2px 8px -2px rgba(120, 80, 0, 0.25);
+  --ring: 0 0 0 3px rgba(251, 133, 0, 0.45);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1c1813;
+    --bg-pattern: #221d16;
+    --surface: #2a241c;
+    --surface-sunk: #221d16;
+    --border: #4a3d29;
+
+    --text: #fdf3df;
+    --text-soft: #c9b79a;
+    --text-onMango: #2b2118;
+
+    --ok: #6fcf7f;
+    --danger: #ff8787;
+
+    --shadow: 0 10px 30px -12px rgba(0, 0, 0, 0.6);
+    --shadow-sm: 0 2px 8px -2px rgba(0, 0, 0, 0.5);
+  }
+}

@@ -12,48 +12,32 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Build, Lint, and Test
+    name: Lint, Typecheck, Test, and Build
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
     steps:
       - name: Checkout Code
         uses: actions/checkout@v6
 
-      - name: Install Rust Toolchain
-        uses: dtolnay/rust-toolchain@stable
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
         with:
-          components: clippy, rustfmt
+          node-version: 22
+          cache: pnpm
 
-      - name: Cache Dependencies
-        uses: Swatinem/rust-cache@v2
-        with:
-          shared-key: ci-ubuntu
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: Check Formatting
-        run: cargo fmt -- --check
+      - name: Lint and Format Check
+        run: pnpm biome ci .
 
-      - name: Install SARIF Tools
-        run: cargo install clippy-sarif sarif-fmt
-
-      - name: Clippy
-        run:
-          cargo clippy
-          --all-targets
-          --all-features
-          --message-format=json -- -D warnings | clippy-sarif | tee rust-clippy-results.sarif | sarif-fmt
-
-      - name: Upload Clippy Results to GitHub
-        if: always()
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: rust-clippy-results.sarif
-          wait-for-processing: true
-
-      - name: Build
-        run: cargo build --locked
+      - name: Typecheck
+        run: pnpm -r typecheck
 
       - name: Test
-        run: cargo test --locked
+        run: pnpm -r test
+
+      - name: Build
+        run: pnpm -r build

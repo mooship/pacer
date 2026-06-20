@@ -1,0 +1,52 @@
+import { breadcrumb } from '@pacer/core';
+import { Settings as SettingsIcon, Sun } from 'lucide-react';
+import styles from './App.module.css';
+import { PlanForm } from './components/PlanForm.js';
+import { ResultsView } from './components/ResultsView.js';
+import { SettingsDialog } from './components/SettingsDialog.js';
+import { StatusMessage } from './components/StatusMessage.js';
+import { Stepper } from './components/Stepper.js';
+import { usePacerStore } from './store.js';
+
+export function App() {
+  const state = usePacerStore((s) => s.state);
+  const dispatch = usePacerStore((s) => s.dispatch);
+  const baseStep = state.step === 'settings' ? state.settingsReturn : state.step;
+  const onResults = baseStep === 'results';
+
+  return (
+    <div className={styles.page}>
+      <header className={styles.header}>
+        <div className={styles.brand}>
+          <span className={styles.logo} aria-hidden>
+            <Sun size={22} strokeWidth={2.5} />
+          </span>
+          <div>
+            <h1 className={styles.title}>Pacer</h1>
+            <p className={styles.tagline}>Pace your pay across the month</p>
+          </div>
+        </div>
+        <button
+          type="button"
+          className={styles.settingsBtn}
+          onClick={() => dispatch({ type: 'openSettings' })}
+        >
+          <SettingsIcon size={20} aria-hidden />
+          <span className="visually-hidden">Settings</span>
+        </button>
+      </header>
+
+      <main className={styles.card}>
+        {onResults ? null : <Stepper steps={breadcrumb({ ...state, step: baseStep })} />}
+        {onResults ? <ResultsView /> : <PlanForm />}
+        <StatusMessage />
+      </main>
+
+      <footer className={styles.footer}>
+        <p>Allowances round to your quantum; the remainder rides on the first payment.</p>
+      </footer>
+
+      <SettingsDialog />
+    </div>
+  );
+}

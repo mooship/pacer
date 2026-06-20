@@ -1,3 +1,7 @@
-/target
+node_modules/
+dist/
+coverage/
+.wrangler/
+*.tsbuildinfo
 .DS_Store
-/pacer-budget.csv
+pacer-budget.csv

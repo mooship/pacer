@@ -1,0 +1,32 @@
+{
+  "name": "pacer-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Splits a salary into a bridge payment plus recurring allowances — TUI + web SPA over a shared core.",
+  "license": "MIT",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r typecheck",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "tui": "pnpm --filter @pacer/tui dev",
+    "web": "pnpm --filter @pacer/web dev",
+    "prepare": "lefthook install"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/node": "^22.10.5",
+    "lefthook": "^1.10.1",
+    "typescript": "^5.7.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild", "lefthook", "workerd"]
+  }
+}
