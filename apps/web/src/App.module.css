@@ -54,7 +54,9 @@
   background: var(--surface);
   border: 2px solid var(--border);
   border-radius: 14px;
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
 }
 
 .settingsBtn:hover {

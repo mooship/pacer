@@ -4,4 +4,4 @@ pre-commit:
     biome:
       glob: "*.{ts,tsx,js,jsx,json,jsonc,css}"
       run: pnpm biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
-      stage_fixes: true
+      stage_fixed: true

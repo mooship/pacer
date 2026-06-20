@@ -59,6 +59,7 @@
 }
 
 .bridge {
+  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) row background */
   background: color-mix(in srgb, var(--mango) 22%, transparent) !important;
 }
 
@@ -88,7 +89,9 @@
   font-weight: 800;
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease;
 }
 
 .secondary {

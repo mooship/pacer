@@ -20,7 +20,10 @@
   font-weight: 800;
   border-radius: var(--radius-sm);
   border: 2px solid transparent;
-  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition:
+    transform 0.1s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
 }
 
 .back {
