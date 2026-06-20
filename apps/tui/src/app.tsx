@@ -6,6 +6,7 @@ import {
   buildSummaryText,
   type Config,
   initialState,
+  mood,
   type PlannerState,
   previews,
   reducer,
@@ -17,6 +18,7 @@ import clipboardy from 'clipboardy';
 import { Box, Text, useApp, useInput } from 'ink';
 import { useMemo, useReducer } from 'react';
 import { Form } from './components/Form.js';
+import { Mascot } from './components/Mascot.js';
 import { Results } from './components/Results.js';
 import { Settings } from './components/Settings.js';
 import { saveConfig } from './config-store.js';
@@ -45,6 +47,7 @@ export function App({ config, invalidConfig }: AppProps) {
   });
 
   const view = previews(state);
+  const mascotMood = mood(state);
 
   const saveSettings = () => {
     dispatch(
@@ -143,10 +146,15 @@ export function App({ config, invalidConfig }: AppProps) {
 
   return (
     <Box flexDirection="column">
-      <Text color={theme.accent} bold>
-        Pacer
-      </Text>
-      <Breadcrumb state={state} theme={theme} />
+      <Box flexDirection="row" gap={1}>
+        <Mascot mood={mascotMood} theme={theme} />
+        <Box flexDirection="column">
+          <Text color={theme.accent} bold>
+            Pacer
+          </Text>
+          <Breadcrumb state={state} theme={theme} />
+        </Box>
+      </Box>
       {state.step === 'settings' ? (
         <Settings
           state={state}

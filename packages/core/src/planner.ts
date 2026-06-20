@@ -324,6 +324,16 @@ export function previews(s: PlannerState): Previews {
   return { pay, last, amount };
 }
 
+export type Mood = 'idle' | 'success' | 'error';
+
+export function mood(s: PlannerState): Mood {
+  const baseStep = s.step === 'settings' ? s.settingsReturn : s.step;
+  if (s.error && s.step !== 'settings') {
+    return 'error';
+  }
+  return baseStep === 'results' ? 'success' : 'idle';
+}
+
 export type StepStatus = 'done' | 'current' | 'todo';
 
 export function breadcrumb(step: Step): { name: string; status: StepStatus }[] {

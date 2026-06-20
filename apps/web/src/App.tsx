@@ -1,6 +1,7 @@
 import { breadcrumb } from '@pacer/core';
-import { Settings as SettingsIcon, Sun } from 'lucide-react';
+import { Settings as SettingsIcon } from 'lucide-react';
 import styles from './App.module.css';
+import { Mascot } from './components/Mascot.js';
 import { PlanForm } from './components/PlanForm.js';
 import { ResultsView } from './components/ResultsView.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
@@ -19,7 +20,7 @@ export function App() {
       <header className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.logo} aria-hidden>
-            <Sun size={22} strokeWidth={2.5} />
+            <Mascot size={26} />
           </span>
           <div>
             <h1 className={styles.title}>Pacer</h1>
