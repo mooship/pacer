@@ -123,6 +123,11 @@
   box-shadow: var(--shadow-sm);
 }
 
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
 @media (min-width: 600px) {
   .actions {
     display: flex;
@@ -131,11 +136,6 @@
   .primary {
     flex: 1;
   }
-}
-
-.primary:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow);
 }
 
 .startOver {
