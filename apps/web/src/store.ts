@@ -18,10 +18,7 @@ const STORAGE_KEY = 'pacer.config';
 export function loadStoredConfig(): ConfigLoad {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      return { config: defaultConfig(), invalid: false };
-    }
-    return parseStoredConfig(JSON.parse(raw));
+    return parseStoredConfig(raw ? JSON.parse(raw) : {});
   } catch {
     return { config: defaultConfig(), invalid: true };
   }
@@ -38,17 +35,13 @@ interface PacerStore {
   exportCsv: () => void;
 }
 
-function buildInitialState(): PlannerState {
-  const { config, invalid } = loadStoredConfig();
-  const state = initialState(config, today());
-  if (invalid) {
-    state.notice = 'stored settings were invalid; using defaults';
-  }
-  return state;
-}
+const { config: initialConfig, invalid: invalidStoredConfig } = loadStoredConfig();
 
 export const usePacerStore = create<PacerStore>((set, get) => ({
-  state: buildInitialState(),
+  state: {
+    ...initialState(initialConfig, today()),
+    ...(invalidStoredConfig && { notice: 'stored settings were invalid; using defaults' }),
+  },
 
   dispatch: (action) => set((s) => ({ state: reducer(s.state, action) })),
 

@@ -56,11 +56,10 @@ button {
   *,
   *::before,
   *::after {
-    /* biome-ignore lint/complexity/noImportantStyles: must win over component animation rules */
+    /* biome-ignore-start lint/complexity/noImportantStyles: must win over component animation rules */
     animation-duration: 0.01ms !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must win over component animation rules */
     animation-iteration-count: 1 !important;
-    /* biome-ignore lint/complexity/noImportantStyles: must win over component animation rules */
     transition-duration: 0.01ms !important;
+    /* biome-ignore-end lint/complexity/noImportantStyles: must win over component animation rules */
   }
 }
