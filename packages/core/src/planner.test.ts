@@ -3,6 +3,7 @@ import { defaultConfig } from './config.js';
 import { buildCsv } from './csv.js';
 import { daysFromCivil } from './date.js';
 import { type Action, initialState, type PlannerState, parseSettings, reducer } from './planner.js';
+import { buildSummaryText } from './text.js';
 
 const start = (today = daysFromCivil(2026, 6, 17)): PlannerState =>
   initialState(defaultConfig(), today);
@@ -189,5 +190,22 @@ describe('buildCsv', () => {
     expect(lines[0]).toBe('Pay date,Covers,Days,Amount,Per day');
     expect(lines.length).toBe(segments + 2);
     expect(lines[lines.length - 1].startsWith('"Total"')).toBe(true);
+  });
+});
+
+describe('buildSummaryText', () => {
+  it('has a summary line, a header, a row per segment, and a total', () => {
+    const s = resultsState();
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    const text = buildSummaryText(s.results, s.total);
+    const lines = text.trimEnd().split('\n');
+    const segments = s.results.dates.length;
+    expect(text.startsWith('Pacer plan:')).toBe(true);
+    expect(text).toContain('Pay');
+    expect(text).toContain('Bridge');
+    expect(lines.length).toBe(segments + 4);
+    expect(lines[lines.length - 1].startsWith('Total')).toBe(true);
   });
 });

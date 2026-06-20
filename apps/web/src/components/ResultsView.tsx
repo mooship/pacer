@@ -1,6 +1,6 @@
 import { BRIDGE_LABEL, coverEnd, fmtMoney, fmtRange, fmtWdDm, fmtWdDmy, perDay } from '@pacer/core';
 import { clsx } from 'clsx';
-import { Download, Pencil, RotateCcw } from 'lucide-react';
+import { Copy, Download, Pencil, RotateCcw } from 'lucide-react';
 import { usePacerStore } from '../store.js';
 import { BoostControl } from './BoostControl.js';
 import styles from './ResultsView.module.css';
@@ -9,6 +9,7 @@ export function ResultsView() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);
   const exportCsv = usePacerStore((s) => s.exportCsv);
+  const copyToClipboard = usePacerStore((s) => s.copyToClipboard);
 
   if (!state.results || state.total === null || state.pay === null || state.last === null) {
     return null;
@@ -83,6 +84,10 @@ export function ResultsView() {
         >
           <Pencil size={18} aria-hidden />
           Edit
+        </button>
+        <button type="button" className={styles.secondary} onClick={copyToClipboard}>
+          <Copy size={18} aria-hidden />
+          Copy
         </button>
         <button type="button" className={styles.primary} onClick={exportCsv}>
           <Download size={18} aria-hidden />

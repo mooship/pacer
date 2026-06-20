@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import {
   breadcrumb,
   buildCsv,
+  buildSummaryText,
   type Config,
   initialState,
   type PlannerState,
@@ -12,6 +13,7 @@ import {
   saveSettingsAction,
   today,
 } from '@pacer/core';
+import clipboardy from 'clipboardy';
 import { Box, Text, useApp, useInput } from 'ink';
 import { useMemo, useReducer } from 'react';
 import { Form } from './components/Form.js';
@@ -62,6 +64,18 @@ export function App({ config, invalidConfig }: AppProps) {
     }
   };
 
+  const copyToClipboard = async () => {
+    if (!state.results || state.total === null) {
+      return;
+    }
+    try {
+      await clipboardy.write(buildSummaryText(state.results, state.total));
+      dispatch({ type: 'notice', value: 'copied to clipboard' });
+    } catch (e) {
+      dispatch({ type: 'error', value: `could not copy: ${String(e)}` });
+    }
+  };
+
   useInput((input, key) => {
     if (F2.includes(input)) {
       dispatch({ type: 'openSettings' });
@@ -90,6 +104,8 @@ export function App({ config, invalidConfig }: AppProps) {
         exit();
       } else if (input === 's') {
         saveCsv();
+      } else if (input === 'c') {
+        copyToClipboard();
       } else if (input === 'r') {
         dispatch({ type: 'reset' });
       } else if (key.upArrow || input === '+' || input === '=') {
@@ -189,7 +205,7 @@ function Hint({ step }: { step: PlannerState['step'] }) {
     step === 'settings'
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
-        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   r → start over   Esc → edit   q → quit'
+        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   c → copy   r → start over   Esc → edit   q → quit'
         : '  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

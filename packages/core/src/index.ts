@@ -6,3 +6,4 @@ export * from './date.js';
 export * from './parse.js';
 export * from './planner.js';
 export * from './result.js';
+export * from './text.js';

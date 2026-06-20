@@ -1,6 +1,7 @@
 import {
   type Action,
   buildCsv,
+  buildSummaryText,
   type Config,
   type ConfigLoad,
   defaultConfig,
@@ -33,6 +34,7 @@ interface PacerStore {
   dispatch: (action: Action) => void;
   saveSettings: () => void;
   exportCsv: () => void;
+  copyToClipboard: () => Promise<void>;
 }
 
 const { config: initialConfig, invalid: invalidStoredConfig } = loadStoredConfig();
@@ -72,5 +74,20 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
     link.remove();
     URL.revokeObjectURL(url);
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'plan downloaded' }) }));
+  },
+
+  copyToClipboard: async () => {
+    const { state } = get();
+    if (!state.results || state.total === null) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(buildSummaryText(state.results, state.total));
+      set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'copied to clipboard' }) }));
+    } catch {
+      set((s) => ({
+        state: reducer(s.state, { type: 'error', value: 'could not copy to clipboard' }),
+      }));
+    }
   },
 }));
