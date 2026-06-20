@@ -1,6 +1,6 @@
 import { idiv } from './math.js';
 
-export function isLeap(y: number): boolean {
+function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 }
 

@@ -20,7 +20,7 @@ Keys:
 Set NO_COLOR to disable colored output.
 `;
 
-export type ArgKind = 'help' | 'version' | 'unknown' | 'run';
+type ArgKind = 'help' | 'version' | 'unknown' | 'run';
 
 export function classifyArg(arg: string | undefined): ArgKind {
   if (arg === '-h' || arg === '--help') {

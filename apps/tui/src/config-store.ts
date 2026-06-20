@@ -4,7 +4,7 @@ import { type Config, type ConfigLoad, defaultConfig, parseStoredConfig } from '
 import envPaths from 'env-paths';
 import { parse as parseToml, stringify as stringifyToml } from 'smol-toml';
 
-export function configPath(): string {
+function configPath(): string {
   const paths = envPaths('pacer', { suffix: '' });
   return join(paths.config, 'config.toml');
 }

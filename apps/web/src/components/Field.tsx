@@ -3,7 +3,7 @@ import { Check } from 'lucide-react';
 import type { HTMLInputTypeAttribute } from 'react';
 import styles from './Field.module.css';
 
-export interface FieldProps {
+interface FieldProps {
   id: string;
   label: string;
   value: string;

@@ -6,9 +6,9 @@ import {
   defaultConfig,
   initialState,
   type PlannerState,
-  parseSettings,
   parseStoredConfig,
   reducer,
+  saveSettingsAction,
   today,
 } from '@pacer/core';
 import { create } from 'zustand';
@@ -47,19 +47,13 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
 
   saveSettings: () => {
     const { state } = get();
-    const parsed = parseSettings(state.quantumInput, state.intervalInput, state.config.payday);
-    if (!parsed.ok) {
-      set((s) => ({ state: reducer(s.state, { type: 'error', value: parsed.error }) }));
-      return;
-    }
-    try {
-      persistConfig(parsed.value);
-      set((s) => ({ state: reducer(s.state, { type: 'settingsSaved', config: parsed.value }) }));
-    } catch (e) {
-      set((s) => ({
-        state: reducer(s.state, { type: 'error', value: `could not save settings: ${String(e)}` }),
-      }));
-    }
+    const action = saveSettingsAction(
+      state.quantumInput,
+      state.intervalInput,
+      state.config.payday,
+      persistConfig,
+    );
+    set((s) => ({ state: reducer(s.state, action) }));
   },
 
   exportCsv: () => {

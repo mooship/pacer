@@ -45,7 +45,7 @@ export function parseDate(s: string): Result<[number, number, number]> {
   return ok([y, m, d]);
 }
 
-export function parseDateDays(s: string): Result<number> {
+function parseDateDays(s: string): Result<number> {
   const r = parseDate(s);
   if (!r.ok) {
     return r;
