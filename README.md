@@ -1,50 +1,80 @@
 # pacer
 
-Splits a monthly salary into recurring weekly allowances.
+Splits a monthly salary into a bridge payment plus recurring weekly allowances.
 
-Enter your pay date, the last day your salary covers, and the total amount. pacer calculates a bridge payment from pay day to the first payout day, then equal allowances on each payout day after that. Weekly amounts are rounded to the nearest quantum (R50 by default); the sub-quantum remainder goes to the bridge.
+Enter your pay date, the last day your salary covers, and the total amount. Pacer
+calculates a bridge payment from pay day to the first payout day, then equal
+allowances on each payout day after that. Weekly amounts are rounded to the
+nearest quantum (R50 by default); the sub-quantum remainder rides on the bridge.
 
-The payout day, the interval between payouts, and the rounding quantum are all configurable — see [Settings](#settings).
+Pacer ships as a **monorepo** with two front-ends over one shared core:
 
-The results table shows a per-day rate for each segment so you can see what you have to spend each day.
+- **`@pacer/core`** — pure, framework-agnostic logic (date math, parsing, the
+  allocation algorithm, CSV export, and the step/boost/settings state machine),
+  fully unit-tested.
+- **`@pacer/tui`** — an [Ink](https://github.com/vadimdemedes/ink) terminal app.
+- **`@pacer/web`** — a React single-page app, deployable to Cloudflare Workers.
 
-## Usage
+Both UIs are thin layers over `@pacer/core`, so the calculation behaves
+identically on the terminal and the web.
 
-```bash
-cargo run            # launch the TUI
-cargo run -- --help  # usage and key bindings
-cargo run -- --version
+## Layout
+
+```
+packages/core   # shared logic (@pacer/core)
+apps/tui        # Ink terminal UI (@pacer/tui)
+apps/web        # React SPA (@pacer/web)
 ```
 
-Set the `NO_COLOR` environment variable to disable colored output.
+## Getting started
 
-### Entering values
+Requires Node 24+ and [pnpm](https://pnpm.io).
 
-- **Pay date** — `YYYY-MM-DD`, or leave it blank / type `today` for today's date.
-- **Last day** — `YYYY-MM-DD`, or a relative offset like `+30` (30 days after the pay date).
+```bash
+pnpm install         # install the workspace
+pnpm tui             # run the terminal app
+pnpm web             # run the web app (Vite dev server)
+pnpm test            # run every package's tests
+pnpm lint            # Biome lint + format check
+pnpm typecheck       # type-check every package
+pnpm build           # build core, tui, and web
+```
+
+### Terminal app
+
+```bash
+pnpm --filter @pacer/tui build
+node apps/tui/dist/cli.js            # or `pacer` once linked
+node apps/tui/dist/cli.js --help
+```
+
+- **Pay date** — `YYYY-MM-DD`, or leave it blank / type `today`.
+- **Last day** — `YYYY-MM-DD`, or a relative offset like `+30`.
 - **Amount** — Rand, with optional cents: `5000`, `R5,000`, or `5000.50`.
 
-Edit fields with the arrow keys, Home/End, Backspace and Delete.
+Keys: **Enter** confirm · **Esc** back · **←/→** move cursor · **F2** settings ·
+**Ctrl+C** quit. On results: **↑/↓** move money into the bridge, **PgUp/PgDn**
+×10, **Home/End** min/max, **s** save CSV, **q** quit. Set `NO_COLOR` to disable
+colour.
 
-### Keys
+### Web app
 
-- **Enter** — confirm   **Esc** — go back   **←/→** — move the cursor
-- On the results screen: **↑/↓** move money into the first pay one quantum at a time, **PgUp/PgDn** move in steps of ten, **Home/End** snap to the minimum/maximum, **s** saves the plan to `pacer-budget.csv`, **q** quits.
-- **F2** opens settings from any screen.
-- **Ctrl+C** quits from anywhere.
+```bash
+pnpm --filter @pacer/web dev        # local dev server
+pnpm --filter @pacer/web build      # production build to apps/web/dist
+pnpm --filter @pacer/web deploy     # deploy to Cloudflare Workers (needs auth)
+```
 
-## Settings
+Mobile-first, keyboard-accessible, with a light/dark "sunny" theme. Settings and
+the plan are stored in `localStorage`; the schedule exports as a CSV download.
 
-Press **F2** to open the settings screen and change:
-
-- **Quantum** — the rounding granularity for allowances, in Rand (default R50).
-- **Payout day** — the weekday each recurring allowance lands on (default Monday). Use **←/→** to cycle.
-- **Every (days)** — the interval between payouts (default 7).
-
-Use **↑/↓** to move between fields, **Enter** to save, **Esc** to cancel.
-
-Settings are saved to `config.toml` in your platform's config directory (e.g. `~/.config/pacer/config.toml` on Linux) and loaded on every launch. The `quantum` value is stored in cents (R50 is `5000`).
+Deployment uses [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
+(see `apps/web/wrangler.jsonc`) — `wrangler deploy` serves the built `dist` with
+a single-page-app fallback. You need a Cloudflare account and `wrangler login`.
 
 ## Development
 
-A git pre-commit hook (managed by [cargo-husky](https://github.com/rhysd/cargo-husky)) runs `cargo fmt` and re-stages your changed Rust files, so commits are always formatted to match CI. The hook installs itself the first time you run `cargo test` after cloning — run it once to set things up.
+Formatting and linting are handled by [Biome](https://biomejs.dev); a
+[Lefthook](https://github.com/evilmartians/lefthook) pre-commit hook runs
+`biome check --write` on staged files so commits match CI. The hook installs
+itself on `pnpm install`.

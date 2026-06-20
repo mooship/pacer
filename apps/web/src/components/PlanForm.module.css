@@ -1,0 +1,51 @@
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.back,
+.next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+  transition: transform 0.1s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.back {
+  color: var(--text);
+  background: var(--surface-sunk);
+  border-color: var(--border);
+}
+
+.back:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.next {
+  flex: 1;
+  color: var(--text-onMango);
+  background: linear-gradient(135deg, var(--mango), var(--mango-deep));
+  box-shadow: var(--shadow-sm);
+}
+
+.next:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow);
+}
+
+.next:active {
+  transform: translateY(0);
+}

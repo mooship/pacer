@@ -1,0 +1,90 @@
+.page {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  color: var(--text-onMango);
+  background: linear-gradient(135deg, var(--mango), var(--mango-deep));
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm);
+}
+
+.title {
+  font-size: 1.5rem;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
+}
+
+.tagline {
+  font-size: 0.85rem;
+  color: var(--text-soft);
+}
+
+.settingsBtn {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: 14px;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.settingsBtn:hover {
+  transform: rotate(20deg);
+  box-shadow: var(--shadow-sm);
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 22px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.footer {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+@media (min-width: 600px) {
+  .page {
+    padding-top: 48px;
+  }
+
+  .card {
+    padding: 28px;
+  }
+}

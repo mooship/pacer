@@ -1,0 +1,122 @@
+.dialog {
+  width: min(420px, calc(100vw - 32px));
+  padding: 0;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.dialog::backdrop {
+  background: rgba(43, 33, 24, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 22px;
+}
+
+.title {
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  min-width: 0;
+}
+
+.field > legend {
+  padding: 0;
+}
+
+.label {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-sunk);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.input:focus-visible {
+  border-color: var(--mango-deep);
+}
+
+.help {
+  font-size: 0.82rem;
+  color: var(--text-soft);
+}
+
+.cycle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cycleBtn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--text);
+  background: var(--surface-sunk);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.cycleValue {
+  flex: 1;
+  text-align: center;
+  font-weight: 800;
+  padding: 10px;
+  background: var(--surface-sunk);
+  border-radius: var(--radius-sm);
+}
+
+.error {
+  color: var(--danger);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.cancel,
+.save {
+  flex: 1;
+  padding: 13px;
+  font-weight: 800;
+  border-radius: var(--radius-sm);
+  border: 2px solid transparent;
+}
+
+.cancel {
+  color: var(--text);
+  background: var(--surface-sunk);
+  border-color: var(--border);
+}
+
+.save {
+  color: var(--text-onMango);
+  background: linear-gradient(135deg, var(--mango), var(--mango-deep));
+}
