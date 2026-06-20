@@ -70,6 +70,94 @@ describe('pacer store', () => {
   });
 });
 
+const reachResults = () => {
+  const { dispatch } = store();
+  dispatch({ type: 'setPayInput', value: '2026-06-25' });
+  dispatch({ type: 'confirm' });
+  dispatch({ type: 'setLastInput', value: '2026-07-24' });
+  dispatch({ type: 'confirm' });
+  dispatch({ type: 'setAmountInput', value: '5000' });
+  dispatch({ type: 'confirm' });
+};
+
+describe('plan persistence', () => {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/');
+  });
+
+  it('persists a plan snapshot to localStorage and the URL on results', () => {
+    reachResults();
+    const stored = JSON.parse(localStorage.getItem('pacer.plan') ?? '{}');
+    expect(stored).toMatchObject({ total: 500000, boost: 0 });
+    expect(window.location.search).toContain('t=500000');
+  });
+
+  it('clears the stored plan and URL on reset', () => {
+    reachResults();
+    store().dispatch({ type: 'reset' });
+    expect(localStorage.getItem('pacer.plan')).toBeNull();
+    expect(window.location.search).toBe('');
+  });
+});
+
+describe('exportIcs', () => {
+  const blobs: Blob[] = [];
+
+  beforeEach(() => {
+    blobs.length = 0;
+    URL.createObjectURL = vi.fn((blob: Blob) => {
+      blobs.push(blob);
+      return 'blob:mock';
+    });
+    URL.revokeObjectURL = vi.fn();
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('downloads the paydays as a calendar blob and notes it', async () => {
+    reachResults();
+    store().exportIcs();
+    expect(HTMLAnchorElement.prototype.click).toHaveBeenCalledTimes(1);
+    expect(blobs).toHaveLength(1);
+    expect(await blobs[0].text()).toContain('BEGIN:VCALENDAR');
+    expect(store().state.notice).toBe('calendar exported');
+  });
+
+  it('does nothing before there is a plan', () => {
+    store().exportIcs();
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+  });
+});
+
+describe('copyShareLink', () => {
+  beforeEach(() => {
+    window.history.replaceState(null, '', '/');
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('copies the current location once a plan exists', async () => {
+    reachResults();
+    await store().copyShareLink();
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href);
+    expect(store().state.notice).toBe('link copied');
+  });
+
+  it('does nothing before there is a plan', async () => {
+    await store().copyShareLink();
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+});
+
 describe('exportCsv', () => {
   const blobs: Blob[] = [];
 

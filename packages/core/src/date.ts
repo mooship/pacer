@@ -93,6 +93,13 @@ export function fmtDmy(days: number): string {
   return `${d} ${MON[m]} ${y}`;
 }
 
+export function fmtIso(days: number): string {
+  const [y, m, d] = civilFromDays(days);
+  return `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d
+    .toString()
+    .padStart(2, '0')}`;
+}
+
 export function fmtRange(start: number, end: number): string {
   const [, sm, sd] = civilFromDays(start);
   const [, em, ed] = civilFromDays(end);

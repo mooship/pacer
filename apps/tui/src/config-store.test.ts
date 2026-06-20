@@ -1,9 +1,9 @@
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { defaultConfig } from '@pacer/core';
+import { daysFromCivil, defaultConfig, type PlanSnapshot } from '@pacer/core';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadConfig, saveConfig } from './config-store.js';
+import { clearPlan, loadConfig, loadPlan, saveConfig, savePlan } from './config-store.js';
 
 let dir: string;
 let path: string;
@@ -44,5 +44,39 @@ describe('config-store', () => {
   it('flags a wrong-typed value as invalid', () => {
     writeFileSync(path, 'payday = "monday"\n');
     expect(loadConfig(path)).toEqual({ config: defaultConfig(), invalid: true });
+  });
+});
+
+describe('plan store', () => {
+  let planFile: string;
+  const snap: PlanSnapshot = {
+    pay: daysFromCivil(2026, 6, 25),
+    last: daysFromCivil(2026, 7, 24),
+    total: 500000,
+    boost: 15000,
+  };
+
+  beforeEach(() => {
+    planFile = join(dir, 'plan.toml');
+  });
+
+  it('returns null for a missing plan', () => {
+    expect(loadPlan(planFile)).toBeNull();
+  });
+
+  it('round-trips a saved plan', () => {
+    savePlan(snap, planFile);
+    expect(loadPlan(planFile)).toEqual(snap);
+  });
+
+  it('returns null for an out-of-range plan', () => {
+    writeFileSync(planFile, 'pay = 100\nlast = 50\ntotal = 500000\nboost = 0\n');
+    expect(loadPlan(planFile)).toBeNull();
+  });
+
+  it('clears a saved plan', () => {
+    savePlan(snap, planFile);
+    clearPlan(planFile);
+    expect(loadPlan(planFile)).toBeNull();
   });
 });

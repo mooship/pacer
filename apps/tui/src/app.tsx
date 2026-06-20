@@ -3,11 +3,13 @@ import { resolve } from 'node:path';
 import {
   breadcrumb,
   buildCsv,
+  buildIcs,
   buildSummaryText,
   type Config,
   initialState,
   mood,
   type PlannerState,
+  planSnapshot,
   previews,
   reducer,
   SETTINGS_PAYDAY,
@@ -16,15 +18,16 @@ import {
 } from '@pacer/core';
 import clipboardy from 'clipboardy';
 import { Box, Text, useApp, useInput } from 'ink';
-import { useMemo, useReducer } from 'react';
+import { useEffect, useMemo, useReducer } from 'react';
 import { Form } from './components/Form.js';
 import { Mascot } from './components/Mascot.js';
 import { Results } from './components/Results.js';
 import { Settings } from './components/Settings.js';
-import { saveConfig } from './config-store.js';
+import { clearPlan, loadPlan, saveConfig, savePlan } from './config-store.js';
 import { colorEnabled, makeTheme, type Theme } from './theme.js';
 
 const EXPORT_PATH = 'pacer-budget.csv';
+const ICS_PATH = 'pacer-paydays.ics';
 
 const F2 = ['OQ', '[12~'];
 const HOME = ['[H', '[1~', 'OH'];
@@ -43,8 +46,25 @@ export function App({ config, invalidConfig }: AppProps) {
     if (invalidConfig) {
       s.notice = 'config.toml is invalid; using defaults';
     }
+    const snap = loadPlan();
+    if (snap) {
+      const restored = reducer(s, { type: 'restorePlan', snap });
+      restored.notice = 'restored your last plan';
+      return restored;
+    }
     return s;
   });
+
+  useEffect(() => {
+    const snap = planSnapshot(state);
+    try {
+      if (snap) {
+        savePlan(snap);
+      } else {
+        clearPlan();
+      }
+    } catch {}
+  }, [state]);
 
   const view = previews(state);
   const mascotMood = mood(state);
@@ -62,6 +82,18 @@ export function App({ config, invalidConfig }: AppProps) {
     try {
       writeFileSync(EXPORT_PATH, buildCsv(state.results, state.total));
       dispatch({ type: 'notice', value: `saved to ${resolve(EXPORT_PATH)}` });
+    } catch (e) {
+      dispatch({ type: 'error', value: `could not save: ${String(e)}` });
+    }
+  };
+
+  const saveIcs = () => {
+    if (!state.results || state.total === null) {
+      return;
+    }
+    try {
+      writeFileSync(ICS_PATH, buildIcs(state.results, state.total, { now: today() }));
+      dispatch({ type: 'notice', value: `saved to ${resolve(ICS_PATH)}` });
     } catch (e) {
       dispatch({ type: 'error', value: `could not save: ${String(e)}` });
     }
@@ -107,6 +139,8 @@ export function App({ config, invalidConfig }: AppProps) {
         exit();
       } else if (input === 's') {
         saveCsv();
+      } else if (input === 'i') {
+        saveIcs();
       } else if (input === 'c') {
         copyToClipboard();
       } else if (input === 'r') {
@@ -213,7 +247,7 @@ function Hint({ step }: { step: PlannerState['step'] }) {
     step === 'settings'
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
-        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   c → copy   r → start over   Esc → edit   q → quit'
+        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   i → calendar   c → copy   r → start over   Esc → edit   q → quit'
         : '  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

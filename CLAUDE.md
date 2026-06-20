@@ -52,10 +52,17 @@ pnpm --filter @pacer/web dev           # one app
   I/O (that lives in the apps).
 - `csv.ts` — `buildCsv(result, total)`; shared by TUI file export and SPA
   download.
+- `ics.ts` — `buildIcs(result, total, { now })`; an RFC 5545 calendar (one
+  all-day `VEVENT` + reminder `VALARM` per payout). Shared by TUI export and SPA
+  download. Pass a fixed `now` in tests for deterministic `DTSTAMP`s.
+- `snapshot.ts` — `PlanSnapshot { pay, last, total, boost }` plus `encodePlan`
+  (→ `p/l/t/b` query string) and `decodePlan` (validated `Result<PlanSnapshot>`,
+  same guards as the reducer). Powers plan persistence and shareable URLs.
 - `planner.ts` — the framework-agnostic state machine: `PlannerState`,
   `initialState`, `reducer(state, action)`, `parseSettings`, and selectors
-  (`previews`, `breadcrumb`, `boostMax`). This is the shared brain of both UIs;
-  persistence is performed by the apps, which then dispatch `settingsSaved`.
+  (`previews`, `breadcrumb`, `boostMax`, `planSnapshot`). This is the shared brain
+  of both UIs; persistence is performed by the apps, which then dispatch
+  `settingsSaved`. `restorePlan` rehydrates a `PlanSnapshot` straight to results.
 
 Every Rust-era test was ported to Vitest (`*.test.ts`) against the same
 fixtures — this is the parity guarantee for the logic.
@@ -64,19 +71,25 @@ fixtures — this is the parity guarantee for the logic.
 
 Ink + `ink-text-input` over the core reducer (`useReducer`). `cli.tsx` parses
 `--help`/`--version` then renders `app.tsx`, which maps keys to actions and owns
-config/CSV file I/O. `config-store.ts` reads/writes `config.toml` under the
-platform config dir (`env-paths` + `smol-toml`). Built with `tsup` to
+config/CSV/ICS file I/O. `config-store.ts` reads/writes `config.toml` plus
+`plan.toml` (the last `PlanSnapshot`, restored on launch and cleared on reset)
+under the platform config dir (`env-paths` + `smol-toml`). Built with `tsup` to
 `dist/cli.js` (bin: `pacer`). Honors `NO_COLOR`.
 
 ### `@pacer/web` (`apps/web/src`)
 
 Vite + React. `store.ts` is a Zustand store wrapping the core reducer and
-persisting `Config` to `localStorage` (validated with Zod). Components use CSS
-Modules; icons are `lucide-react`; the font is Fontsource Nunito. `App.tsx`
-renders the stepped form, the results table, the boost slider, and a settings
-`<dialog>`. Mobile-first and accessible (labels, `aria-live`, focus management,
-keyboard support, reduced-motion). Deploys via Cloudflare Workers Static Assets
-(`wrangler.jsonc`).
+persisting `Config` to `localStorage` (validated with Zod). It also persists the
+last `PlanSnapshot` (key `pacer.plan`) and mirrors it to the URL query string, so
+plans survive reloads and are shareable/bookmarkable (precedence: URL >
+localStorage); `restorePlan` rehydrates on load. Components use CSS Modules;
+icons are `lucide-react`; the font is Fontsource Nunito. `App.tsx` renders the
+stepped form, the results table, the boost slider, and a settings `<dialog>`;
+results offer Copy / Share / Calendar / CSV. Mobile-first and accessible (labels,
+`aria-live`, focus management, keyboard support, reduced-motion). Installable PWA
+via `vite-plugin-pwa` (autoUpdate service worker, manifest, icons generated from
+`public/favicon.svg`) — fully offline-capable. Deploys via Cloudflare Workers
+Static Assets (`wrangler.jsonc`).
 
 ## Code Style
 
