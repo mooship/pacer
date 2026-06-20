@@ -8,6 +8,11 @@ import { err, ok, type Result } from './result.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
+export const SETTINGS_QUANTUM = 0;
+export const SETTINGS_PAYDAY = 1;
+export const SETTINGS_INTERVAL = 2;
+export const SETTINGS_CURSOR_MAX = SETTINGS_INTERVAL;
+
 export interface PlannerState {
   step: Step;
   payInput: string;
@@ -113,6 +118,24 @@ export function parseSettings(
     return err('interval must be a whole number of days');
   }
   return ok(sanitize({ quantum: quantum.value, payday, interval }));
+}
+
+export function saveSettingsAction(
+  quantumInput: string,
+  intervalInput: string,
+  payday: number,
+  persist: (config: Config) => void,
+): Action {
+  const parsed = parseSettings(quantumInput, intervalInput, payday);
+  if (!parsed.ok) {
+    return { type: 'error', value: parsed.error };
+  }
+  try {
+    persist(parsed.value);
+    return { type: 'settingsSaved', config: parsed.value };
+  } catch (e) {
+    return { type: 'error', value: `could not save settings: ${String(e)}` };
+  }
 }
 
 export function reducer(state: PlannerState, action: Action): PlannerState {
@@ -232,7 +255,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       s.settingsCursor = Math.max(0, s.settingsCursor - 1);
       return s;
     case 'settingsDown':
-      s.settingsCursor = Math.min(2, s.settingsCursor + 1);
+      s.settingsCursor = Math.min(SETTINGS_CURSOR_MAX, s.settingsCursor + 1);
       return s;
     case 'paydayPrev':
       s.config = { ...s.config, payday: remEuclid(s.config.payday - 1, 7) };

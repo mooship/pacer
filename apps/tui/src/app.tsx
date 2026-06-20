@@ -6,9 +6,10 @@ import {
   type Config,
   initialState,
   type PlannerState,
-  parseSettings,
   previews,
   reducer,
+  SETTINGS_PAYDAY,
+  saveSettingsAction,
   today,
 } from '@pacer/core';
 import { Box, Text, useApp, useInput } from 'ink';
@@ -44,17 +45,9 @@ export function App({ config, invalidConfig }: AppProps) {
   const view = previews(state);
 
   const saveSettings = () => {
-    const parsed = parseSettings(state.quantumInput, state.intervalInput, state.config.payday);
-    if (!parsed.ok) {
-      dispatch({ type: 'error', value: parsed.error });
-      return;
-    }
-    try {
-      saveConfig(parsed.value);
-      dispatch({ type: 'settingsSaved', config: parsed.value });
-    } catch (e) {
-      dispatch({ type: 'error', value: `could not save settings: ${String(e)}` });
-    }
+    dispatch(
+      saveSettingsAction(state.quantumInput, state.intervalInput, state.config.payday, saveConfig),
+    );
   };
 
   const saveCsv = () => {
@@ -80,11 +73,11 @@ export function App({ config, invalidConfig }: AppProps) {
         dispatch({ type: 'settingsUp' });
       } else if (key.downArrow) {
         dispatch({ type: 'settingsDown' });
-      } else if (key.leftArrow && state.settingsCursor === 1) {
+      } else if (key.leftArrow && state.settingsCursor === SETTINGS_PAYDAY) {
         dispatch({ type: 'paydayPrev' });
-      } else if (key.rightArrow && state.settingsCursor === 1) {
+      } else if (key.rightArrow && state.settingsCursor === SETTINGS_PAYDAY) {
         dispatch({ type: 'paydayNext' });
-      } else if (key.return && state.settingsCursor === 1) {
+      } else if (key.return && state.settingsCursor === SETTINGS_PAYDAY) {
         saveSettings();
       } else if (key.escape) {
         dispatch({ type: 'back' });

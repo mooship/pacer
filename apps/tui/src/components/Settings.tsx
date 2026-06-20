@@ -1,4 +1,10 @@
-import { type PlannerState, WD } from '@pacer/core';
+import {
+  type PlannerState,
+  SETTINGS_INTERVAL,
+  SETTINGS_PAYDAY,
+  SETTINGS_QUANTUM,
+  WD,
+} from '@pacer/core';
 import { Box, Text } from 'ink';
 import type { Theme } from '../theme.js';
 import { Field } from './Field.js';
@@ -19,15 +25,15 @@ export function Settings({
   onIntervalChange,
   onSubmit,
 }: SettingsProps) {
-  const paydayActive = state.settingsCursor === 1;
+  const paydayActive = state.settingsCursor === SETTINGS_PAYDAY;
   return (
     <Box flexDirection="column">
       <Field
         label="Quantum (R)"
         labelWidth={14}
         value={state.quantumInput}
-        active={state.settingsCursor === 0}
-        done={state.settingsCursor !== 0}
+        active={state.settingsCursor === SETTINGS_QUANTUM}
+        done={state.settingsCursor !== SETTINGS_QUANTUM}
         theme={theme}
         onChange={onQuantumChange}
         onSubmit={onSubmit}
@@ -42,8 +48,8 @@ export function Settings({
         label="Every (days)"
         labelWidth={14}
         value={state.intervalInput}
-        active={state.settingsCursor === 2}
-        done={state.settingsCursor !== 2}
+        active={state.settingsCursor === SETTINGS_INTERVAL}
+        done={state.settingsCursor !== SETTINGS_INTERVAL}
         theme={theme}
         onChange={onIntervalChange}
         onSubmit={onSubmit}
