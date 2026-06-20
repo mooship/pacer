@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { civilFromDays, daysFromCivil, fmtRange, weekday } from './date.js';
+import { civilFromDays, daysFromCivil, fmtIso, fmtRange, weekday } from './date.js';
 
 describe('date', () => {
   it('round trips common dates', () => {
@@ -45,5 +45,10 @@ describe('date', () => {
     const s = daysFromCivil(2026, 6, 29);
     const e = daysFromCivil(2026, 7, 5);
     expect(fmtRange(s, e)).toBe('29 Jun–5 Jul');
+  });
+
+  it('fmtIso zero-pads and round-trips through parseable form', () => {
+    expect(fmtIso(daysFromCivil(2026, 7, 5))).toBe('2026-07-05');
+    expect(fmtIso(daysFromCivil(2026, 12, 25))).toBe('2026-12-25');
   });
 });

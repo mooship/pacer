@@ -2,7 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { defaultConfig } from './config.js';
 import { buildCsv } from './csv.js';
 import { daysFromCivil } from './date.js';
-import { type Action, initialState, type PlannerState, parseSettings, reducer } from './planner.js';
+import {
+  type Action,
+  initialState,
+  type PlannerState,
+  parseSettings,
+  planSnapshot,
+  reducer,
+} from './planner.js';
 import { buildSummaryText } from './text.js';
 
 const start = (today = daysFromCivil(2026, 6, 17)): PlannerState =>
@@ -190,6 +197,58 @@ describe('buildCsv', () => {
     expect(lines[0]).toBe('Pay date,Covers,Days,Amount,Per day');
     expect(lines.length).toBe(segments + 2);
     expect(lines[lines.length - 1].startsWith('"Total"')).toBe(true);
+  });
+});
+
+describe('planSnapshot / restorePlan', () => {
+  it('returns null before results and a snapshot on results', () => {
+    expect(planSnapshot(start())).toBeNull();
+    const s = resultsState();
+    const snap = planSnapshot(s);
+    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total, boost: s.boost });
+  });
+
+  it('restores a plan to results with matching amounts and pre-filled inputs', () => {
+    const original = resultsState();
+    const snap = planSnapshot(original);
+    if (!snap) {
+      throw new Error('expected snapshot');
+    }
+    const restored = run(start(), { type: 'restorePlan', snap });
+    expect(restored.step).toBe('results');
+    expect(restored.pay).toBe(original.pay);
+    expect(restored.last).toBe(original.last);
+    expect(restored.total).toBe(original.total);
+    expect(restored.payInput).toBe('2026-06-25');
+    expect(restored.lastInput).toBe('2026-07-24');
+    expect(restored.results?.amounts).toEqual(original.results?.amounts);
+    expect(planSnapshot(restored)).toEqual(snap);
+  });
+
+  it('clamps a restored boost to the available maximum', () => {
+    const restored = run(start(), {
+      type: 'restorePlan',
+      snap: {
+        pay: daysFromCivil(2026, 6, 25),
+        last: daysFromCivil(2026, 7, 24),
+        total: 500000,
+        boost: 999999999,
+      },
+    });
+    expect(restored.boost).toBe(restored.boostMax);
+  });
+
+  it('edits back through pre-filled inputs after restore', () => {
+    const snap = {
+      pay: daysFromCivil(2026, 6, 25),
+      last: daysFromCivil(2026, 7, 24),
+      total: 500000,
+      boost: 0,
+    };
+    const restored = run(start(), { type: 'restorePlan', snap });
+    const back = run(restored, { type: 'back' });
+    expect(back.step).toBe('amount');
+    expect(back.amountInput).toBe('5,000.00');
   });
 });
 

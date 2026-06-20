@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pacer">
+  <rect width="512" height="512" rx="112" fill="#ffb703" />
+  <g fill="#1f6b3a">
+    <ellipse cx="256" cy="272" rx="118" ry="96" />
+    <circle cx="256" cy="150" r="42" />
+    <rect x="120" y="244" width="46" height="74" rx="22" transform="rotate(-28 143 281)" />
+    <rect x="346" y="244" width="46" height="74" rx="22" transform="rotate(28 369 281)" />
+    <rect x="150" y="318" width="42" height="70" rx="20" transform="rotate(18 171 353)" />
+    <rect x="320" y="318" width="42" height="70" rx="20" transform="rotate(-18 341 353)" />
+  </g>
+  <g fill="#2f9e54">
+    <path d="M256 188c-58 0-104 38-104 86 0 44 46 78 104 78s104-34 104-78c0-48-46-86-104-86z" />
+  </g>
+  <g fill="#ffb703">
+    <path d="M256 214l34 24-13 40h-42l-13-40z" />
+    <circle cx="196" cy="262" r="16" />
+    <circle cx="316" cy="262" r="16" />
+    <circle cx="222" cy="320" r="15" />
+    <circle cx="290" cy="320" r="15" />
+  </g>
+  <g fill="#0f3d22">
+    <circle cx="240" cy="146" r="8" />
+    <circle cx="272" cy="146" r="8" />
+  </g>
+</svg>

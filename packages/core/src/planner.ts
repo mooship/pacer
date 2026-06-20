@@ -1,10 +1,11 @@
 import { type ComputeResult, compute, fmtMoney } from './compute.js';
 import { type Config, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
-import { fmtWdDmy } from './date.js';
+import { fmtIso, fmtWdDmy } from './date.js';
 import { clamp, remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
 import { err, ok, type Result } from './result.js';
+import type { PlanSnapshot } from './snapshot.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
@@ -58,6 +59,7 @@ export type Action =
   | { type: 'setQuantumInput'; value: string }
   | { type: 'setIntervalInput'; value: string }
   | { type: 'settingsSaved'; config: Config }
+  | { type: 'restorePlan'; snap: PlanSnapshot }
   | { type: 'notice'; value: string | null }
   | { type: 'error'; value: string | null };
 
@@ -86,6 +88,17 @@ export function initialState(config: Config, today: number): PlannerState {
 
 export function boostMax(amounts: number[]): number {
   return amounts.slice(1).reduce((a, b) => a + b, 0);
+}
+
+function isOnResults(s: PlannerState): boolean {
+  return (s.step === 'settings' ? s.settingsReturn : s.step) === 'results';
+}
+
+export function planSnapshot(s: PlannerState): PlanSnapshot | null {
+  if (!isOnResults(s) || s.pay === null || s.last === null || s.total === null) {
+    return null;
+  }
+  return { pay: s.pay, last: s.last, total: s.total, boost: s.boost };
 }
 
 function recompute(s: PlannerState): void {
@@ -286,6 +299,20 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       return s;
     }
 
+    case 'restorePlan': {
+      const { pay, last, total, boost } = action.snap;
+      s.pay = pay;
+      s.last = last;
+      s.total = total;
+      s.payInput = fmtIso(pay);
+      s.lastInput = fmtIso(last);
+      s.amountInput = fmtMoney(total).replace(/^R/, '');
+      enterResults(s);
+      setBoost(s, boost);
+      s.step = 'results';
+      return s;
+    }
+
     case 'notice':
       s.notice = action.value;
       return s;
@@ -327,11 +354,10 @@ export function previews(s: PlannerState): Previews {
 export type Mood = 'idle' | 'success' | 'error';
 
 export function mood(s: PlannerState): Mood {
-  const baseStep = s.step === 'settings' ? s.settingsReturn : s.step;
   if (s.error && s.step !== 'settings') {
     return 'error';
   }
-  return baseStep === 'results' ? 'success' : 'idle';
+  return isOnResults(s) ? 'success' : 'idle';
 }
 
 export type StepStatus = 'done' | 'current' | 'todo';

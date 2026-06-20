@@ -131,10 +131,15 @@
 @media (min-width: 600px) {
   .actions {
     display: flex;
+    flex-wrap: wrap;
+  }
+
+  .secondary {
+    flex: 1;
   }
 
   .primary {
-    flex: 1;
+    flex: 1 1 100%;
   }
 }
 

@@ -30,6 +30,19 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Cache Typecheck and Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/core/node_modules/.cache/tsc
+            apps/tui/node_modules/.cache/tsc
+            apps/web/node_modules/.cache/tsc
+            apps/web/node_modules/.vite
+          key: build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          restore-keys: |
+            build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            build-${{ runner.os }}-
+
       - name: Lint and Format Check
         run: pnpm biome ci .
 
