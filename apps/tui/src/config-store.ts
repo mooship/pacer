@@ -9,10 +9,10 @@ export function configPath(): string {
   return join(paths.config, 'config.toml');
 }
 
-export function loadConfig(): ConfigLoad {
+export function loadConfig(path = configPath()): ConfigLoad {
   let body: string;
   try {
-    body = readFileSync(configPath(), 'utf8');
+    body = readFileSync(path, 'utf8');
   } catch {
     return { config: defaultConfig(), invalid: false };
   }
@@ -23,8 +23,7 @@ export function loadConfig(): ConfigLoad {
   }
 }
 
-export function saveConfig(config: Config): void {
-  const path = configPath();
+export function saveConfig(config: Config, path = configPath()): void {
   mkdirSync(dirname(path), { recursive: true });
   writeFileSync(path, stringifyToml(config as unknown as Record<string, unknown>));
 }

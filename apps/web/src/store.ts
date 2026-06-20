@@ -14,7 +14,7 @@ import { create } from 'zustand';
 
 const STORAGE_KEY = 'pacer.config';
 
-function loadStoredConfig(): Config {
+export function loadStoredConfig(): Config {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
