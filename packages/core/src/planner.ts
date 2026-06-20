@@ -170,6 +170,10 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
 
     case 'confirm': {
       if (s.step === 'payDate') {
+        if (s.payInput.trim() === '') {
+          s.error = 'enter the pay date (e.g. today, +7, or 2026-07-25)';
+          return s;
+        }
         const r = resolveDate(s.payInput, s.today);
         if (r.ok) {
           s.pay = r.value;
@@ -329,8 +333,13 @@ export interface Previews {
 }
 
 export function previews(s: PlannerState): Previews {
-  const payR = resolveDate(s.payInput, s.today);
-  const pay = payR.ok ? fmtWdDmy(payR.value) : '';
+  let pay = '';
+  if (s.payInput.trim() !== '') {
+    const payR = resolveDate(s.payInput, s.today);
+    if (payR.ok) {
+      pay = fmtWdDmy(payR.value);
+    }
+  }
 
   let last = '';
   if (s.pay !== null && s.lastInput.trim() !== '') {

@@ -32,9 +32,17 @@ const resultsState = (): PlannerState =>
   );
 
 describe('planner', () => {
-  it('empty pay date defaults to today', () => {
+  it('empty pay date is rejected', () => {
     const today = daysFromCivil(2026, 6, 17);
     const s = run(start(today), { type: 'confirm' });
+    expect(s.step).toBe('payDate');
+    expect(s.pay).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+
+  it('explicit today resolves the pay date', () => {
+    const today = daysFromCivil(2026, 6, 17);
+    const s = run(start(today), { type: 'setPayInput', value: 'today' }, { type: 'confirm' });
     expect(s.step).toBe('lastDay');
     expect(s.pay).toBe(today);
   });
