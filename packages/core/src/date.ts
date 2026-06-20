@@ -1,4 +1,4 @@
-const idiv = (a: number, b: number): number => Math.trunc(a / b);
+import { idiv } from './math.js';
 
 export function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;

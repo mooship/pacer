@@ -165,7 +165,7 @@ function Breadcrumb({ state, theme }: { state: PlannerState; theme: Theme }) {
   if (state.step === 'settings') {
     return <Text dimColor>{'  Settings'}</Text>;
   }
-  const crumbs = breadcrumb(state);
+  const crumbs = breadcrumb(state.step);
   return (
     <Text>
       {'  '}

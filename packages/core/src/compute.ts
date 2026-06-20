@@ -1,7 +1,6 @@
 import type { Config } from './config.js';
 import { weekday } from './date.js';
-
-const idiv = (a: number, b: number): number => Math.trunc(a / b);
+import { clamp, idiv, remEuclid } from './math.js';
 
 export interface ComputeResult {
   dates: number[];
@@ -57,10 +56,10 @@ export function compute(
   cfg: Config,
 ): ComputeResult {
   const totalDays = end - pay + 1;
-  const clampedBoost = Math.min(Math.max(boost, 0), total);
+  const clampedBoost = clamp(boost, 0, total);
 
   const dates = [pay];
-  const offset = (((cfg.payday - weekday(pay)) % 7) + 7) % 7;
+  const offset = remEuclid(cfg.payday - weekday(pay), 7);
   const toFirst = offset === 0 ? cfg.interval : offset;
   let m = pay + toFirst;
   while (m <= end) {

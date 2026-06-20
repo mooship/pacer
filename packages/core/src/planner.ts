@@ -2,6 +2,7 @@ import { type ComputeResult, compute, fmtMoney } from './compute.js';
 import { type Config, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
 import { fmtWdDmy } from './date.js';
+import { clamp, remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
 import { type Result, err, ok } from './result.js';
 
@@ -44,7 +45,6 @@ export type Action =
   | { type: 'openSettings' }
   | { type: 'settingsUp' }
   | { type: 'settingsDown' }
-  | { type: 'setSettingsCursor'; value: number }
   | { type: 'paydayPrev' }
   | { type: 'paydayNext' }
   | { type: 'setQuantumInput'; value: string }
@@ -52,9 +52,6 @@ export type Action =
   | { type: 'settingsSaved'; config: Config }
   | { type: 'notice'; value: string | null }
   | { type: 'error'; value: string | null };
-
-const remEuclid = (n: number, m: number): number => ((n % m) + m) % m;
-const clamp = (v: number, lo: number, hi: number): number => Math.min(Math.max(v, lo), hi);
 
 export function initialState(config: Config, today: number): PlannerState {
   return {
@@ -237,9 +234,6 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
     case 'settingsDown':
       s.settingsCursor = Math.min(2, s.settingsCursor + 1);
       return s;
-    case 'setSettingsCursor':
-      s.settingsCursor = clamp(action.value, 0, 2);
-      return s;
     case 'paydayPrev':
       s.config = { ...s.config, payday: remEuclid(s.config.payday - 1, 7) };
       return s;
@@ -303,8 +297,8 @@ export function previews(s: PlannerState): Previews {
 
 export type StepStatus = 'done' | 'current' | 'todo';
 
-export function breadcrumb(s: PlannerState): { name: string; status: StepStatus }[] {
-  const current = s.step === 'payDate' ? 0 : s.step === 'lastDay' ? 1 : s.step === 'amount' ? 2 : 3;
+export function breadcrumb(step: Step): { name: string; status: StepStatus }[] {
+  const current = step === 'payDate' ? 0 : step === 'lastDay' ? 1 : step === 'amount' ? 2 : 3;
   const names = ['Pay date', 'Last day', 'Amount'];
   return names.map((name, i) => ({
     name,

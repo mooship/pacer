@@ -4,6 +4,7 @@ import {
   DEFAULT_QUANTUM,
   defaultConfig,
   parseConfig,
+  parseStoredConfig,
   sanitize,
 } from './config.js';
 
@@ -37,5 +38,17 @@ describe('config', () => {
     expect(parseConfig({ payday: 'oops' })).toEqual(defaultConfig());
     expect(parseConfig('not an object')).toEqual(defaultConfig());
     expect(parseConfig(null)).toEqual(defaultConfig());
+  });
+
+  it('parseStoredConfig fills defaults and reports validity', () => {
+    expect(parseStoredConfig({ payday: 5 })).toEqual({
+      config: { ...defaultConfig(), payday: 5 },
+      invalid: false,
+    });
+    expect(parseStoredConfig({ payday: 'oops' })).toEqual({
+      config: defaultConfig(),
+      invalid: true,
+    });
+    expect(parseStoredConfig('not an object').invalid).toBe(true);
   });
 });

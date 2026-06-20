@@ -37,7 +37,7 @@ export function App() {
       </header>
 
       <main className={styles.card}>
-        {onResults ? null : <Stepper steps={breadcrumb({ ...state, step: baseStep })} />}
+        {onResults ? null : <Stepper steps={breadcrumb(baseStep)} />}
         {onResults ? <ResultsView /> : <PlanForm />}
         <StatusMessage />
       </main>
