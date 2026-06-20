@@ -117,15 +117,23 @@ describe('loadStoredConfig', () => {
       'pacer.config',
       JSON.stringify({ quantum: 10000, payday: 3, interval: 7 }),
     );
-    expect(loadStoredConfig()).toEqual({ quantum: 10000, payday: 3, interval: 7 });
+    expect(loadStoredConfig()).toEqual({
+      config: { quantum: 10000, payday: 3, interval: 7 },
+      invalid: false,
+    });
   });
 
   it('falls back to defaults when nothing is stored', () => {
-    expect(loadStoredConfig()).toEqual(defaultConfig());
+    expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: false });
   });
 
   it('falls back to defaults for unparseable storage', () => {
     localStorage.setItem('pacer.config', 'not json');
-    expect(loadStoredConfig()).toEqual(defaultConfig());
+    expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: true });
+  });
+
+  it('falls back to defaults and flags invalid stored data', () => {
+    localStorage.setItem('pacer.config', JSON.stringify({ quantum: 'bad' }));
+    expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: true });
   });
 });
