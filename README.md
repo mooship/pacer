@@ -28,7 +28,7 @@ apps/web        # React SPA (@pacer/web)
 
 ## Getting started
 
-Requires Node 20+ and [pnpm](https://pnpm.io).
+Requires Node 26+ and [pnpm](https://pnpm.io).
 
 ```bash
 pnpm install         # install the workspace
