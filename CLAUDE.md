@@ -38,7 +38,9 @@ pnpm --filter @pacer/web dev           # one app
 - `date.ts` — date math via Hinnant's proleptic Gregorian algorithm. Days are
   `number` days-since-1970-01-01. `today()` reads the local calendar date.
 - `parse.ts` — `parseDate`, `parseDateDays`, `resolveDate` (blank/`today`/`+N`/
-  `-N`/absolute), and `parseAmount` (→ cents). All return a `Result<T>` =
+  `-N`/`MM-DD`/absolute), and `parseAmount` (→ cents). `MM-DD` infers the year
+  relative to the base date passed in, rolling forward a year once that
+  month/day has already passed. All return a `Result<T>` =
   `{ ok: true; value } | { ok: false; error }`.
 - `compute.ts` — `compute(pay, end, total, boost, cfg)` → `{ dates, segDays,
   amounts }`, plus `fmtMoney`, `coverEnd`, `perDay`. Splits a salary into a

@@ -1,4 +1,4 @@
-import { daysFromCivil, daysInMonth } from './date.js';
+import { civilFromDays, daysFromCivil, daysInMonth } from './date.js';
 import { err, ok, type Result } from './result.js';
 
 const isAsciiDigits = (s: string): boolean => s.length > 0 && /^[0-9]+$/.test(s);
@@ -54,6 +54,31 @@ function parseDateDays(s: string): Result<number> {
   return ok(daysFromCivil(y, m, d));
 }
 
+// Gregorian leap years recur at least every 8 years (the longest gap, caused
+// by the century rule), so searching that far forward always finds Feb 29.
+const MAX_LEAP_GAP_YEARS = 8;
+
+function resolveMonthDay(s: string, m: number, d: number, base: number): Result<number> {
+  if (m < 1 || m > 12) {
+    return err(`month out of range in \`${s}\``);
+  }
+  const maxDay = m === 2 ? 29 : daysInMonth(2000, m);
+  if (d < 1 || d > maxDay) {
+    return err(`day out of range in \`${s}\``);
+  }
+  const [baseYear] = civilFromDays(base);
+  const inYear = (y: number): number | null =>
+    d <= daysInMonth(y, m) ? daysFromCivil(y, m, d) : null;
+
+  for (let offset = 0; offset <= MAX_LEAP_GAP_YEARS; offset++) {
+    const days = inYear(baseYear + offset);
+    if (days !== null && days >= base) {
+      return ok(days);
+    }
+  }
+  return err(`day out of range in \`${s}\``);
+}
+
 export function resolveDate(s: string, base: number): Result<number> {
   const t = s.trim();
   if (t === '' || t.toLowerCase() === 'today') {
@@ -69,6 +94,18 @@ export function resolveDate(s: string, base: number): Result<number> {
       return err(`day offset out of range in \`${s}\``);
     }
     return ok(sum);
+  }
+  const parts = t.split('-');
+  if (parts.length === 2) {
+    const m = parseIntStrict(parts[0]);
+    if (m === null) {
+      return err(`bad month in \`${s}\``);
+    }
+    const d = parseIntStrict(parts[1]);
+    if (d === null) {
+      return err(`bad day in \`${s}\``);
+    }
+    return resolveMonthDay(s, m, d, base);
   }
   return parseDateDays(t);
 }

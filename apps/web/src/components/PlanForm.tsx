@@ -38,7 +38,7 @@ export function PlanForm() {
         value={state.payInput}
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
         status={statusFor(state.step, 'payDate', state.pay !== null)}
-        placeholder="today, +7, or 2026-07-25"
+        placeholder="today, +7, 07-25, or 2026-07-25"
         hint={state.step === 'payDate' ? view.pay : undefined}
       />
       <Field
@@ -47,7 +47,7 @@ export function PlanForm() {
         value={state.lastInput}
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         status={statusFor(state.step, 'lastDay', state.last !== null)}
-        placeholder="+30 or 2026-07-25"
+        placeholder="+30, 07-25, or 2026-07-25"
         hint={state.step === 'lastDay' ? view.last : undefined}
       />
       <Field
