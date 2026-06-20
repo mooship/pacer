@@ -90,6 +90,8 @@ export function App({ config, invalidConfig }: AppProps) {
         exit();
       } else if (input === 's') {
         saveCsv();
+      } else if (input === 'r') {
+        dispatch({ type: 'reset' });
       } else if (key.upArrow || input === '+' || input === '=') {
         dispatch({ type: 'boostUp' });
       } else if (key.downArrow || input === '-' || input === '_') {
@@ -187,7 +189,7 @@ function Hint({ step }: { step: PlannerState['step'] }) {
     step === 'settings'
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
-        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   Esc → edit   q → quit'
+        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   r → start over   Esc → edit   q → quit'
         : '  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

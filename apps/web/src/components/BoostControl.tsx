@@ -1,4 +1,4 @@
-import { fmtMoney } from '@pacer/core';
+import { BRIDGE_LABEL, fmtMoney } from '@pacer/core';
 import { ChevronsLeft, ChevronsRight, Minus, Plus } from 'lucide-react';
 import { usePacerStore } from '../store.js';
 import styles from './BoostControl.module.css';
@@ -20,7 +20,10 @@ export function BoostControl() {
           {fmtMoney(boost)}
         </output>
       </div>
-      <p className={styles.help}>Move money into the first, shorter payment.</p>
+      <p className={styles.help}>
+        Extra cash added to the <strong>{BRIDGE_LABEL}</strong> payment below — the first, often
+        shorter payment that covers you until your regular pay cycle kicks in.
+      </p>
       <div className={styles.row}>
         <button
           type="button"

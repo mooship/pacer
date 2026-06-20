@@ -8,6 +8,8 @@ import { err, ok, type Result } from './result.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
+export const BRIDGE_LABEL = 'Bridge';
+
 export const SETTINGS_QUANTUM = 0;
 export const SETTINGS_PAYDAY = 1;
 export const SETTINGS_INTERVAL = 2;
@@ -40,6 +42,7 @@ export type Action =
   | { type: 'setAmountInput'; value: string }
   | { type: 'confirm' }
   | { type: 'back' }
+  | { type: 'reset' }
   | { type: 'setBoost'; value: number }
   | { type: 'boostUp' }
   | { type: 'boostDown' }
@@ -217,6 +220,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       }
       return s;
     }
+
+    case 'reset':
+      return initialState(s.config, s.today);
 
     case 'setBoost':
       setBoost(s, action.value);
