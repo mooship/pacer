@@ -6,6 +6,7 @@ import {
   buildSummaryText,
   type Config,
   initialState,
+  mood,
   type PlannerState,
   previews,
   reducer,
@@ -46,7 +47,7 @@ export function App({ config, invalidConfig }: AppProps) {
   });
 
   const view = previews(state);
-  const mood = state.error ? 'error' : state.step === 'results' ? 'success' : 'idle';
+  const mascotMood = mood(state);
 
   const saveSettings = () => {
     dispatch(
@@ -146,7 +147,7 @@ export function App({ config, invalidConfig }: AppProps) {
   return (
     <Box flexDirection="column">
       <Box flexDirection="row" gap={1}>
-        <Mascot mood={mood} theme={theme} />
+        <Mascot mood={mascotMood} theme={theme} />
         <Box flexDirection="column">
           <Text color={theme.accent} bold>
             Pacer

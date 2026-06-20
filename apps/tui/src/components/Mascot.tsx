@@ -1,8 +1,7 @@
+import type { Mood } from '@pacer/core';
 import { Box, Text } from 'ink';
 import { useEffect, useState } from 'react';
 import type { Theme } from '../theme.js';
-
-export type Mood = 'idle' | 'success' | 'error';
 
 const FRAMES: Record<Mood, readonly (readonly string[])[]> = {
   idle: [
@@ -38,26 +37,25 @@ export function Mascot({ mood, theme }: MascotProps) {
   useEffect(() => {
     setFrame(0);
     const frames = FRAMES[mood];
-    if (mood === 'error') {
-      let i = 0;
-      const id = setInterval(() => {
-        i += 1;
-        if (i >= frames.length) {
-          clearInterval(id);
-          return;
-        }
-        setFrame(i);
-      }, INTERVAL_MS.error);
-      return () => clearInterval(id);
-    }
+    const loops = mood !== 'error';
     const id = setInterval(() => {
-      setFrame((f) => (f + 1) % frames.length);
+      setFrame((f) => {
+        const next = f + 1;
+        if (next < frames.length) {
+          return next;
+        }
+        if (loops) {
+          return 0;
+        }
+        clearInterval(id);
+        return f;
+      });
     }, INTERVAL_MS[mood]);
     return () => clearInterval(id);
   }, [mood]);
 
   const color = mood === 'success' ? theme.green : mood === 'error' ? theme.red : undefined;
-  const lines = FRAMES[mood][frame] ?? FRAMES[mood][0];
+  const lines = FRAMES[mood][frame];
 
   return (
     <Box flexDirection="column">
