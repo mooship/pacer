@@ -69,8 +69,9 @@
 }
 
 .bridgeTag {
-  display: inline-block;
-  margin-left: 8px;
+  display: block;
+  width: fit-content;
+  margin-top: 4px;
   padding: 1px 6px;
   font-size: 0.68rem;
   font-weight: 800;
@@ -88,7 +89,8 @@
 }
 
 .actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
 
@@ -98,6 +100,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
+  min-width: 0;
   padding: 14px 20px;
   font-weight: 800;
   border-radius: var(--radius-sm);
@@ -114,10 +117,20 @@
 }
 
 .primary {
-  flex: 1;
+  grid-column: 1 / -1;
   color: var(--text-onMango);
   background: linear-gradient(135deg, var(--mango), var(--mango-deep));
   box-shadow: var(--shadow-sm);
+}
+
+@media (min-width: 600px) {
+  .actions {
+    display: flex;
+  }
+
+  .primary {
+    flex: 1;
+  }
 }
 
 .primary:hover {
