@@ -74,8 +74,13 @@ describe('planner', () => {
     expect(back.pay).toBeNull();
   });
 
-  it('reset returns to the first step and clears all inputs', () => {
-    const s = run(resultsState(), { type: 'reset' });
+  it('reset returns to the first step, clears inputs, and preserves config', () => {
+    const customConfig = { quantum: 1000, payday: 3, interval: 14 };
+    const s = run(
+      resultsState(),
+      { type: 'settingsSaved', config: customConfig },
+      { type: 'reset' },
+    );
     expect(s.step).toBe('payDate');
     expect(s.pay).toBeNull();
     expect(s.last).toBeNull();
@@ -84,15 +89,7 @@ describe('planner', () => {
     expect(s.lastInput).toBe('');
     expect(s.amountInput).toBe('');
     expect(s.results).toBeNull();
-  });
-
-  it('reset preserves the current config', () => {
-    const withConfig = run(start(), {
-      type: 'settingsSaved',
-      config: { quantum: 1000, payday: 3, interval: 14 },
-    });
-    const s = run(withConfig, { type: 'reset' });
-    expect(s.config).toEqual({ quantum: 1000, payday: 3, interval: 14 });
+    expect(s.config).toEqual(customConfig);
   });
 
   it('boost is clamped to recurring total', () => {

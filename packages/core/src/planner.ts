@@ -8,6 +8,8 @@ import { err, ok, type Result } from './result.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
+export const BRIDGE_LABEL = 'Bridge';
+
 export const SETTINGS_QUANTUM = 0;
 export const SETTINGS_PAYDAY = 1;
 export const SETTINGS_INTERVAL = 2;

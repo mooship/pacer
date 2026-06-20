@@ -1,4 +1,4 @@
-import { coverEnd, fmtMoney, fmtRange, fmtWdDm, fmtWdDmy, perDay } from '@pacer/core';
+import { BRIDGE_LABEL, coverEnd, fmtMoney, fmtRange, fmtWdDm, fmtWdDmy, perDay } from '@pacer/core';
 import { clsx } from 'clsx';
 import { Download, Pencil, RotateCcw } from 'lucide-react';
 import { usePacerStore } from '../store.js';
@@ -50,7 +50,7 @@ export function ResultsView() {
               <tr key={d} className={clsx(i === 0 && styles.bridge)}>
                 <th scope="row">
                   {fmtWdDm(d)}
-                  {i === 0 ? <span className={styles.bridgeTag}>Bridge</span> : null}
+                  {i === 0 ? <span className={styles.bridgeTag}>{BRIDGE_LABEL}</span> : null}
                 </th>
                 <td>{fmtRange(d, coverEnd(d, segDays[i]))}</td>
                 <td className={styles.num}>{segDays[i]}</td>

@@ -1,4 +1,12 @@
-import { type ComputeResult, coverEnd, fmtMoney, fmtRange, fmtWdDm, perDay } from '@pacer/core';
+import {
+  BRIDGE_LABEL,
+  type ComputeResult,
+  coverEnd,
+  fmtMoney,
+  fmtRange,
+  fmtWdDm,
+  perDay,
+} from '@pacer/core';
 import { Box, Text } from 'ink';
 import type { Theme } from '../theme.js';
 
@@ -23,12 +31,12 @@ export function Results({ results, total, boost, theme }: ResultsProps) {
         <Text color={theme.yellow} bold>
           {fmtMoney(boost)}
         </Text>
-        <Text dimColor>{'   ↑/↓ to move money into the Bridge payment below'}</Text>
+        <Text dimColor>{`   ↑/↓ to move money into the ${BRIDGE_LABEL} payment below`}</Text>
       </Box>
       <Box>
         <Text dimColor>{'  '}</Text>
         <Text color={theme.yellow}>{'■'}</Text>
-        <Text dimColor>{' = Bridge payment, the first and often shorter one'}</Text>
+        <Text dimColor>{` = ${BRIDGE_LABEL} payment, the first and often shorter one`}</Text>
       </Box>
       <Box borderStyle="round" flexDirection="column" paddingX={1}>
         <Box>

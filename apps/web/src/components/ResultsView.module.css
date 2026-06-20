@@ -126,12 +126,13 @@
 }
 
 .startOver {
+  composes: secondary;
   align-self: center;
-  color: var(--text-soft);
+  background: transparent;
+  border-color: transparent;
+  padding: 6px 10px;
   font-size: 0.85rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  color: var(--text-soft);
 }
 
 .startOver:hover {
