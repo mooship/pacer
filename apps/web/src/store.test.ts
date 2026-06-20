@@ -111,6 +111,60 @@ describe('exportCsv', () => {
   });
 });
 
+describe('copyToClipboard', () => {
+  beforeEach(() => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('copies the plan as text and notes it', async () => {
+    const { dispatch, copyToClipboard } = store();
+    dispatch({ type: 'setPayInput', value: '2026-06-25' });
+    dispatch({ type: 'confirm' });
+    dispatch({ type: 'setLastInput', value: '2026-07-24' });
+    dispatch({ type: 'confirm' });
+    dispatch({ type: 'setAmountInput', value: '5000' });
+    dispatch({ type: 'confirm' });
+
+    await copyToClipboard();
+
+    expect(navigator.clipboard.writeText).toHaveBeenCalledTimes(1);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(
+      expect.stringContaining('Pacer plan:'),
+    );
+    expect(store().state.notice).toBe('copied to clipboard');
+  });
+
+  it('does nothing before there is a plan', async () => {
+    await store().copyToClipboard();
+    expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
+  });
+
+  it('reports an error when the clipboard write fails', async () => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    const { dispatch, copyToClipboard } = store();
+    dispatch({ type: 'setPayInput', value: '2026-06-25' });
+    dispatch({ type: 'confirm' });
+    dispatch({ type: 'setLastInput', value: '2026-07-24' });
+    dispatch({ type: 'confirm' });
+    dispatch({ type: 'setAmountInput', value: '5000' });
+    dispatch({ type: 'confirm' });
+
+    await copyToClipboard();
+
+    expect(store().state.error).toBe('could not copy to clipboard');
+  });
+});
+
 describe('loadStoredConfig', () => {
   it('reads a persisted config back', () => {
     localStorage.setItem(

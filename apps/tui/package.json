@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@pacer/core": "workspace:*",
+    "clipboardy": "^5.3.1",
     "env-paths": "^4.0.0",
     "ink": "^7.1.0",
     "ink-text-input": "^6.0.0",
