@@ -64,12 +64,12 @@ export function App({ config, invalidConfig }: AppProps) {
     }
   };
 
-  const copyToClipboard = () => {
+  const copyToClipboard = async () => {
     if (!state.results || state.total === null) {
       return;
     }
     try {
-      clipboardy.writeSync(buildSummaryText(state.results, state.total));
+      await clipboardy.write(buildSummaryText(state.results, state.total));
       dispatch({ type: 'notice', value: 'copied to clipboard' });
     } catch (e) {
       dispatch({ type: 'error', value: `could not copy: ${String(e)}` });

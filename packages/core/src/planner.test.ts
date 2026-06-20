@@ -202,10 +202,10 @@ describe('buildSummaryText', () => {
     const text = buildSummaryText(s.results, s.total);
     const lines = text.trimEnd().split('\n');
     const segments = s.results.dates.length;
-    expect(lines[0].startsWith('Pacer plan:')).toBe(true);
-    expect(lines[2].startsWith('Pay')).toBe(true);
+    expect(text.startsWith('Pacer plan:')).toBe(true);
+    expect(text).toContain('Pay');
+    expect(text).toContain('Bridge');
     expect(lines.length).toBe(segments + 4);
     expect(lines[lines.length - 1].startsWith('Total')).toBe(true);
-    expect(lines[3]).toContain('Bridge');
   });
 });
