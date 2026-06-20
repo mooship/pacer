@@ -4,9 +4,9 @@ import type { Theme } from '../theme.js';
 export type Mood = 'idle' | 'success' | 'error';
 
 const FRAMES: Record<Mood, readonly string[]> = {
-  idle: [' o ', '/|\\', '/ \\'],
-  success: ['  o ', ' /|->', ' / \\'],
-  error: [' o', '/|\\', ' \\_'],
+  idle: [' ____', '(o  )=', ' \\__/'],
+  success: [' ____', '(o  )=<', ' \\__/ ~'],
+  error: [' \\__/', '(x  )==', '  ----'],
 };
 
 interface MascotProps {
