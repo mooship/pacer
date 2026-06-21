@@ -54,8 +54,8 @@ node apps/tui/dist/cli.js --help
 
 Keys: **Enter** confirm · **Esc** back · **←/→** move cursor · **F2** settings ·
 **Ctrl+C** quit. On results: **↑/↓** move money into the bridge, **PgUp/PgDn**
-×10, **Home/End** min/max, **s** save CSV, **q** quit. Set `NO_COLOR` to disable
-colour.
+×10, **Home/End** min/max, **s** save CSV, **i** save calendar, **c** copy,
+**r** start over, **Esc** edit, **q** quit. Set `NO_COLOR` to disable colour.
 
 ### Web app
 
