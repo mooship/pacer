@@ -337,4 +337,15 @@ describe('summaryLine', () => {
     expect(line).toContain('Spend about');
     expect(line).toContain('to reach');
   });
+
+  it('falls back to a single pace when the top-up empties the recurring payouts', () => {
+    const s = run(resultsState(), { type: 'boostToMax' });
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    expect(sum(s.results.amounts.slice(1))).toBe(0);
+    const line = summaryLine(s.results, s.total, s.config);
+    expect(line).toContain('to reach');
+    expect(line).not.toContain('weekly');
+  });
 });

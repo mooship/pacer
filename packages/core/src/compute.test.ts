@@ -153,7 +153,15 @@ describe('compute', () => {
     const result = compute(pay, end, 500000, 0, cfg());
     expect(nextPayout(result, pay)).toBe(result.dates[1] - pay);
     expect(nextPayout(result, end)).toBeNull();
-    expect(nextPayout(result, pay - 1)).toBeNull();
+    expect(nextPayout(result, end + 1)).toBeNull();
+  });
+
+  it('nextPayout counts down to the pay date before the plan starts', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const end = daysFromCivil(2026, 7, 24);
+    const result = compute(pay, end, 500000, 0, cfg());
+    expect(nextPayout(result, pay - 1)).toBe(1);
+    expect(nextPayout(result, pay - 5)).toBe(5);
   });
 
   it('barFractions normalizes to the largest amount', () => {

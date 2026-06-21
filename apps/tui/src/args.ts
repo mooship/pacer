@@ -15,7 +15,7 @@ In the TUI:
 Keys:
   Enter confirm   Esc back   ←/→ move cursor   F2 settings   Ctrl+C quit
   Results: ↑/↓ move money into the bridge   PgUp/PgDn ×10   Home/End min/max
-           s save csv   q quit
+           s save csv   i save calendar   c copy   r start over   Esc edit   q quit
 
 Set NO_COLOR to disable colored output.
 `;
