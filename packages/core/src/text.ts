@@ -18,11 +18,12 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
   const cur = cfg.currency;
   const end = coverEnd(dates[dates.length - 1], segDays[segDays.length - 1]);
 
-  if (dates.length === 1) {
-    return `Spend about ${fmtMoney(perDay(total, segDays[0]), cur)}/day to reach ${fmtWdDmy(end)}.`;
+  const steadyTotal = amounts.slice(1).reduce((a, b) => a + b, 0);
+  if (dates.length === 1 || steadyTotal === 0) {
+    const totalDays = segDays.reduce((a, b) => a + b, 0);
+    return `Spend about ${fmtMoney(perDay(total, totalDays), cur)}/day to reach ${fmtWdDmy(end)}.`;
   }
 
-  const steadyTotal = amounts.slice(1).reduce((a, b) => a + b, 0);
   const steadyDays = segDays.slice(1).reduce((a, b) => a + b, 0);
   const steadyPerDay = fmtMoney(perDay(steadyTotal, steadyDays), cur);
   const recurring = fmtMoney(amounts[1], cur);

@@ -44,11 +44,12 @@ export function currentSegment(result: ComputeResult, today: number): number | n
 }
 
 export function nextPayout(result: ComputeResult, today: number): number | null {
-  const i = currentSegment(result, today);
-  if (i === null || i + 1 >= result.dates.length) {
-    return null;
+  for (const date of result.dates) {
+    if (date > today) {
+      return date - today;
+    }
   }
-  return result.dates[i + 1] - today;
+  return null;
 }
 
 export function barFractions(amounts: number[]): number[] {
