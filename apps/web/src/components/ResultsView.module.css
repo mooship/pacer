@@ -13,6 +13,21 @@
   color: var(--text);
 }
 
+.headline {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.next {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--sky);
+}
+
 .tableScroll {
   overflow-x: auto;
   border: 2px solid var(--border);
@@ -54,6 +69,27 @@
   color: var(--text);
 }
 
+.amount.num {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.bar {
+  height: 4px;
+  min-width: 2px;
+  border-radius: 999px;
+  background: var(--mango);
+  transition: width 0.2s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar {
+    transition: none;
+  }
+}
+
 .soft {
   color: var(--text-soft);
 }
@@ -68,7 +104,8 @@
   font-weight: 800;
 }
 
-.bridgeTag {
+.bridgeTag,
+.todayTag {
   display: block;
   width: fit-content;
   margin-top: 4px;
@@ -80,6 +117,24 @@
   color: var(--text-onMango);
   background: var(--mango-deep);
   border-radius: 999px;
+}
+
+.todayTag {
+  color: var(--bg);
+  background: var(--sky);
+}
+
+.today {
+  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) row background */
+  background: color-mix(in srgb, var(--sky) 18%, transparent) !important;
+}
+
+.today th {
+  font-weight: 800;
+}
+
+.today .bar {
+  background: var(--sky);
 }
 
 .table tfoot th,

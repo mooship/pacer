@@ -10,7 +10,7 @@ import {
   planSnapshot,
   reducer,
 } from './planner.js';
-import { buildSummaryText } from './text.js';
+import { buildSummaryText, summaryLine } from './text.js';
 
 const start = (today = daysFromCivil(2026, 6, 17)): PlannerState =>
   initialState(defaultConfig(), today);
@@ -91,7 +91,7 @@ describe('planner', () => {
   });
 
   it('reset returns to the first step, clears inputs, and preserves config', () => {
-    const customConfig = { quantum: 1000, payday: 3, interval: 14 };
+    const customConfig = { quantum: 1000, payday: 3, interval: 14, currency: 'R' };
     const s = run(
       resultsState(),
       { type: 'settingsSaved', config: customConfig },
@@ -176,6 +176,7 @@ describe('planner', () => {
     s = reducer(s, { type: 'openSettings' });
     expect(s.step).toBe('settings');
     expect(s.quantumInput).toBe('50.00');
+    expect(s.currencyInput).toBe('R');
     const parsed = parseSettings('100', '14', s.config.payday);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
@@ -191,6 +192,16 @@ describe('planner', () => {
     expect(parseSettings('50', '0', 1).ok).toBe(false);
     expect(parseSettings('50', 'abc', 1).ok).toBe(false);
   });
+
+  it('parseSettings carries and sanitizes the currency', () => {
+    const parsed = parseSettings('50', '7', 1, ' $ ');
+    expect(parsed.ok).toBe(true);
+    if (parsed.ok) {
+      expect(parsed.value.currency).toBe('$');
+    }
+    const blank = parseSettings('50', '7', 1, '');
+    expect(blank.ok && blank.value.currency).toBe('R');
+  });
 });
 
 describe('buildCsv', () => {
@@ -205,6 +216,16 @@ describe('buildCsv', () => {
     expect(lines[0]).toBe('Pay date,Covers,Days,Amount,Per day');
     expect(lines.length).toBe(segments + 2);
     expect(lines[lines.length - 1].startsWith('"Total"')).toBe(true);
+  });
+
+  it('renders amounts with the configured currency', () => {
+    const s = resultsState();
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    const csv = buildCsv(s.results, s.total, '$');
+    expect(csv).toContain('$');
+    expect(csv).not.toContain('R');
   });
 });
 
@@ -274,5 +295,46 @@ describe('buildSummaryText', () => {
     expect(text).toContain('Bridge');
     expect(lines.length).toBe(segments + 4);
     expect(lines[lines.length - 1].startsWith('Total')).toBe(true);
+  });
+
+  it('respects a custom currency', () => {
+    const s = resultsState();
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    const text = buildSummaryText(s.results, s.total, '$');
+    expect(text).toContain('$');
+    expect(text).not.toContain('R5');
+  });
+});
+
+describe('summaryLine', () => {
+  it('describes a steady daily spend and cadence', () => {
+    const s = resultsState();
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    const line = summaryLine(s.results, s.total, s.config);
+    expect(line).toContain('Spend about');
+    expect(line).toContain('/day');
+    expect(line).toContain('weekly');
+  });
+
+  it('handles a single-segment plan', () => {
+    const single = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-06-26' },
+      { type: 'confirm' },
+      { type: 'setAmountInput', value: '1000' },
+      { type: 'confirm' },
+    );
+    if (!single.results || single.total === null) {
+      throw new Error('expected results');
+    }
+    const line = summaryLine(single.results, single.total, single.config);
+    expect(line).toContain('Spend about');
+    expect(line).toContain('to reach');
   });
 });

@@ -65,8 +65,10 @@ pnpm --filter @pacer/web build      # production build to apps/web/dist
 pnpm --filter @pacer/web deploy     # deploy to Cloudflare Workers (needs auth)
 ```
 
-Mobile-first, keyboard-accessible, with a light/dark "sunny" theme. Settings and
-the plan are stored in `localStorage`; the schedule exports as a CSV download.
+Mobile-first, keyboard-accessible, with a light/dark "sunny" theme. Settings
+(quantum, payout day, interval, and currency symbol) and the plan are stored in
+`localStorage`; the schedule exports as a CSV download. Results lead with a
+plain-language pace, a per-segment bar, and a "today" marker.
 
 Deployment uses [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 (see `apps/web/wrangler.jsonc`) — `wrangler deploy` serves the built `dist` with

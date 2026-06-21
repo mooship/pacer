@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { compute, fmtMoney } from './compute.js';
+import { barFractions, compute, currentSegment, fmtMoney, nextPayout } from './compute.js';
 import { type Config, DEFAULT_QUANTUM, defaultConfig } from './config.js';
 import { daysFromCivil, weekday } from './date.js';
 
@@ -129,6 +129,36 @@ describe('compute', () => {
     expect(fmtMoney(502550)).toBe('R5,025.50');
     expect(fmtMoney(99)).toBe('R0.99');
     expect(fmtMoney(1234567)).toBe('R12,345.67');
+  });
+
+  it('fmtMoney uses a custom currency symbol', () => {
+    expect(fmtMoney(500000, '$')).toBe('$5,000.00');
+    expect(fmtMoney(500000, '')).toBe('5,000.00');
+    expect(fmtMoney(-1500, '€')).toBe('-€15.00');
+  });
+
+  it('currentSegment finds the segment covering a day, else null', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const end = daysFromCivil(2026, 7, 24);
+    const result = compute(pay, end, 500000, 0, cfg());
+    expect(currentSegment(result, pay)).toBe(0);
+    expect(currentSegment(result, result.dates[1])).toBe(1);
+    expect(currentSegment(result, pay - 1)).toBeNull();
+    expect(currentSegment(result, end + 1)).toBeNull();
+  });
+
+  it('nextPayout returns days to the upcoming payout, else null', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const end = daysFromCivil(2026, 7, 24);
+    const result = compute(pay, end, 500000, 0, cfg());
+    expect(nextPayout(result, pay)).toBe(result.dates[1] - pay);
+    expect(nextPayout(result, end)).toBeNull();
+    expect(nextPayout(result, pay - 1)).toBeNull();
+  });
+
+  it('barFractions normalizes to the largest amount', () => {
+    expect(barFractions([100, 50, 0])).toEqual([1, 0.5, 0]);
+    expect(barFractions([0, 0])).toEqual([0, 0]);
   });
 
   it('first payout lands on configured weekday', () => {

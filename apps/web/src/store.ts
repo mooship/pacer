@@ -141,6 +141,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       state.intervalInput,
       state.config.payday,
       persistConfig,
+      state.currencyInput,
     );
     set((s) => ({ state: reducer(s.state, action) }));
   },
@@ -150,7 +151,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
     if (!state.results || state.total === null) {
       return;
     }
-    const csv = buildCsv(state.results, state.total);
+    const csv = buildCsv(state.results, state.total, state.config.currency);
     downloadBlob(csv, 'text/csv;charset=utf-8', 'pacer-budget.csv');
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'plan downloaded' }) }));
   },
@@ -160,7 +161,10 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
     if (!state.results || state.total === null) {
       return;
     }
-    const ics = buildIcs(state.results, state.total, { now: today() });
+    const ics = buildIcs(state.results, state.total, {
+      now: today(),
+      currency: state.config.currency,
+    });
     downloadBlob(ics, 'text/calendar;charset=utf-8', 'pacer-paydays.ics');
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'calendar exported' }) }));
   },
@@ -171,7 +175,9 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       return;
     }
     try {
-      await navigator.clipboard.writeText(buildSummaryText(state.results, state.total));
+      await navigator.clipboard.writeText(
+        buildSummaryText(state.results, state.total, state.config.currency),
+      );
       set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'copied to clipboard' }) }));
     } catch {
       set((s) => ({

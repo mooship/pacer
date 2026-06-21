@@ -79,7 +79,13 @@ export function App({ config, invalidConfig }: AppProps) {
 
   const saveSettings = () => {
     dispatch(
-      saveSettingsAction(state.quantumInput, state.intervalInput, state.config.payday, saveConfig),
+      saveSettingsAction(
+        state.quantumInput,
+        state.intervalInput,
+        state.config.payday,
+        saveConfig,
+        state.currencyInput,
+      ),
     );
   };
 
@@ -95,16 +101,19 @@ export function App({ config, invalidConfig }: AppProps) {
     }
   };
 
-  const saveCsv = () => saveFile(EXPORT_PATH, (results, total) => buildCsv(results, total));
+  const saveCsv = () =>
+    saveFile(EXPORT_PATH, (results, total) => buildCsv(results, total, state.config.currency));
   const saveIcs = () =>
-    saveFile(ICS_PATH, (results, total) => buildIcs(results, total, { now: today() }));
+    saveFile(ICS_PATH, (results, total) =>
+      buildIcs(results, total, { now: today(), currency: state.config.currency }),
+    );
 
   const copyToClipboard = async () => {
     if (!state.results || state.total === null) {
       return;
     }
     try {
-      await clipboardy.write(buildSummaryText(state.results, state.total));
+      await clipboardy.write(buildSummaryText(state.results, state.total, state.config.currency));
       dispatch({ type: 'notice', value: 'copied to clipboard' });
     } catch (e) {
       dispatch({ type: 'error', value: `could not copy: ${String(e)}` });
@@ -189,12 +198,18 @@ export function App({ config, invalidConfig }: AppProps) {
           <Breadcrumb state={state} theme={theme} />
         </Box>
       </Box>
+      {state.step === 'payDate' && state.pay === null ? (
+        <Text dimColor>
+          {'  Pace a salary across the month so it lasts until your next payday.'}
+        </Text>
+      ) : null}
       {state.step === 'settings' ? (
         <Settings
           state={state}
           theme={theme}
           onQuantumChange={(value) => dispatch({ type: 'setQuantumInput', value })}
           onIntervalChange={(value) => dispatch({ type: 'setIntervalInput', value })}
+          onCurrencyChange={(value) => dispatch({ type: 'setCurrencyInput', value })}
           onSubmit={saveSettings}
         />
       ) : (
@@ -207,7 +222,14 @@ export function App({ config, invalidConfig }: AppProps) {
         />
       )}
       {state.step === 'results' && state.results && state.total !== null ? (
-        <Results results={state.results} total={state.total} boost={state.boost} theme={theme} />
+        <Results
+          results={state.results}
+          total={state.total}
+          boost={state.boost}
+          config={state.config}
+          today={state.today}
+          theme={theme}
+        />
       ) : null}
       <Hint step={state.step} />
     </Box>

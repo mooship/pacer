@@ -112,8 +112,9 @@ export function resolveDate(s: string, base: number): Result<number> {
 
 export function parseAmount(s: string): Result<number> {
   let t = s.trim();
-  if (t.startsWith('R') || t.startsWith('r')) {
-    t = t.slice(1).replace(/^\s+/, '');
+  const symbol = t.match(/^[^\d.\-+]+/);
+  if (symbol) {
+    t = t.slice(symbol[0].length).replace(/^\s+/, '');
   }
   const dot = t.indexOf('.');
   const intRaw = dot === -1 ? t : t.slice(0, dot);
@@ -121,7 +122,7 @@ export function parseAmount(s: string): Result<number> {
 
   const intClean = intRaw.replace(/[,_ ]/g, '');
   if (!isAsciiDigits(intClean)) {
-    return err(`amount must be a number of Rand, got \`${s}\``);
+    return err(`amount must be a number, got \`${s}\``);
   }
   const rand = parseIntStrict(intClean);
   if (rand === null) {

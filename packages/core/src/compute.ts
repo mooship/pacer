@@ -1,4 +1,4 @@
-import type { Config } from './config.js';
+import { type Config, DEFAULT_CURRENCY } from './config.js';
 import { weekday } from './date.js';
 import { clamp, idiv, remEuclid } from './math.js';
 
@@ -16,7 +16,7 @@ export function perDay(amount: number, days: number): number {
   return idiv(amount, days);
 }
 
-export function fmtMoney(cents: number): string {
+export function fmtMoney(cents: number, symbol: string = DEFAULT_CURRENCY): string {
   const neg = cents < 0;
   const abs = Math.abs(cents);
   const rand = idiv(abs, 100);
@@ -30,7 +30,30 @@ export function fmtMoney(cents: number): string {
     }
     grouped += digits[i];
   }
-  return `${neg ? '-' : ''}R${grouped}.${frac.toString().padStart(2, '0')}`;
+  return `${neg ? '-' : ''}${symbol}${grouped}.${frac.toString().padStart(2, '0')}`;
+}
+
+export function currentSegment(result: ComputeResult, today: number): number | null {
+  const { dates, segDays } = result;
+  for (let i = 0; i < dates.length; i++) {
+    if (today >= dates[i] && today <= coverEnd(dates[i], segDays[i])) {
+      return i;
+    }
+  }
+  return null;
+}
+
+export function nextPayout(result: ComputeResult, today: number): number | null {
+  const i = currentSegment(result, today);
+  if (i === null || i + 1 >= result.dates.length) {
+    return null;
+  }
+  return result.dates[i + 1] - today;
+}
+
+export function barFractions(amounts: number[]): number[] {
+  const max = Math.max(...amounts, 1);
+  return amounts.map((a) => a / max);
 }
 
 function distribute(quanta: number, weights: number[], totalWeight: number): number[] {

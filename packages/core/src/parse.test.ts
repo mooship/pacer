@@ -54,6 +54,12 @@ describe('parseAmount', () => {
     expect(value(parseAmount('R5000'))).toBe(500000);
   });
 
+  it('other currency symbols are stripped', () => {
+    expect(value(parseAmount('$5000'))).toBe(500000);
+    expect(value(parseAmount('€5,000.50'))).toBe(500050);
+    expect(value(parseAmount('kr 250'))).toBe(25000);
+  });
+
   it('commas', () => {
     expect(value(parseAmount('5,000'))).toBe(500000);
   });

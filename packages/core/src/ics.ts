@@ -1,10 +1,12 @@
 import { type ComputeResult, coverEnd, fmtMoney, perDay } from './compute.js';
+import { DEFAULT_CURRENCY } from './config.js';
 import { civilFromDays, fmtRange } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
 export interface IcsOptions {
   now: number;
   reminderHour?: number;
+  currency?: string;
 }
 
 function pad(n: number, width: number): string {
@@ -39,6 +41,7 @@ function fold(line: string): string {
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {
   const { dates, segDays, amounts } = result;
   const hour = opts.reminderHour ?? 9;
+  const cur = opts.currency ?? DEFAULT_CURRENCY;
   const stamp = `${dateStamp(opts.now)}T000000Z`;
 
   const lines: string[] = [
@@ -47,15 +50,17 @@ export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions)
     'PRODID:-//Pacer//Pacer//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    `X-WR-CALNAME:Pacer plan (${fmtMoney(total)})`,
+    `X-WR-CALNAME:Pacer plan (${fmtMoney(total, cur)})`,
   ];
 
   dates.forEach((d, i) => {
-    const label = i === 0 ? `${fmtMoney(amounts[i])} (${BRIDGE_LABEL})` : fmtMoney(amounts[i]);
+    const label =
+      i === 0 ? `${fmtMoney(amounts[i], cur)} (${BRIDGE_LABEL})` : fmtMoney(amounts[i], cur);
     const covers = fmtRange(d, coverEnd(d, segDays[i]));
     const summary = `Pacer: ${label}`;
-    const description = `${fmtMoney(amounts[i])} covering ${covers} · ${fmtMoney(
+    const description = `${fmtMoney(amounts[i], cur)} covering ${covers} · ${fmtMoney(
       perDay(amounts[i], segDays[i]),
+      cur,
     )}/day over ${segDays[i]} day${segDays[i] === 1 ? '' : 's'}`;
     lines.push(
       'BEGIN:VEVENT',

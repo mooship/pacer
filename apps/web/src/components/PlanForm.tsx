@@ -1,5 +1,5 @@
 import { previews, type Step } from '@pacer/core';
-import { ArrowLeft, ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
 import { Field } from './Field.js';
@@ -7,6 +7,35 @@ import styles from './PlanForm.module.css';
 
 const statusFor = (step: Step, field: Step, done: boolean): 'active' | 'done' | 'idle' =>
   step === field ? 'active' : done ? 'done' : 'idle';
+
+const PAY_CHIPS: { label: string; value: string }[] = [
+  { label: 'Today', value: 'today' },
+  { label: 'In 1 week', value: '+7' },
+  { label: 'In 2 weeks', value: '+14' },
+];
+
+const LAST_CHIPS: { label: string; value: string }[] = [
+  { label: '+30 days', value: '+30' },
+  { label: '+60 days', value: '+60' },
+];
+
+function Chips({
+  chips,
+  onPick,
+}: {
+  chips: { label: string; value: string }[];
+  onPick: (value: string) => void;
+}) {
+  return (
+    <div className={styles.chips}>
+      {chips.map((c) => (
+        <button key={c.value} type="button" className={styles.chip} onClick={() => onPick(c.value)}>
+          {c.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function PlanForm() {
   const state = usePacerStore((s) => s.state);
@@ -21,6 +50,14 @@ export function PlanForm() {
   }, [state.step]);
 
   const onAmount = state.step === 'amount';
+  const fresh = state.step === 'payDate' && state.payInput.trim() === '' && state.pay === null;
+
+  const loadExample = () => {
+    dispatch({
+      type: 'restorePlan',
+      snap: { pay: state.today, last: state.today + 30, total: 1850000, boost: 0 },
+    });
+  };
 
   return (
     <form
@@ -32,6 +69,13 @@ export function PlanForm() {
       }}
       noValidate
     >
+      {fresh ? (
+        <p className={styles.intro}>
+          Tell Pacer when you get paid, the last day that pay needs to last, and how much it is.
+          You'll get a day-by-day spending pace so the money reaches your next payday.
+        </p>
+      ) : null}
+
       <Field
         id="pay-date"
         label="Pay date"
@@ -41,6 +85,10 @@ export function PlanForm() {
         placeholder="today, +7, 07-25, or 2026-07-25"
         hint={state.step === 'payDate' ? view.pay : undefined}
       />
+      {state.step === 'payDate' ? (
+        <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
+      ) : null}
+
       <Field
         id="last-day"
         label="Last day it covers"
@@ -50,6 +98,10 @@ export function PlanForm() {
         placeholder="+30, 07-25, or 2026-07-25"
         hint={state.step === 'lastDay' ? view.last : undefined}
       />
+      {state.step === 'lastDay' ? (
+        <Chips chips={LAST_CHIPS} onPick={(value) => dispatch({ type: 'setLastInput', value })} />
+      ) : null}
+
       <Field
         id="amount"
         label="Amount (R)"
@@ -76,6 +128,13 @@ export function PlanForm() {
           {onAmount ? <Sparkles size={18} aria-hidden /> : <ArrowRight size={18} aria-hidden />}
         </button>
       </div>
+
+      {fresh ? (
+        <button type="button" className={styles.example} onClick={loadExample}>
+          <Wand2 size={16} aria-hidden />
+          See an example
+        </button>
+      ) : null}
     </form>
   );
 }

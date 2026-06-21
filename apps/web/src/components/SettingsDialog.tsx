@@ -61,6 +61,21 @@ export function SettingsDialog() {
             <p className={styles.help}>Rounding granularity for allowances.</p>
           </div>
 
+          <div className={styles.field}>
+            <label className={styles.label} htmlFor="currency">
+              Currency symbol
+            </label>
+            <input
+              id="currency"
+              className={styles.input}
+              value={state.currencyInput}
+              maxLength={3}
+              autoComplete="off"
+              onChange={(e) => dispatch({ type: 'setCurrencyInput', value: e.target.value })}
+            />
+            <p className={styles.help}>Shown before amounts, e.g. R, $, or €.</p>
+          </div>
+
           <fieldset className={styles.field}>
             <legend className={styles.label}>Payout day</legend>
             <div className={styles.cycle}>

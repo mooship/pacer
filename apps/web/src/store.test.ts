@@ -68,6 +68,17 @@ describe('pacer store', () => {
     expect(store().state.error).not.toBeNull();
     expect(localStorage.getItem('pacer.config')).toBeNull();
   });
+
+  it('persists a custom currency symbol', () => {
+    const { dispatch, saveSettings } = store();
+    dispatch({ type: 'openSettings' });
+    dispatch({ type: 'setCurrencyInput', value: '$' });
+    saveSettings();
+
+    expect(store().state.config.currency).toBe('$');
+    const stored = JSON.parse(localStorage.getItem('pacer.config') ?? '{}');
+    expect(stored).toMatchObject({ currency: '$' });
+  });
 });
 
 const reachResults = () => {
@@ -260,7 +271,7 @@ describe('loadStoredConfig', () => {
       JSON.stringify({ quantum: 10000, payday: 3, interval: 7 }),
     );
     expect(loadStoredConfig()).toEqual({
-      config: { quantum: 10000, payday: 3, interval: 7 },
+      config: { quantum: 10000, payday: 3, interval: 7, currency: 'R' },
       invalid: false,
     });
   });

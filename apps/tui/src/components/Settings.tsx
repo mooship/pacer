@@ -1,5 +1,6 @@
 import {
   type PlannerState,
+  SETTINGS_CURRENCY,
   SETTINGS_INTERVAL,
   SETTINGS_PAYDAY,
   SETTINGS_QUANTUM,
@@ -15,6 +16,7 @@ interface SettingsProps {
   theme: Theme;
   onQuantumChange: (value: string) => void;
   onIntervalChange: (value: string) => void;
+  onCurrencyChange: (value: string) => void;
   onSubmit: () => void;
 }
 
@@ -23,6 +25,7 @@ export function Settings({
   theme,
   onQuantumChange,
   onIntervalChange,
+  onCurrencyChange,
   onSubmit,
 }: SettingsProps) {
   const paydayActive = state.settingsCursor === SETTINGS_PAYDAY;
@@ -36,6 +39,16 @@ export function Settings({
         done={state.settingsCursor !== SETTINGS_QUANTUM}
         theme={theme}
         onChange={onQuantumChange}
+        onSubmit={onSubmit}
+      />
+      <Field
+        label="Currency"
+        labelWidth={14}
+        value={state.currencyInput}
+        active={state.settingsCursor === SETTINGS_CURRENCY}
+        done={state.settingsCursor !== SETTINGS_CURRENCY}
+        theme={theme}
+        onChange={onCurrencyChange}
         onSubmit={onSubmit}
       />
       <Box>
