@@ -1,7 +1,12 @@
 import { type ComputeResult, coverEnd, fmtMoney, perDay } from './compute.js';
+import { DEFAULT_CURRENCY } from './config.js';
 import { fmtDmy, fmtRange } from './date.js';
 
-export function buildCsv(result: ComputeResult, total: number, currency = 'R'): string {
+export function buildCsv(
+  result: ComputeResult,
+  total: number,
+  currency = DEFAULT_CURRENCY,
+): string {
   const { dates, segDays, amounts } = result;
   let out = 'Pay date,Covers,Days,Amount,Per day\n';
   for (let i = 0; i < dates.length; i++) {

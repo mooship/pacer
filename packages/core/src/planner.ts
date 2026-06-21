@@ -1,5 +1,5 @@
 import { type ComputeResult, compute, fmtMoney } from './compute.js';
-import { type Config, sanitize } from './config.js';
+import { type Config, DEFAULT_CURRENCY, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
 import { fmtIso, fmtWdDmy } from './date.js';
 import { clamp, remEuclid } from './math.js';
@@ -127,7 +127,7 @@ export function parseSettings(
   quantumInput: string,
   intervalInput: string,
   payday: number,
-  currencyInput = 'R',
+  currencyInput = DEFAULT_CURRENCY,
 ): Result<Config> {
   const quantum = parseAmount(quantumInput);
   if (!quantum.ok) {
@@ -146,7 +146,7 @@ export function saveSettingsAction(
   intervalInput: string,
   payday: number,
   persist: (config: Config) => void,
-  currencyInput = 'R',
+  currencyInput = DEFAULT_CURRENCY,
 ): Action {
   const parsed = parseSettings(quantumInput, intervalInput, payday, currencyInput);
   if (!parsed.ok) {
@@ -363,7 +363,7 @@ export function previews(s: PlannerState): Previews {
   if (s.amountInput.trim() !== '') {
     const r = parseAmount(s.amountInput);
     if (r.ok) {
-      amount = fmtMoney(r.value);
+      amount = fmtMoney(r.value, s.config.currency);
     }
   }
 

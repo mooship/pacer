@@ -1,4 +1,5 @@
 import { type ComputeResult, coverEnd, fmtMoney, perDay } from './compute.js';
+import { DEFAULT_CURRENCY } from './config.js';
 import { civilFromDays, fmtRange } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
@@ -40,7 +41,7 @@ function fold(line: string): string {
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {
   const { dates, segDays, amounts } = result;
   const hour = opts.reminderHour ?? 9;
-  const cur = opts.currency ?? 'R';
+  const cur = opts.currency ?? DEFAULT_CURRENCY;
   const stamp = `${dateStamp(opts.now)}T000000Z`;
 
   const lines: string[] = [

@@ -1,5 +1,6 @@
 import {
   BRIDGE_LABEL,
+  barFractions,
   type ComputeResult,
   type Config,
   coverEnd,
@@ -7,6 +8,7 @@ import {
   fmtMoney,
   fmtRange,
   fmtWdDm,
+  nextPayout,
   perDay,
   summaryLine,
 } from '@pacer/core';
@@ -29,11 +31,11 @@ interface ResultsProps {
 export function Results({ results, total, boost, config, today, theme }: ResultsProps) {
   const { dates, segDays, amounts } = results;
   const cur = config.currency;
+  const money = (cents: number) => fmtMoney(cents, cur);
   const totalDays = segDays.reduce((a, b) => a + b, 0);
-  const maxAmount = Math.max(...amounts, 1);
+  const fractions = barFractions(amounts);
   const todayIdx = currentSegment(results, today);
-  const daysToNext =
-    todayIdx !== null && todayIdx + 1 < dates.length ? dates[todayIdx + 1] - today : null;
+  const daysToNext = nextPayout(results, today);
 
   return (
     <Box flexDirection="column">
@@ -52,7 +54,7 @@ export function Results({ results, total, boost, config, today, theme }: Results
       <Box>
         <Text dimColor>{'  Bridge top-up  '}</Text>
         <Text color={theme.yellow} bold>
-          {fmtMoney(boost, cur)}
+          {money(boost)}
         </Text>
         <Text dimColor>{`   ↑/↓ to move money into the ${BRIDGE_LABEL} payment below`}</Text>
       </Box>
@@ -70,7 +72,7 @@ export function Results({ results, total, boost, config, today, theme }: Results
         {dates.map((d, i) => {
           const dim = i % 2 === 1;
           const isToday = i === todayIdx;
-          const barLen = Math.max(1, Math.round((amounts[i] / maxAmount) * BAR_CELLS));
+          const barLen = Math.max(1, Math.round(fractions[i] * BAR_CELLS));
           const barColor = i === 0 ? theme.yellow : isToday ? theme.accent : theme.green;
           return (
             <Box key={d}>
@@ -83,9 +85,9 @@ export function Results({ results, total, boost, config, today, theme }: Results
               <Text dimColor={dim}>{pad(fmtRange(d, coverEnd(d, segDays[i])), WIDTHS[1])}</Text>
               <Text dimColor={dim}>{pad(String(segDays[i]), WIDTHS[2])}</Text>
               <Text color={theme.green} dimColor={dim}>
-                {pad(fmtMoney(amounts[i], cur), WIDTHS[3])}
+                {pad(money(amounts[i]), WIDTHS[3])}
               </Text>
-              <Text dimColor>{pad(fmtMoney(perDay(amounts[i], segDays[i]), cur), WIDTHS[4])}</Text>
+              <Text dimColor>{pad(money(perDay(amounts[i], segDays[i])), WIDTHS[4])}</Text>
               <Text color={barColor}>{'█'.repeat(barLen)}</Text>
             </Box>
           );
@@ -96,9 +98,9 @@ export function Results({ results, total, boost, config, today, theme }: Results
           <Text bold>{pad('', WIDTHS[1])}</Text>
           <Text bold>{pad(String(totalDays), WIDTHS[2])}</Text>
           <Text color={theme.green} bold>
-            {pad(fmtMoney(total, cur), WIDTHS[3])}
+            {pad(money(total), WIDTHS[3])}
           </Text>
-          <Text dimColor>{pad(fmtMoney(perDay(total, totalDays), cur), WIDTHS[4])}</Text>
+          <Text dimColor>{pad(money(perDay(total, totalDays)), WIDTHS[4])}</Text>
         </Box>
       </Box>
     </Box>

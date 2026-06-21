@@ -1,11 +1,13 @@
 import {
   BRIDGE_LABEL,
+  barFractions,
   coverEnd,
   currentSegment,
   fmtMoney,
   fmtRange,
   fmtWdDm,
   fmtWdDmy,
+  nextPayout,
   perDay,
   summaryLine,
 } from '@pacer/core';
@@ -30,10 +32,9 @@ export function ResultsView() {
   const currency = state.config.currency;
   const money = (cents: number) => fmtMoney(cents, currency);
   const totalDays = segDays.reduce((a, b) => a + b, 0);
-  const maxAmount = Math.max(...amounts, 1);
+  const fractions = barFractions(amounts);
   const todayIdx = currentSegment(state.results, state.today);
-  const daysToNext =
-    todayIdx !== null && todayIdx + 1 < dates.length ? dates[todayIdx + 1] - state.today : null;
+  const daysToNext = nextPayout(state.results, state.today);
 
   return (
     <div className={styles.wrap}>
@@ -89,7 +90,7 @@ export function ResultsView() {
                   {money(amounts[i])}
                   <span
                     className={styles.bar}
-                    style={{ width: `${(amounts[i] / maxAmount) * 100}%` }}
+                    style={{ width: `${fractions[i] * 100}%` }}
                     aria-hidden
                   />
                 </td>

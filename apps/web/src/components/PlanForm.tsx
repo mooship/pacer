@@ -1,4 +1,4 @@
-import { type Action, previews, type Step } from '@pacer/core';
+import { previews, type Step } from '@pacer/core';
 import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
@@ -53,17 +53,10 @@ export function PlanForm() {
   const fresh = state.step === 'payDate' && state.payInput.trim() === '' && state.pay === null;
 
   const loadExample = () => {
-    const steps: Action[] = [
-      { type: 'setPayInput', value: 'today' },
-      { type: 'confirm' },
-      { type: 'setLastInput', value: '+30' },
-      { type: 'confirm' },
-      { type: 'setAmountInput', value: '18500' },
-      { type: 'confirm' },
-    ];
-    for (const action of steps) {
-      dispatch(action);
-    }
+    dispatch({
+      type: 'restorePlan',
+      snap: { pay: state.today, last: state.today + 30, total: 1850000, boost: 0 },
+    });
   };
 
   return (

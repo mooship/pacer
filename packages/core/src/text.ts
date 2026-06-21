@@ -1,5 +1,5 @@
 import { type ComputeResult, coverEnd, fmtMoney, perDay } from './compute.js';
-import type { Config } from './config.js';
+import { type Config, DEFAULT_CURRENCY } from './config.js';
 import { fmtDmy, fmtRange, fmtWdDmy } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
@@ -30,7 +30,11 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
   return `Spend about ${steadyPerDay}/day — ${recurring} lands ${cadence} until ${fmtWdDmy(end)}.`;
 }
 
-export function buildSummaryText(result: ComputeResult, total: number, currency = 'R'): string {
+export function buildSummaryText(
+  result: ComputeResult,
+  total: number,
+  currency = DEFAULT_CURRENCY,
+): string {
   const { dates, segDays, amounts } = result;
   const totalDays = segDays.reduce((a, b) => a + b, 0);
   const pay = dates[0];
