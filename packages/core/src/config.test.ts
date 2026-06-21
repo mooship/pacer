@@ -10,16 +10,34 @@ import {
 
 describe('config', () => {
   it('sanitize clamps out of range', () => {
-    expect(sanitize({ quantum: 0, payday: 9, interval: 999 })).toEqual({
+    expect(sanitize({ quantum: 0, payday: 9, interval: 999, currency: 'R' })).toEqual({
       quantum: 1,
       payday: 2,
       interval: 366,
+      currency: 'R',
     });
-    expect(sanitize({ quantum: -100, payday: -1, interval: 0 })).toEqual({
+    expect(sanitize({ quantum: -100, payday: -1, interval: 0, currency: 'R' })).toEqual({
       quantum: 1,
       payday: 6,
       interval: 1,
+      currency: 'R',
     });
+  });
+
+  it('sanitize trims currency, caps length, and falls back when empty', () => {
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '  $  ' }).currency).toBe(
+      '$',
+    );
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '' }).currency).toBe('R');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: 'USDX' }).currency).toBe(
+      'USD',
+    );
+  });
+
+  it('currency fills default when missing and round trips', () => {
+    expect(parseConfig({ payday: 5 }).currency).toBe('R');
+    const c = { ...defaultConfig(), currency: '€' };
+    expect(parseConfig(c)).toEqual(c);
   });
 
   it('parseConfig round trips defaults', () => {

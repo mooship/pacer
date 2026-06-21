@@ -1,4 +1,14 @@
-import { BRIDGE_LABEL, coverEnd, fmtMoney, fmtRange, fmtWdDm, fmtWdDmy, perDay } from '@pacer/core';
+import {
+  BRIDGE_LABEL,
+  coverEnd,
+  currentSegment,
+  fmtMoney,
+  fmtRange,
+  fmtWdDm,
+  fmtWdDmy,
+  perDay,
+  summaryLine,
+} from '@pacer/core';
 import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
 import { usePacerStore } from '../store.js';
@@ -17,14 +27,28 @@ export function ResultsView() {
     return null;
   }
   const { dates, segDays, amounts } = state.results;
+  const currency = state.config.currency;
+  const money = (cents: number) => fmtMoney(cents, currency);
   const totalDays = segDays.reduce((a, b) => a + b, 0);
+  const maxAmount = Math.max(...amounts, 1);
+  const todayIdx = currentSegment(state.results, state.today);
+  const daysToNext =
+    todayIdx !== null && todayIdx + 1 < dates.length ? dates[todayIdx + 1] - state.today : null;
 
   return (
     <div className={styles.wrap}>
       <p className={styles.summary}>
-        {fmtMoney(state.total)} from <strong>{fmtWdDmy(state.pay)}</strong> to{' '}
+        {money(state.total)} from <strong>{fmtWdDmy(state.pay)}</strong> to{' '}
         <strong>{fmtWdDmy(state.last)}</strong>
       </p>
+
+      <p className={styles.headline}>{summaryLine(state.results, state.total, state.config)}</p>
+
+      {daysToNext !== null ? (
+        <p className={styles.next} aria-live="polite">
+          Next payout in {daysToNext} day{daysToNext === 1 ? '' : 's'}.
+        </p>
+      ) : null}
 
       <BoostControl />
 
@@ -50,16 +74,27 @@ export function ResultsView() {
           </thead>
           <tbody>
             {dates.map((d, i) => (
-              <tr key={d} className={clsx(i === 0 && styles.bridge)}>
+              <tr
+                key={d}
+                className={clsx(i === 0 && styles.bridge, i === todayIdx && styles.today)}
+              >
                 <th scope="row">
                   {fmtWdDm(d)}
                   {i === 0 ? <span className={styles.bridgeTag}>{BRIDGE_LABEL}</span> : null}
+                  {i === todayIdx ? <span className={styles.todayTag}>Today</span> : null}
                 </th>
                 <td>{fmtRange(d, coverEnd(d, segDays[i]))}</td>
                 <td className={styles.num}>{segDays[i]}</td>
-                <td className={clsx(styles.num, styles.amount)}>{fmtMoney(amounts[i])}</td>
+                <td className={clsx(styles.num, styles.amount)}>
+                  {money(amounts[i])}
+                  <span
+                    className={styles.bar}
+                    style={{ width: `${(amounts[i] / maxAmount) * 100}%` }}
+                    aria-hidden
+                  />
+                </td>
                 <td className={clsx(styles.num, styles.soft)}>
-                  {fmtMoney(perDay(amounts[i], segDays[i]))}
+                  {money(perDay(amounts[i], segDays[i]))}
                 </td>
               </tr>
             ))}
@@ -69,9 +104,9 @@ export function ResultsView() {
               <th scope="row">Total</th>
               <td />
               <td className={styles.num}>{totalDays}</td>
-              <td className={clsx(styles.num, styles.amount)}>{fmtMoney(state.total)}</td>
+              <td className={clsx(styles.num, styles.amount)}>{money(state.total)}</td>
               <td className={clsx(styles.num, styles.soft)}>
-                {fmtMoney(perDay(state.total, totalDays))}
+                {money(perDay(state.total, totalDays))}
               </td>
             </tr>
           </tfoot>

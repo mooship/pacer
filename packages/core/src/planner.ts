@@ -12,8 +12,9 @@ export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 export const BRIDGE_LABEL = 'Bridge';
 
 export const SETTINGS_QUANTUM = 0;
-export const SETTINGS_PAYDAY = 1;
-export const SETTINGS_INTERVAL = 2;
+export const SETTINGS_CURRENCY = 1;
+export const SETTINGS_PAYDAY = 2;
+export const SETTINGS_INTERVAL = 3;
 export const SETTINGS_CURSOR_MAX = SETTINGS_INTERVAL;
 
 export interface PlannerState {
@@ -34,6 +35,7 @@ export interface PlannerState {
   settingsCursor: number;
   quantumInput: string;
   intervalInput: string;
+  currencyInput: string;
   settingsReturn: Step;
 }
 
@@ -58,6 +60,7 @@ export type Action =
   | { type: 'paydayNext' }
   | { type: 'setQuantumInput'; value: string }
   | { type: 'setIntervalInput'; value: string }
+  | { type: 'setCurrencyInput'; value: string }
   | { type: 'settingsSaved'; config: Config }
   | { type: 'restorePlan'; snap: PlanSnapshot }
   | { type: 'notice'; value: string | null }
@@ -82,6 +85,7 @@ export function initialState(config: Config, today: number): PlannerState {
     settingsCursor: 0,
     quantumInput: '',
     intervalInput: '',
+    currencyInput: '',
     settingsReturn: 'payDate',
   };
 }
@@ -123,6 +127,7 @@ export function parseSettings(
   quantumInput: string,
   intervalInput: string,
   payday: number,
+  currencyInput = 'R',
 ): Result<Config> {
   const quantum = parseAmount(quantumInput);
   if (!quantum.ok) {
@@ -133,7 +138,7 @@ export function parseSettings(
   if (!Number.isSafeInteger(interval) || interval < 1) {
     return err('interval must be a whole number of days');
   }
-  return ok(sanitize({ quantum: quantum.value, payday, interval }));
+  return ok(sanitize({ quantum: quantum.value, payday, interval, currency: currencyInput }));
 }
 
 export function saveSettingsAction(
@@ -141,8 +146,9 @@ export function saveSettingsAction(
   intervalInput: string,
   payday: number,
   persist: (config: Config) => void,
+  currencyInput = 'R',
 ): Action {
-  const parsed = parseSettings(quantumInput, intervalInput, payday);
+  const parsed = parseSettings(quantumInput, intervalInput, payday, currencyInput);
   if (!parsed.ok) {
     return { type: 'error', value: parsed.error };
   }
@@ -269,8 +275,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       }
       s.settingsReturn = s.step;
       s.settingsCursor = 0;
-      s.quantumInput = fmtMoney(s.config.quantum).replace(/^R/, '');
+      s.quantumInput = fmtMoney(s.config.quantum, '');
       s.intervalInput = s.config.interval.toString();
+      s.currencyInput = s.config.currency;
       s.step = 'settings';
       return s;
     }
@@ -292,6 +299,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
     case 'setIntervalInput':
       s.intervalInput = action.value;
       return s;
+    case 'setCurrencyInput':
+      s.currencyInput = action.value;
+      return s;
 
     case 'settingsSaved': {
       s.config = action.config;
@@ -310,7 +320,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       s.total = total;
       s.payInput = fmtIso(pay);
       s.lastInput = fmtIso(last);
-      s.amountInput = fmtMoney(total).replace(/^R/, '');
+      s.amountInput = fmtMoney(total, '');
       enterResults(s);
       setBoost(s, boost);
       s.step = 'results';

@@ -41,6 +41,7 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
     await user.click(screen.getByRole('button', { name: /continue/i }));
     await user.type(screen.getByLabelText('Last day it covers'), '+30');
     await user.click(screen.getByRole('button', { name: /continue/i }));

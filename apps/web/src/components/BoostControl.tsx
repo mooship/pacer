@@ -8,6 +8,7 @@ export function BoostControl() {
   const dispatch = usePacerStore((s) => s.dispatch);
   const { boost, boostMax } = state;
   const quantum = state.config.quantum;
+  const currency = state.config.currency;
   const disabled = boostMax <= 0;
 
   return (
@@ -17,7 +18,7 @@ export function BoostControl() {
           Bridge top-up
         </span>
         <output className={styles.value} htmlFor="boost-range">
-          {fmtMoney(boost)}
+          {fmtMoney(boost, currency)}
         </output>
       </div>
       <p className={styles.help}>
@@ -54,7 +55,7 @@ export function BoostControl() {
           disabled={disabled}
           onChange={(e) => dispatch({ type: 'setBoost', value: Number(e.target.value) })}
           aria-label="Bridge top-up"
-          aria-valuetext={fmtMoney(boost)}
+          aria-valuetext={fmtMoney(boost, currency)}
         />
         <button
           type="button"

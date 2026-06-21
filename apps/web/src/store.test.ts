@@ -260,7 +260,7 @@ describe('loadStoredConfig', () => {
       JSON.stringify({ quantum: 10000, payday: 3, interval: 7 }),
     );
     expect(loadStoredConfig()).toEqual({
-      config: { quantum: 10000, payday: 3, interval: 7 },
+      config: { quantum: 10000, payday: 3, interval: 7, currency: 'R' },
       invalid: false,
     });
   });

@@ -23,7 +23,7 @@ describe('config-store', () => {
   });
 
   it('round-trips a saved config', () => {
-    const config = { quantum: 10000, payday: 5, interval: 14 };
+    const config = { quantum: 10000, payday: 5, interval: 14, currency: '$' };
     saveConfig(config, path);
     expect(loadConfig(path)).toEqual({ config, invalid: false });
   });

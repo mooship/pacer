@@ -43,12 +43,14 @@ pnpm --filter @pacer/web dev           # one app
   month/day has already passed. All return a `Result<T>` =
   `{ ok: true; value } | { ok: false; error }`.
 - `compute.ts` — `compute(pay, end, total, boost, cfg)` → `{ dates, segDays,
-  amounts }`, plus `fmtMoney`, `coverEnd`, `perDay`. Splits a salary into a
-  bridge payment (pay day → first payout) plus recurring allowances rounded to
-  `cfg.quantum` (default R50); the remainder and clamped `boost` go to the
-  bridge. Uses the largest-remainder method.
-- `config.ts` — `Config { quantum, payday, interval }`, `sanitize()`, and a Zod
-  `ConfigSchema` / `parseConfig` for validating persisted config. No file/storage
+  amounts }`, plus `fmtMoney(cents, symbol?)`, `coverEnd`, `perDay`, and
+  `currentSegment(result, today)` (the index of the segment covering `today`, or
+  `null`). Splits a salary into a bridge payment (pay day → first payout) plus
+  recurring allowances rounded to `cfg.quantum` (default R50); the remainder and
+  clamped `boost` go to the bridge. Uses the largest-remainder method.
+- `config.ts` — `Config { quantum, payday, interval, currency }`, `sanitize()`,
+  and a Zod `ConfigSchema` / `parseConfig` for validating persisted config.
+  `currency` is the symbol (default `R`) prefixed to amounts. No file/storage
   I/O (that lives in the apps).
 - `csv.ts` — `buildCsv(result, total)`; shared by TUI file export and SPA
   download.
