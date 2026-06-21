@@ -217,6 +217,16 @@ describe('buildCsv', () => {
     expect(lines.length).toBe(segments + 2);
     expect(lines[lines.length - 1].startsWith('"Total"')).toBe(true);
   });
+
+  it('renders amounts with the configured currency', () => {
+    const s = resultsState();
+    if (!s.results || s.total === null) {
+      throw new Error('expected results');
+    }
+    const csv = buildCsv(s.results, s.total, '$');
+    expect(csv).toContain('$');
+    expect(csv).not.toContain('R');
+  });
 });
 
 describe('planSnapshot / restorePlan', () => {
