@@ -9,13 +9,12 @@ interface FieldProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  status: 'active' | 'done' | 'idle';
+  complete?: boolean;
   placeholder?: string;
   hint?: string;
   invalid?: boolean;
   inputMode?: 'text' | 'decimal' | 'numeric';
   type?: HTMLInputTypeAttribute;
-  autoFocus?: boolean;
   datePicker?: boolean;
   min?: string;
 }
@@ -25,26 +24,26 @@ export function Field({
   label,
   value,
   onChange,
-  status,
+  complete = false,
   placeholder,
   hint,
   invalid = false,
   inputMode = 'text',
   type = 'text',
-  autoFocus = false,
   datePicker = false,
   min,
 }: FieldProps) {
   const hintId = `${id}-hint`;
   const showHint = Boolean(hint);
-  const active = status === 'active';
   const inputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className={clsx(styles.field, styles[status], invalid && styles.invalidField)}>
+    <div
+      className={clsx(styles.field, complete && styles.complete, invalid && styles.invalidField)}
+    >
       <label className={styles.label} htmlFor={id}>
         {label}
-        {status === 'done' ? <Check className={styles.check} size={16} aria-hidden /> : null}
+        {complete ? <Check className={styles.check} size={16} aria-hidden /> : null}
       </label>
       <div className={styles.row}>
         <input
@@ -54,12 +53,9 @@ export function Field({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          disabled={!active}
           inputMode={inputMode}
           type={type}
           autoComplete="off"
-          // biome-ignore lint/a11y/noAutofocus: focus follows the active wizard step
-          autoFocus={autoFocus}
           aria-invalid={invalid || undefined}
           aria-describedby={showHint ? hintId : undefined}
         />
@@ -68,7 +64,6 @@ export function Field({
             label={label}
             value={value}
             onChange={onChange}
-            active={active}
             min={min}
             onPicked={() => inputRef.current?.focus()}
           />

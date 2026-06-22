@@ -46,16 +46,6 @@
   background: var(--surface);
 }
 
-.input:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.active .input {
-  border-color: var(--mango);
-  background: var(--surface);
-}
-
 .calendarWrap {
   position: relative;
   flex: 0 0 auto;
@@ -94,14 +84,14 @@
     background 0.15s ease;
 }
 
-.calendarButton:hover:not(:disabled) {
+.calendarButton:hover {
   border-color: var(--mango-deep);
   background: var(--surface);
 }
 
-.calendarButton:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
+.complete .input,
+.complete .calendarButton {
+  border-color: var(--ok);
 }
 
 .invalidField .input,
@@ -118,8 +108,4 @@
 
 .hintError {
   color: var(--danger);
-}
-
-.idle {
-  opacity: 0.85;
 }

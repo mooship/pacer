@@ -1,19 +1,25 @@
-import { type FieldState, fmtIso, previews, type Step } from '@pacer/core';
-import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { type FieldState, fmtIso, previews } from '@pacer/core';
+import { Sparkles, Wand2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
 import { Field } from './Field.js';
 import styles from './PlanForm.module.css';
 
-const statusFor = (step: Step, field: Step, done: boolean): 'active' | 'done' | 'idle' =>
-  step === field ? 'active' : done ? 'done' : 'idle';
-
 const hintFor = (
-  active: boolean,
-  fieldState: FieldState,
+  attempted: boolean,
+  state: FieldState,
   preview: string,
   invalidMsg: string,
-): string | undefined => (active ? (fieldState === 'invalid' ? invalidMsg : preview) : undefined);
+  requiredMsg: string,
+): string | undefined => {
+  if (state === 'invalid') {
+    return invalidMsg;
+  }
+  if (state === 'empty') {
+    return attempted ? requiredMsg : undefined;
+  }
+  return preview;
+};
 
 const PAY_CHIPS: { label: string; value: string }[] = [
   { label: 'Today', value: 'today' },
@@ -49,17 +55,22 @@ export function PlanForm() {
   const dispatch = usePacerStore((s) => s.dispatch);
   const view = previews(state);
   const formRef = useRef<HTMLFormElement>(null);
+  const [attempted, setAttempted] = useState(false);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: refocus when the active step changes
+  const payMin = view.payDay !== null ? fmtIso(view.payDay) : undefined;
+  const showInvalid = (fieldState: FieldState) =>
+    fieldState === 'invalid' || (attempted && fieldState === 'empty');
+
   useEffect(() => {
-    const next = formRef.current?.querySelector<HTMLInputElement>('input:not([disabled])');
-    next?.focus();
-  }, [state.step]);
+    const inputs = [...(formRef.current?.querySelectorAll<HTMLInputElement>('input') ?? [])];
+    const target = inputs.find((i) => i.value.trim() === '') ?? inputs[0];
+    target?.focus();
+  }, []);
 
-  const onAmount = state.step === 'amount';
-  const payActive = state.step === 'payDate';
-  const lastActive = state.step === 'lastDay';
-  const fresh = payActive && state.payInput.trim() === '' && state.pay === null;
+  const fresh =
+    state.payInput.trim() === '' &&
+    state.lastInput.trim() === '' &&
+    state.amountInput.trim() === '';
 
   const loadExample = () => {
     dispatch({
@@ -68,13 +79,28 @@ export function PlanForm() {
     });
   };
 
+  const submit = () => {
+    const fields = [
+      ['pay-date', view.payState],
+      ['last-day', view.lastState],
+      ['amount', view.amountState],
+    ] as const;
+    const firstBad = fields.find(([, fieldState]) => fieldState !== 'ok');
+    if (firstBad) {
+      setAttempted(true);
+      document.getElementById(firstBad[0])?.focus();
+      return;
+    }
+    dispatch({ type: 'submit' });
+  };
+
   return (
     <form
       ref={formRef}
       className={styles.form}
       onSubmit={(e) => {
         e.preventDefault();
-        dispatch({ type: 'confirm' });
+        submit();
       }}
       noValidate
     >
@@ -90,72 +116,62 @@ export function PlanForm() {
         label="Pay date"
         value={state.payInput}
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
-        status={statusFor(state.step, 'payDate', state.pay !== null)}
+        complete={view.payState === 'ok'}
         placeholder="today, +7, 07-25, or 2026-07-25"
         hint={hintFor(
-          payActive,
+          attempted,
           view.payState,
           view.pay,
           'Hmm, try today, +7, 07-25, or 2026-07-25.',
+          'Enter a pay date to start.',
         )}
-        invalid={payActive && view.payState === 'invalid'}
+        invalid={showInvalid(view.payState)}
         datePicker
       />
-      {state.step === 'payDate' ? (
-        <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
-      ) : null}
+      <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
 
       <Field
         id="last-day"
         label="Last day it covers"
         value={state.lastInput}
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
-        status={statusFor(state.step, 'lastDay', state.last !== null)}
+        complete={view.lastState === 'ok'}
         placeholder="+30, 07-25, or 2026-07-25"
         hint={hintFor(
-          lastActive,
+          attempted,
           view.lastState,
           view.last,
           'That date is before pay day — try a later one.',
+          'Enter the last day this pay covers.',
         )}
-        invalid={lastActive && view.lastState === 'invalid'}
+        invalid={showInvalid(view.lastState)}
         datePicker
-        min={state.pay !== null ? fmtIso(state.pay) : undefined}
+        min={payMin}
       />
-      {state.step === 'lastDay' ? (
-        <Chips chips={LAST_CHIPS} onPick={(value) => dispatch({ type: 'setLastInput', value })} />
-      ) : null}
+      <Chips chips={LAST_CHIPS} onPick={(value) => dispatch({ type: 'setLastInput', value })} />
 
       <Field
         id="amount"
         label="Amount (R)"
         value={state.amountInput}
         onChange={(value) => dispatch({ type: 'setAmountInput', value })}
-        status={statusFor(state.step, 'amount', state.total !== null)}
+        complete={view.amountState === 'ok'}
         placeholder="e.g. 18500"
         hint={hintFor(
-          onAmount,
+          attempted,
           view.amountState,
           view.amount,
           'Enter an amount like 18500 or 18500.50.',
+          'Enter the amount to pace.',
         )}
-        invalid={onAmount && view.amountState === 'invalid'}
+        invalid={showInvalid(view.amountState)}
         inputMode="decimal"
       />
 
       <div className={styles.actions}>
-        <button
-          type="button"
-          className={styles.back}
-          onClick={() => dispatch({ type: 'back' })}
-          disabled={state.step === 'payDate'}
-        >
-          <ArrowLeft size={18} aria-hidden />
-          Back
-        </button>
         <button type="submit" className={styles.next}>
-          {onAmount ? 'Plan it' : 'Continue'}
-          {onAmount ? <Sparkles size={18} aria-hidden /> : <ArrowRight size={18} aria-hidden />}
+          Plan it
+          <Sparkles size={18} aria-hidden />
         </button>
       </div>
 

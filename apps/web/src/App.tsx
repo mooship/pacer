@@ -1,4 +1,3 @@
-import { breadcrumb } from '@pacer/core';
 import { Settings as SettingsIcon } from 'lucide-react';
 import styles from './App.module.css';
 import { Mascot } from './components/Mascot.js';
@@ -6,7 +5,6 @@ import { PlanForm } from './components/PlanForm.js';
 import { ResultsView } from './components/ResultsView.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { StatusMessage } from './components/StatusMessage.js';
-import { Stepper } from './components/Stepper.js';
 import { usePacerStore } from './store.js';
 
 export function App() {
@@ -38,7 +36,6 @@ export function App() {
       </header>
 
       <main className={styles.card}>
-        {onResults ? null : <Stepper steps={breadcrumb(baseStep)} />}
         {onResults ? <ResultsView /> : <PlanForm />}
         <StatusMessage />
       </main>

@@ -86,7 +86,8 @@ last `PlanSnapshot` (key `pacer.plan`) and mirrors it to the URL query string, s
 plans survive reloads and are shareable/bookmarkable (precedence: URL >
 localStorage); `restorePlan` rehydrates on load. Components use CSS Modules;
 icons are `lucide-react`; the font is Fontsource Nunito. `App.tsx` renders the
-stepped form, the results table, the boost slider, and a settings `<dialog>`;
+single-screen plan form (all fields editable at once, one submit), the results
+table, the boost slider, and a settings `<dialog>`;
 results offer Copy / Share / Calendar / CSV. Mobile-first and accessible (labels,
 `aria-live`, focus management, keyboard support, reduced-motion). Installable PWA
 via `vite-plugin-pwa` (autoUpdate service worker, manifest, icons generated from

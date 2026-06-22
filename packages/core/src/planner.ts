@@ -44,6 +44,7 @@ export type Action =
   | { type: 'setLastInput'; value: string }
   | { type: 'setAmountInput'; value: string }
   | { type: 'confirm' }
+  | { type: 'submit' }
   | { type: 'back' }
   | { type: 'reset' }
   | { type: 'setBoost'; value: number }
@@ -123,6 +124,20 @@ function setBoost(s: PlannerState, boost: number): void {
   recompute(s);
 }
 
+function resolveLast(lastInput: string, pay: number): Result<number> {
+  const r = resolveDate(lastInput, pay);
+  if (!r.ok) {
+    return r;
+  }
+  if (r.value < pay) {
+    return err('must be on or after the pay date');
+  }
+  if (r.value - pay + 1 > MAX_DAYS) {
+    return err("period can't be longer than a year");
+  }
+  return ok(r.value);
+}
+
 export function parseSettings(
   quantumInput: string,
   intervalInput: string,
@@ -195,13 +210,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
         if (s.pay === null) {
           return s;
         }
-        const r = resolveDate(s.lastInput, s.pay);
+        const r = resolveLast(s.lastInput, s.pay);
         if (!r.ok) {
           s.error = r.error;
-        } else if (r.value < s.pay) {
-          s.error = 'must be on or after the pay date';
-        } else if (r.value - s.pay + 1 > MAX_DAYS) {
-          s.error = "period can't be longer than a year";
         } else {
           s.last = r.value;
           s.step = 'amount';
@@ -216,6 +227,38 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
           s.error = r.error;
         }
       }
+      return s;
+    }
+
+    case 'submit': {
+      if (s.payInput.trim() === '') {
+        s.error = 'enter the pay date (e.g. today, +7, or 2026-07-25)';
+        return s;
+      }
+      const payR = resolveDate(s.payInput, s.today);
+      if (!payR.ok) {
+        s.error = payR.error;
+        return s;
+      }
+      if (s.lastInput.trim() === '') {
+        s.error = 'enter the last day (e.g. +30 or 2026-07-24)';
+        return s;
+      }
+      const lastR = resolveLast(s.lastInput, payR.value);
+      if (!lastR.ok) {
+        s.error = lastR.error;
+        return s;
+      }
+      const amtR = parseAmount(s.amountInput);
+      if (!amtR.ok) {
+        s.error = amtR.error;
+        return s;
+      }
+      s.pay = payR.value;
+      s.last = lastR.value;
+      s.total = amtR.value;
+      enterResults(s);
+      s.step = 'results';
       return s;
     }
 
@@ -342,6 +385,7 @@ export interface Previews {
   pay: string;
   last: string;
   amount: string;
+  payDay: number | null;
   payState: FieldState;
   lastState: FieldState;
   amountState: FieldState;
@@ -350,11 +394,13 @@ export interface Previews {
 export function previews(s: PlannerState): Previews {
   let pay = '';
   let payState: FieldState = 'empty';
+  let payDay: number | null = null;
   if (s.payInput.trim() !== '') {
     const payR = resolveDate(s.payInput, s.today);
     if (payR.ok) {
       pay = fmtWdDmy(payR.value);
       payState = 'ok';
+      payDay = payR.value;
     } else {
       payState = 'invalid';
     }
@@ -362,10 +408,10 @@ export function previews(s: PlannerState): Previews {
 
   let last = '';
   let lastState: FieldState = 'empty';
-  if (s.pay !== null && s.lastInput.trim() !== '') {
-    const r = resolveDate(s.lastInput, s.pay);
-    if (r.ok && r.value >= s.pay) {
-      last = `${fmtWdDmy(r.value)} · ${r.value - s.pay + 1} days`;
+  if (payDay !== null && s.lastInput.trim() !== '') {
+    const r = resolveLast(s.lastInput, payDay);
+    if (r.ok) {
+      last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
       lastState = 'ok';
     } else {
       lastState = 'invalid';
@@ -384,7 +430,7 @@ export function previews(s: PlannerState): Previews {
     }
   }
 
-  return { pay, last, amount, payState, lastState, amountState };
+  return { pay, last, amount, payDay, payState, lastState, amountState };
 }
 
 export type Mood = 'idle' | 'success' | 'error';

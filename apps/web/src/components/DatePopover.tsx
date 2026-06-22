@@ -24,18 +24,13 @@ interface DatePopoverProps {
   label: string;
   value: string;
   onChange: (value: string) => void;
-  active: boolean;
   min?: string;
   onPicked?: () => void;
 }
 
-export function DatePopover({ label, value, onChange, active, min, onPicked }: DatePopoverProps) {
+export function DatePopover({ label, value, onChange, min, onPicked }: DatePopoverProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    if (!active) setOpen(false);
-  }, [active]);
 
   useEffect(() => {
     if (!open) return;
@@ -64,7 +59,6 @@ export function DatePopover({ label, value, onChange, active, min, onPicked }: D
         type="button"
         className={styles.calendarButton}
         onClick={() => setOpen((o) => !o)}
-        disabled={!active}
         aria-label={`Pick ${label.toLowerCase()} from a calendar`}
         aria-haspopup="dialog"
         aria-expanded={open}

@@ -32,6 +32,59 @@ const resultsState = (): PlannerState =>
     { type: 'confirm' },
   );
 
+describe('submit (all fields at once)', () => {
+  it('resolves every field in one action and lands on results', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.step).toBe('results');
+    expect(s.pay).toBe(daysFromCivil(2026, 6, 25));
+    expect(s.last).toBe(daysFromCivil(2026, 7, 24));
+    expect(s.total).toBe(500000);
+    expect(sum(s.results?.amounts ?? [])).toBe(500000);
+  });
+
+  it('resolves the last day relative to the pay date entered alongside it', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '+30' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.step).toBe('results');
+    expect(s.last).toBe(daysFromCivil(2026, 6, 25) + 30);
+  });
+
+  it('stays on the form and reports the first problem', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '2026-06-24' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.step).toBe('payDate');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('rejects a blank amount', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'submit' },
+    );
+    expect(s.step).toBe('payDate');
+    expect(s.total).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+});
+
 describe('planner', () => {
   it('empty pay date is rejected', () => {
     const today = daysFromCivil(2026, 6, 17);

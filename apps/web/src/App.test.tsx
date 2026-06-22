@@ -11,24 +11,20 @@ beforeEach(() => {
 });
 
 describe('App', () => {
-  it('renders the brand and only the first step is enabled', () => {
+  it('renders the brand with every field editable at once', () => {
     render(<App />);
     expect(screen.getByRole('heading', { name: 'Pacer' })).toBeInTheDocument();
     expect(screen.getByLabelText('Pay date')).toBeEnabled();
-    expect(screen.getByLabelText('Last day it covers')).toBeDisabled();
-    expect(screen.getByLabelText('Amount (R)')).toBeDisabled();
+    expect(screen.getByLabelText('Last day it covers')).toBeEnabled();
+    expect(screen.getByLabelText('Amount (R)')).toBeEnabled();
   });
 
-  it('advances through the wizard to a plan with an accessible table', async () => {
+  it('plans from all fields with a single submit', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
-
     await user.type(screen.getByLabelText('Last day it covers'), '2026-07-24');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
-
     await user.type(screen.getByLabelText('Amount (R)'), '5000');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
@@ -37,18 +33,19 @@ describe('App', () => {
     expect(screen.getByRole('slider', { name: /top-up/i })).toBeInTheDocument();
   });
 
-  it('shows a validation error for a bad amount', async () => {
+  it('shows inline invalid feedback for a bad amount and stays on the form', async () => {
     const user = userEvent.setup();
     render(<App />);
 
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
     await user.type(screen.getByLabelText('Last day it covers'), '+30');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
-    await user.type(screen.getByLabelText('Amount (R)'), 'abc');
+    const amount = screen.getByLabelText('Amount (R)');
+    await user.type(amount, 'abc');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/amount must be a number/i);
+    expect(amount).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/enter an amount like/i)).toBeInTheDocument();
+    expect(screen.queryByRole('table')).toBeNull();
   });
 
   it('loads a worked example in one click', async () => {
@@ -103,9 +100,7 @@ describe('App', () => {
     render(<App />);
 
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
     await user.type(screen.getByLabelText('Last day it covers'), '2026-07-24');
-    await user.click(screen.getByRole('button', { name: /continue/i }));
     await user.type(screen.getByLabelText('Amount (R)'), '5000');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
