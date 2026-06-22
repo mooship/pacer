@@ -1,4 +1,4 @@
-import { type FieldState, fmtIso, previews, resolveDate } from '@pacer/core';
+import { type FieldState, fmtIso, previews } from '@pacer/core';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
@@ -57,16 +57,15 @@ export function PlanForm() {
   const formRef = useRef<HTMLFormElement>(null);
   const [attempted, setAttempted] = useState(false);
 
-  const payResolved =
-    state.payInput.trim() !== '' ? resolveDate(state.payInput, state.today) : null;
-  const payMin = payResolved?.ok ? fmtIso(payResolved.value) : undefined;
+  const payMin = view.payDay !== null ? fmtIso(view.payDay) : undefined;
+  const showInvalid = (fieldState: FieldState) =>
+    fieldState === 'invalid' || (attempted && fieldState === 'empty');
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: focus the first empty field on entry
   useEffect(() => {
     const inputs = [...(formRef.current?.querySelectorAll<HTMLInputElement>('input') ?? [])];
     const target = inputs.find((i) => i.value.trim() === '') ?? inputs[0];
     target?.focus();
-  }, [state.step]);
+  }, []);
 
   const fresh =
     state.payInput.trim() === '' &&
@@ -81,14 +80,15 @@ export function PlanForm() {
   };
 
   const submit = () => {
-    if (view.payState !== 'ok' || view.lastState !== 'ok' || view.amountState !== 'ok') {
+    const fields = [
+      ['pay-date', view.payState],
+      ['last-day', view.lastState],
+      ['amount', view.amountState],
+    ] as const;
+    const firstBad = fields.find(([, fieldState]) => fieldState !== 'ok');
+    if (firstBad) {
       setAttempted(true);
-      const order: FieldState[] = [view.payState, view.lastState, view.amountState];
-      const ids = ['pay-date', 'last-day', 'amount'];
-      const firstBad = order.findIndex((s) => s !== 'ok');
-      if (firstBad !== -1) {
-        document.getElementById(ids[firstBad])?.focus();
-      }
+      document.getElementById(firstBad[0])?.focus();
       return;
     }
     dispatch({ type: 'submit' });
@@ -125,7 +125,7 @@ export function PlanForm() {
           'Hmm, try today, +7, 07-25, or 2026-07-25.',
           'Enter a pay date to start.',
         )}
-        invalid={view.payState === 'invalid' || (attempted && view.payState === 'empty')}
+        invalid={showInvalid(view.payState)}
         datePicker
       />
       <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
@@ -144,7 +144,7 @@ export function PlanForm() {
           'That date is before pay day — try a later one.',
           'Enter the last day this pay covers.',
         )}
-        invalid={view.lastState === 'invalid' || (attempted && view.lastState === 'empty')}
+        invalid={showInvalid(view.lastState)}
         datePicker
         min={payMin}
       />
@@ -164,7 +164,7 @@ export function PlanForm() {
           'Enter an amount like 18500 or 18500.50.',
           'Enter the amount to pace.',
         )}
-        invalid={view.amountState === 'invalid' || (attempted && view.amountState === 'empty')}
+        invalid={showInvalid(view.amountState)}
         inputMode="decimal"
       />
 
