@@ -1,4 +1,4 @@
-import { fmtIso, previews, type Step } from '@pacer/core';
+import { type FieldState, fmtIso, previews, type Step } from '@pacer/core';
 import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
@@ -7,6 +7,13 @@ import styles from './PlanForm.module.css';
 
 const statusFor = (step: Step, field: Step, done: boolean): 'active' | 'done' | 'idle' =>
   step === field ? 'active' : done ? 'done' : 'idle';
+
+const hintFor = (
+  active: boolean,
+  fieldState: FieldState,
+  preview: string,
+  invalidMsg: string,
+): string | undefined => (active ? (fieldState === 'invalid' ? invalidMsg : preview) : undefined);
 
 const PAY_CHIPS: { label: string; value: string }[] = [
   { label: 'Today', value: 'today' },
@@ -50,7 +57,9 @@ export function PlanForm() {
   }, [state.step]);
 
   const onAmount = state.step === 'amount';
-  const fresh = state.step === 'payDate' && state.payInput.trim() === '' && state.pay === null;
+  const payActive = state.step === 'payDate';
+  const lastActive = state.step === 'lastDay';
+  const fresh = payActive && state.payInput.trim() === '' && state.pay === null;
 
   const loadExample = () => {
     dispatch({
@@ -83,14 +92,13 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
         status={statusFor(state.step, 'payDate', state.pay !== null)}
         placeholder="today, +7, 07-25, or 2026-07-25"
-        hint={
-          state.step === 'payDate'
-            ? view.payState === 'invalid'
-              ? 'Hmm, try today, +7, 07-25, or 2026-07-25.'
-              : view.pay
-            : undefined
-        }
-        invalid={state.step === 'payDate' && view.payState === 'invalid'}
+        hint={hintFor(
+          payActive,
+          view.payState,
+          view.pay,
+          'Hmm, try today, +7, 07-25, or 2026-07-25.',
+        )}
+        invalid={payActive && view.payState === 'invalid'}
         datePicker
       />
       {state.step === 'payDate' ? (
@@ -104,14 +112,13 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         status={statusFor(state.step, 'lastDay', state.last !== null)}
         placeholder="+30, 07-25, or 2026-07-25"
-        hint={
-          state.step === 'lastDay'
-            ? view.lastState === 'invalid'
-              ? 'That date is before pay day — try a later one.'
-              : view.last
-            : undefined
-        }
-        invalid={state.step === 'lastDay' && view.lastState === 'invalid'}
+        hint={hintFor(
+          lastActive,
+          view.lastState,
+          view.last,
+          'That date is before pay day — try a later one.',
+        )}
+        invalid={lastActive && view.lastState === 'invalid'}
         datePicker
         min={state.pay !== null ? fmtIso(state.pay) : undefined}
       />
@@ -126,14 +133,13 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setAmountInput', value })}
         status={statusFor(state.step, 'amount', state.total !== null)}
         placeholder="e.g. 18500"
-        hint={
-          state.step === 'amount'
-            ? view.amountState === 'invalid'
-              ? 'Enter an amount like 18500 or 18500.50.'
-              : view.amount
-            : undefined
-        }
-        invalid={state.step === 'amount' && view.amountState === 'invalid'}
+        hint={hintFor(
+          onAmount,
+          view.amountState,
+          view.amount,
+          'Enter an amount like 18500 or 18500.50.',
+        )}
+        invalid={onAmount && view.amountState === 'invalid'}
         inputMode="decimal"
       />
 
