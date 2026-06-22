@@ -44,6 +44,7 @@ export type Action =
   | { type: 'setLastInput'; value: string }
   | { type: 'setAmountInput'; value: string }
   | { type: 'confirm' }
+  | { type: 'submit' }
   | { type: 'back' }
   | { type: 'reset' }
   | { type: 'setBoost'; value: number }
@@ -219,6 +220,46 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       return s;
     }
 
+    case 'submit': {
+      if (s.payInput.trim() === '') {
+        s.error = 'enter the pay date (e.g. today, +7, or 2026-07-25)';
+        return s;
+      }
+      const payR = resolveDate(s.payInput, s.today);
+      if (!payR.ok) {
+        s.error = payR.error;
+        return s;
+      }
+      if (s.lastInput.trim() === '') {
+        s.error = 'enter the last day (e.g. +30 or 2026-07-24)';
+        return s;
+      }
+      const lastR = resolveDate(s.lastInput, payR.value);
+      if (!lastR.ok) {
+        s.error = lastR.error;
+        return s;
+      }
+      if (lastR.value < payR.value) {
+        s.error = 'must be on or after the pay date';
+        return s;
+      }
+      if (lastR.value - payR.value + 1 > MAX_DAYS) {
+        s.error = "period can't be longer than a year";
+        return s;
+      }
+      const amtR = parseAmount(s.amountInput);
+      if (!amtR.ok) {
+        s.error = amtR.error;
+        return s;
+      }
+      s.pay = payR.value;
+      s.last = lastR.value;
+      s.total = amtR.value;
+      enterResults(s);
+      s.step = 'results';
+      return s;
+    }
+
     case 'back': {
       switch (s.step) {
         case 'payDate':
@@ -350,11 +391,13 @@ export interface Previews {
 export function previews(s: PlannerState): Previews {
   let pay = '';
   let payState: FieldState = 'empty';
+  let payDay: number | null = null;
   if (s.payInput.trim() !== '') {
     const payR = resolveDate(s.payInput, s.today);
     if (payR.ok) {
       pay = fmtWdDmy(payR.value);
       payState = 'ok';
+      payDay = payR.value;
     } else {
       payState = 'invalid';
     }
@@ -362,10 +405,10 @@ export function previews(s: PlannerState): Previews {
 
   let last = '';
   let lastState: FieldState = 'empty';
-  if (s.pay !== null && s.lastInput.trim() !== '') {
-    const r = resolveDate(s.lastInput, s.pay);
-    if (r.ok && r.value >= s.pay) {
-      last = `${fmtWdDmy(r.value)} · ${r.value - s.pay + 1} days`;
+  if (payDay !== null && s.lastInput.trim() !== '') {
+    const r = resolveDate(s.lastInput, payDay);
+    if (r.ok && r.value >= payDay && r.value - payDay + 1 <= MAX_DAYS) {
+      last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
       lastState = 'ok';
     } else {
       lastState = 'invalid';
