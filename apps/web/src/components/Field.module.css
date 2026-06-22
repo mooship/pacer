@@ -62,13 +62,20 @@
   display: flex;
 }
 
-.dateAnchor {
+.popover {
   position: absolute;
-  inset: 0;
-  padding: 0;
-  border: 0;
-  opacity: 0;
-  pointer-events: none;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  padding: 8px;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+  --rdp-accent-color: var(--mango-deep);
+  --rdp-accent-background-color: var(--mango);
+  --rdp-today-color: var(--mango-deep);
+  --rdp-selected-border: 2px solid var(--mango-deep);
 }
 
 .calendarButton {

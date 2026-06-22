@@ -1,7 +1,7 @@
 import { daysFromCivil, defaultConfig, initialState } from '@pacer/core';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App.js';
 import { usePacerStore } from './store.js';
 
@@ -79,17 +79,20 @@ describe('App', () => {
     ).toBeInTheDocument();
   });
 
-  it('opens the native picker on a rendered date input when the affordance is clicked', async () => {
-    const showPicker = vi.spyOn(HTMLInputElement.prototype, 'showPicker');
+  it('opens a calendar popover and selecting a day fills the date field', async () => {
     const user = userEvent.setup();
-    const { container } = render(<App />);
+    render(<App />);
+
+    const payInput = screen.getByLabelText('Pay date');
+    await user.type(payInput, '2026-06-25');
 
     await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
+    const dialog = screen.getByRole('dialog', { name: /pay date calendar/i });
 
-    expect(showPicker).toHaveBeenCalledTimes(1);
-    const anchor = showPicker.mock.instances[0] as HTMLInputElement;
-    expect(anchor.type).toBe('date');
-    expect(container.querySelector('.visually-hidden[type="date"]')).toBeNull();
+    await user.click(within(dialog).getByText('20'));
+
+    expect(payInput).toHaveValue('2026-06-20');
+    expect(screen.queryByRole('dialog', { name: /pay date calendar/i })).toBeNull();
   });
 
   it('renders results in the configured currency', async () => {

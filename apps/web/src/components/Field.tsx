@@ -1,6 +1,7 @@
 import { clsx } from 'clsx';
-import { Calendar, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { type HTMLInputTypeAttribute, useRef } from 'react';
+import { DatePopover } from './DatePopover.js';
 import styles from './Field.module.css';
 
 interface FieldProps {
@@ -36,11 +37,9 @@ export function Field({
 }: FieldProps) {
   const hintId = `${id}-hint`;
   const showHint = Boolean(hint);
-  const dateRef = useRef<HTMLInputElement>(null);
   const active = status === 'active';
-  const openPicker = () => {
-    dateRef.current?.showPicker?.();
-  };
+  const inputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className={clsx(styles.field, styles[status], invalid && styles.invalidField)}>
       <label className={styles.label} htmlFor={id}>
@@ -50,6 +49,7 @@ export function Field({
       <div className={styles.row}>
         <input
           id={id}
+          ref={inputRef}
           className={styles.input}
           value={value}
           onChange={(e) => onChange(e.target.value)}
@@ -64,31 +64,14 @@ export function Field({
           aria-describedby={showHint ? hintId : undefined}
         />
         {datePicker ? (
-          <span className={styles.calendarWrap}>
-            <button
-              type="button"
-              className={styles.calendarButton}
-              onClick={openPicker}
-              disabled={!active}
-              aria-label={`Pick ${label.toLowerCase()} from a calendar`}
-            >
-              <Calendar size={18} aria-hidden />
-            </button>
-            <input
-              ref={dateRef}
-              type="date"
-              className={styles.dateAnchor}
-              tabIndex={-1}
-              aria-hidden
-              disabled={!active}
-              min={min}
-              onChange={(e) => {
-                if (e.target.value) {
-                  onChange(e.target.value);
-                }
-              }}
-            />
-          </span>
+          <DatePopover
+            label={label}
+            value={value}
+            onChange={onChange}
+            active={active}
+            min={min}
+            onPicked={() => inputRef.current?.focus()}
+          />
         ) : null}
       </div>
       <p id={hintId} className={clsx(styles.hint, invalid && styles.hintError)} aria-live="polite">
