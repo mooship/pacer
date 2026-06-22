@@ -41,4 +41,45 @@ describe('ics', () => {
   it('uses CRLF line endings', () => {
     expect(ics).toContain('\r\n');
   });
+
+  it('escapes special characters in text values', () => {
+    const escaped = buildIcs(result, 500000, {
+      now: daysFromCivil(2026, 6, 20),
+      currency: 'a;b,c',
+    });
+    expect(escaped).toContain('SUMMARY:Pacer: a\\;b\\,c');
+  });
+
+  it('folds lines longer than 75 octets onto continuation lines', () => {
+    const longCurrency = `CUR${'x'.repeat(90)} `;
+    const folded = buildIcs(result, 500000, {
+      now: daysFromCivil(2026, 6, 20),
+      currency: longCurrency,
+    });
+    for (const line of folded.split('\r\n')) {
+      expect(line.length).toBeLessThanOrEqual(75);
+    }
+    expect(folded).toContain('\r\n ');
+  });
+
+  it('falls back to a 9am reminder for a non-positive or non-integer hour', () => {
+    for (const reminderHour of [0, -5, 2.5, Number.NaN]) {
+      const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour });
+      expect(out).toContain('TRIGGER:PT9H');
+    }
+  });
+
+  it('honours a valid custom reminder hour', () => {
+    const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour: 2 });
+    expect(out).toContain('TRIGGER:PT2H');
+  });
+
+  it('produces a valid calendar with no events for an empty result', () => {
+    const empty = buildIcs({ dates: [], segDays: [], amounts: [] }, 0, {
+      now: daysFromCivil(2026, 6, 20),
+    });
+    expect(empty.startsWith('BEGIN:VCALENDAR\r\n')).toBe(true);
+    expect(empty.trimEnd().endsWith('END:VCALENDAR')).toBe(true);
+    expect(empty).not.toContain('BEGIN:VEVENT');
+  });
 });

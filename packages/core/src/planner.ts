@@ -336,38 +336,55 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
   }
 }
 
+export type FieldState = 'empty' | 'ok' | 'invalid';
+
 export interface Previews {
   pay: string;
   last: string;
   amount: string;
+  payState: FieldState;
+  lastState: FieldState;
+  amountState: FieldState;
 }
 
 export function previews(s: PlannerState): Previews {
   let pay = '';
+  let payState: FieldState = 'empty';
   if (s.payInput.trim() !== '') {
     const payR = resolveDate(s.payInput, s.today);
     if (payR.ok) {
       pay = fmtWdDmy(payR.value);
+      payState = 'ok';
+    } else {
+      payState = 'invalid';
     }
   }
 
   let last = '';
+  let lastState: FieldState = 'empty';
   if (s.pay !== null && s.lastInput.trim() !== '') {
     const r = resolveDate(s.lastInput, s.pay);
     if (r.ok && r.value >= s.pay) {
       last = `${fmtWdDmy(r.value)} · ${r.value - s.pay + 1} days`;
+      lastState = 'ok';
+    } else {
+      lastState = 'invalid';
     }
   }
 
   let amount = '';
+  let amountState: FieldState = 'empty';
   if (s.amountInput.trim() !== '') {
     const r = parseAmount(s.amountInput);
     if (r.ok) {
       amount = fmtMoney(r.value, s.config.currency);
+      amountState = 'ok';
+    } else {
+      amountState = 'invalid';
     }
   }
 
-  return { pay, last, amount };
+  return { pay, last, amount, payState, lastState, amountState };
 }
 
 export type Mood = 'idle' | 'success' | 'error';

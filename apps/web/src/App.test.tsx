@@ -61,6 +61,24 @@ describe('App', () => {
     expect(screen.getByRole('slider', { name: /top-up/i })).toBeInTheDocument();
   });
 
+  it('shows inline invalid feedback while typing an unreadable date', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const payInput = screen.getByLabelText('Pay date');
+    await user.type(payInput, 'not-a-date');
+
+    expect(payInput).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText(/Hmm, try today/i)).toBeInTheDocument();
+  });
+
+  it('offers a calendar picker affordance on the date fields', () => {
+    render(<App />);
+    expect(
+      screen.getByRole('button', { name: /pick pay date from a calendar/i }),
+    ).toBeInTheDocument();
+  });
+
   it('renders results in the configured currency', async () => {
     usePacerStore.setState({
       state: initialState({ ...defaultConfig(), currency: '$' }, daysFromCivil(2026, 6, 17)),
