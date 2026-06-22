@@ -1,7 +1,7 @@
 import { daysFromCivil, defaultConfig, initialState } from '@pacer/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from './App.js';
 import { usePacerStore } from './store.js';
 
@@ -77,6 +77,21 @@ describe('App', () => {
     expect(
       screen.getByRole('button', { name: /pick pay date from a calendar/i }),
     ).toBeInTheDocument();
+  });
+
+  it('opens the native picker on a rendered date input when the affordance is clicked', async () => {
+    const showPicker = vi.fn();
+    HTMLInputElement.prototype.showPicker = showPicker;
+    const user = userEvent.setup();
+    const { container } = render(<App />);
+
+    await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
+
+    expect(showPicker).toHaveBeenCalledTimes(1);
+    const anchor = showPicker.mock.instances[0] as HTMLInputElement;
+    expect(anchor.type).toBe('date');
+    expect(anchor.className).not.toContain('visually-hidden');
+    expect(container.querySelector('.visually-hidden[type="date"]')).toBeNull();
   });
 
   it('renders results in the configured currency', async () => {
