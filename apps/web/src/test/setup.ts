@@ -32,3 +32,5 @@ Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: new MemoryStorage(),
 });
+
+HTMLInputElement.prototype.showPicker ??= function showPicker() {};

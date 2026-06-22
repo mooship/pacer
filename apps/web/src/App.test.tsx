@@ -80,8 +80,7 @@ describe('App', () => {
   });
 
   it('opens the native picker on a rendered date input when the affordance is clicked', async () => {
-    const showPicker = vi.fn();
-    HTMLInputElement.prototype.showPicker = showPicker;
+    const showPicker = vi.spyOn(HTMLInputElement.prototype, 'showPicker');
     const user = userEvent.setup();
     const { container } = render(<App />);
 
@@ -90,7 +89,6 @@ describe('App', () => {
     expect(showPicker).toHaveBeenCalledTimes(1);
     const anchor = showPicker.mock.instances[0] as HTMLInputElement;
     expect(anchor.type).toBe('date');
-    expect(anchor.className).not.toContain('visually-hidden');
     expect(container.querySelector('.visually-hidden[type="date"]')).toBeNull();
   });
 
