@@ -64,7 +64,7 @@ export function Field({
           aria-describedby={showHint ? hintId : undefined}
         />
         {datePicker ? (
-          <>
+          <span className={styles.calendarWrap}>
             <button
               type="button"
               className={styles.calendarButton}
@@ -77,9 +77,10 @@ export function Field({
             <input
               ref={dateRef}
               type="date"
-              className="visually-hidden"
+              className={styles.dateAnchor}
               tabIndex={-1}
               aria-hidden
+              disabled={!active}
               min={min}
               onChange={(e) => {
                 if (e.target.value) {
@@ -87,7 +88,7 @@ export function Field({
                 }
               }}
             />
-          </>
+          </span>
         ) : null}
       </div>
       <p id={hintId} className={clsx(styles.hint, invalid && styles.hintError)} aria-live="polite">

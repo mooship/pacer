@@ -56,6 +56,21 @@
   background: var(--surface);
 }
 
+.calendarWrap {
+  position: relative;
+  flex: 0 0 auto;
+  display: flex;
+}
+
+.dateAnchor {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .calendarButton {
   display: flex;
   align-items: center;

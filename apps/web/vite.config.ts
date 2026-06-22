@@ -27,6 +27,7 @@ export default defineConfig({
   test: {
     environment: 'happy-dom',
     globals: true,
+    restoreMocks: true,
     setupFiles: ['./src/test/setup.ts'],
     css: { modules: { classNameStrategy: 'non-scoped' } },
   },
