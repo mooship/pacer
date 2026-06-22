@@ -8,6 +8,7 @@ import {
   type PlannerState,
   parseSettings,
   planSnapshot,
+  previews,
   reducer,
 } from './planner.js';
 import { buildSummaryText, summaryLine } from './text.js';
@@ -201,6 +202,44 @@ describe('planner', () => {
     }
     const blank = parseSettings('50', '7', 1, '');
     expect(blank.ok && blank.value.currency).toBe('R');
+  });
+});
+
+describe('previews', () => {
+  it('reports empty for blank inputs', () => {
+    const v = previews(start());
+    expect(v.payState).toBe('empty');
+    expect(v.lastState).toBe('empty');
+    expect(v.amountState).toBe('empty');
+  });
+
+  it('marks an unparseable date or amount as invalid', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: 'not-a-date' },
+      { type: 'setAmountInput', value: 'abc' },
+    );
+    const v = previews(s);
+    expect(v.payState).toBe('invalid');
+    expect(v.pay).toBe('');
+    expect(v.amountState).toBe('invalid');
+  });
+
+  it('marks a last day before pay day as invalid', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-06-20' },
+    );
+    expect(previews(s).lastState).toBe('invalid');
+  });
+
+  it('reports ok with a formatted preview for valid inputs', () => {
+    const s = run(start(), { type: 'setPayInput', value: '2026-06-25' });
+    const v = previews(s);
+    expect(v.payState).toBe('ok');
+    expect(v.pay).not.toBe('');
   });
 });
 

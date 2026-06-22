@@ -40,7 +40,8 @@ function fold(line: string): string {
 
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {
   const { dates, segDays, amounts } = result;
-  const hour = opts.reminderHour ?? 9;
+  const requested = opts.reminderHour ?? 9;
+  const hour = Number.isInteger(requested) && requested > 0 ? requested : 9;
   const cur = opts.currency ?? DEFAULT_CURRENCY;
   const stamp = `${dateStamp(opts.now)}T000000Z`;
 
@@ -50,7 +51,7 @@ export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions)
     'PRODID:-//Pacer//Pacer//EN',
     'CALSCALE:GREGORIAN',
     'METHOD:PUBLISH',
-    `X-WR-CALNAME:Pacer plan (${fmtMoney(total, cur)})`,
+    fold(`X-WR-CALNAME:${escapeText(`Pacer plan (${fmtMoney(total, cur)})`)}`),
   ];
 
   dates.forEach((d, i) => {

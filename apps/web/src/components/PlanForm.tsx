@@ -1,4 +1,4 @@
-import { previews, type Step } from '@pacer/core';
+import { fmtIso, previews, type Step } from '@pacer/core';
 import { ArrowLeft, ArrowRight, Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
@@ -83,7 +83,15 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
         status={statusFor(state.step, 'payDate', state.pay !== null)}
         placeholder="today, +7, 07-25, or 2026-07-25"
-        hint={state.step === 'payDate' ? view.pay : undefined}
+        hint={
+          state.step === 'payDate'
+            ? view.payState === 'invalid'
+              ? 'Hmm, try today, +7, 07-25, or 2026-07-25.'
+              : view.pay
+            : undefined
+        }
+        invalid={state.step === 'payDate' && view.payState === 'invalid'}
+        datePicker
       />
       {state.step === 'payDate' ? (
         <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
@@ -96,7 +104,16 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         status={statusFor(state.step, 'lastDay', state.last !== null)}
         placeholder="+30, 07-25, or 2026-07-25"
-        hint={state.step === 'lastDay' ? view.last : undefined}
+        hint={
+          state.step === 'lastDay'
+            ? view.lastState === 'invalid'
+              ? 'That date is before pay day — try a later one.'
+              : view.last
+            : undefined
+        }
+        invalid={state.step === 'lastDay' && view.lastState === 'invalid'}
+        datePicker
+        min={state.pay !== null ? fmtIso(state.pay) : undefined}
       />
       {state.step === 'lastDay' ? (
         <Chips chips={LAST_CHIPS} onPick={(value) => dispatch({ type: 'setLastInput', value })} />
@@ -109,7 +126,14 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setAmountInput', value })}
         status={statusFor(state.step, 'amount', state.total !== null)}
         placeholder="e.g. 18500"
-        hint={state.step === 'amount' ? view.amount : undefined}
+        hint={
+          state.step === 'amount'
+            ? view.amountState === 'invalid'
+              ? 'Enter an amount like 18500 or 18500.50.'
+              : view.amount
+            : undefined
+        }
+        invalid={state.step === 'amount' && view.amountState === 'invalid'}
         inputMode="decimal"
       />
 
