@@ -1,4 +1,4 @@
-import { WD } from '@pacer/core';
+import { MAX_CURRENCY_LEN, WD } from '@pacer/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
@@ -69,7 +69,7 @@ export function SettingsDialog() {
               id="currency"
               className={styles.input}
               value={state.currencyInput}
-              maxLength={3}
+              maxLength={MAX_CURRENCY_LEN}
               autoComplete="off"
               onChange={(e) => dispatch({ type: 'setCurrencyInput', value: e.target.value })}
             />
