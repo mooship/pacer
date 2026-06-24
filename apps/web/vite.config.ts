@@ -1,29 +1,10 @@
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 import { defineConfig } from 'vitest/config';
+import { pwaOptions } from './src/pwa.js';
 
 export default defineConfig({
-  plugins: [
-    react(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
-      pwaAssets: {
-        image: 'public/favicon.svg',
-        preset: 'minimal-2023',
-      },
-      manifest: {
-        name: 'Pacer',
-        short_name: 'Pacer',
-        description: 'Pace your pay across the month.',
-        theme_color: '#ffb703',
-        background_color: '#fffbf0',
-        display: 'standalone',
-        start_url: '/',
-        scope: '/',
-      },
-    }),
-  ],
+  plugins: [react(), VitePWA(pwaOptions)],
   test: {
     environment: 'happy-dom',
     globals: true,
