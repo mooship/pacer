@@ -152,7 +152,7 @@ export function PlanForm() {
 
       <Field
         id="amount"
-        label="Amount (R)"
+        label={`Amount (${state.config.currency})`}
         value={state.amountInput}
         onChange={(value) => dispatch({ type: 'setAmountInput', value })}
         complete={view.amountState === 'ok'}

@@ -32,7 +32,7 @@ export function Settings({
   return (
     <Box flexDirection="column">
       <Field
-        label="Quantum (R)"
+        label={`Quantum (${state.config.currency})`}
         labelWidth={14}
         value={state.quantumInput}
         active={state.settingsCursor === SETTINGS_QUANTUM}

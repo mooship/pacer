@@ -48,7 +48,7 @@ export function SettingsDialog() {
 
           <div className={styles.field}>
             <label className={styles.label} htmlFor="quantum">
-              Quantum (R)
+              Quantum ({state.config.currency})
             </label>
             <input
               id="quantum"
