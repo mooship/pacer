@@ -99,9 +99,11 @@ describe('App', () => {
     const user = userEvent.setup();
     render(<App />);
 
+    expect(screen.getByLabelText('Amount ($)')).toBeInTheDocument();
+
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
     await user.type(screen.getByLabelText('Last day it covers'), '2026-07-24');
-    await user.type(screen.getByLabelText('Amount (R)'), '5000');
+    await user.type(screen.getByLabelText('Amount ($)'), '5000');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
     const table = screen.getByRole('table');

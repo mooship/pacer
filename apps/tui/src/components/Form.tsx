@@ -39,7 +39,7 @@ export function Form({ state, previews, theme, onChange, onSubmit }: FormProps) 
         onSubmit={onSubmit}
       />
       <Field
-        label="Amount (R)"
+        label={`Amount (${state.config.currency})`}
         labelWidth={18}
         value={state.amountInput}
         active={state.step === 'amount'}
