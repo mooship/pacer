@@ -7,6 +7,7 @@ import {
   buildSummaryText,
   type ComputeResult,
   type Config,
+  examplePlan,
   initialState,
   mood,
   type PlannerState,
@@ -205,10 +206,7 @@ export function App({ config, invalidConfig }: AppProps) {
     }
 
     if (input === 'e') {
-      dispatch({
-        type: 'restorePlan',
-        snap: { pay: state.today, last: state.today + 30, total: 1850000, boost: 0 },
-      });
+      dispatch({ type: 'restorePlan', snap: examplePlan(state.today) });
     } else if (key.escape) {
       dispatch({ type: 'back' });
     }
