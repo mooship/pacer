@@ -11,6 +11,7 @@ interface FieldProps {
   theme: Theme;
   placeholder?: string;
   preview?: string;
+  invalid?: boolean;
   onChange?: (value: string) => void;
   onSubmit?: () => void;
 }
@@ -24,11 +25,12 @@ export function Field({
   theme,
   placeholder,
   preview,
+  invalid = false,
   onChange,
   onSubmit,
 }: FieldProps) {
   const paddedLabel = `  ${label.padEnd(labelWidth)}`;
-  const bracket = active ? theme.accent : undefined;
+  const bracket = invalid ? theme.red : active ? theme.accent : undefined;
   return (
     <Box>
       <Text dimColor={!active}>{paddedLabel}</Text>

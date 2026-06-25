@@ -22,20 +22,33 @@ function escapeText(text: string): string {
   return text.replace(/[\\;,]/g, (c) => `\\${c}`).replace(/\n/g, '\\n');
 }
 
+const utf8Encoder = new TextEncoder();
+
+function utf8Length(s: string): number {
+  return utf8Encoder.encode(s).length;
+}
+
 function fold(line: string): string {
-  if (line.length <= 75) {
+  if (utf8Length(line) <= 75) {
     return line;
   }
   const parts: string[] = [];
-  let rest = line;
-  parts.push(rest.slice(0, 75));
-  rest = rest.slice(75);
-  while (rest.length > 74) {
-    parts.push(` ${rest.slice(0, 74)}`);
-    rest = rest.slice(74);
+  let current = '';
+  let currentBytes = 0;
+  let limit = 75;
+  for (const ch of line) {
+    const chBytes = utf8Length(ch);
+    if (currentBytes + chBytes > limit) {
+      parts.push(current);
+      current = '';
+      currentBytes = 0;
+      limit = 74;
+    }
+    current += ch;
+    currentBytes += chBytes;
   }
-  parts.push(` ${rest}`);
-  return parts.join('\r\n');
+  parts.push(current);
+  return parts.map((p, i) => (i === 0 ? p : ` ${p}`)).join('\r\n');
 }
 
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {

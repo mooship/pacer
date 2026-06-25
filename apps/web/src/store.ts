@@ -97,6 +97,7 @@ function syncPlan(prev: PlannerState, next: PlannerState): void {
 
 interface PacerStore {
   state: PlannerState;
+  pendingAction: 'copy' | 'share' | null;
   dispatch: (action: Action) => void;
   saveSettings: () => void;
   exportCsv: () => void;
@@ -126,6 +127,7 @@ function buildInitialState(): PlannerState {
 
 export const usePacerStore = create<PacerStore>((set, get) => ({
   state: buildInitialState(),
+  pendingAction: null,
 
   dispatch: (action) =>
     set((s) => {
@@ -170,10 +172,11 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
   },
 
   copyToClipboard: async () => {
-    const { state } = get();
-    if (!state.results || state.total === null) {
+    const { state, pendingAction } = get();
+    if (!state.results || state.total === null || pendingAction) {
       return;
     }
+    set({ pendingAction: 'copy' });
     try {
       await navigator.clipboard.writeText(
         buildSummaryText(state.results, state.total, state.config.currency),
@@ -183,19 +186,24 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       set((s) => ({
         state: reducer(s.state, { type: 'error', value: 'could not copy to clipboard' }),
       }));
+    } finally {
+      set({ pendingAction: null });
     }
   },
 
   copyShareLink: async () => {
-    const { state } = get();
-    if (!planSnapshot(state)) {
+    const { state, pendingAction } = get();
+    if (!planSnapshot(state) || pendingAction) {
       return;
     }
+    set({ pendingAction: 'share' });
     try {
       await navigator.clipboard.writeText(window.location.href);
       set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'link copied' }) }));
     } catch {
       set((s) => ({ state: reducer(s.state, { type: 'error', value: 'could not copy link' }) }));
+    } finally {
+      set({ pendingAction: null });
     }
   },
 }));

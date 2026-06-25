@@ -1,5 +1,6 @@
 import { Settings as SettingsIcon } from 'lucide-react';
 import styles from './App.module.css';
+import { ErrorBoundary } from './components/ErrorBoundary.js';
 import { Mascot } from './components/Mascot.js';
 import { PlanForm } from './components/PlanForm.js';
 import { ResultsView } from './components/ResultsView.js';
@@ -35,16 +36,18 @@ export function App() {
         </button>
       </header>
 
-      <main className={styles.card}>
-        {onResults ? <ResultsView /> : <PlanForm />}
-        <StatusMessage />
-      </main>
+      <ErrorBoundary>
+        <main className={styles.card}>
+          {onResults ? <ResultsView /> : <PlanForm />}
+          <StatusMessage />
+        </main>
+
+        <SettingsDialog />
+      </ErrorBoundary>
 
       <footer className={styles.footer}>
         <p>Allowances round to your quantum; the remainder rides on the first payment.</p>
       </footer>
-
-      <SettingsDialog />
     </div>
   );
 }
