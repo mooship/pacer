@@ -13,6 +13,7 @@ import {
 } from '@pacer/core';
 import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
 import { BoostControl } from './BoostControl.js';
 import styles from './ResultsView.module.css';
@@ -24,6 +25,29 @@ export function ResultsView() {
   const exportIcs = usePacerStore((s) => s.exportIcs);
   const copyToClipboard = usePacerStore((s) => s.copyToClipboard);
   const copyShareLink = usePacerStore((s) => s.copyShareLink);
+  const pendingAction = usePacerStore((s) => s.pendingAction);
+  const [resetArmed, setResetArmed] = useState(false);
+  const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(
+    () => () => {
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+    },
+    [],
+  );
+  const handleResetClick = () => {
+    if (resetArmed) {
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+      setResetArmed(false);
+      dispatch({ type: 'reset' });
+      return;
+    }
+    setResetArmed(true);
+    resetTimer.current = setTimeout(() => setResetArmed(false), 3000);
+  };
 
   if (!state.results || state.total === null || state.pay === null || state.last === null) {
     return null;
@@ -123,11 +147,21 @@ export function ResultsView() {
           <Pencil size={18} aria-hidden />
           Edit
         </button>
-        <button type="button" className={styles.secondary} onClick={copyToClipboard}>
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={copyToClipboard}
+          disabled={pendingAction !== null}
+        >
           <Copy size={18} aria-hidden />
           Copy
         </button>
-        <button type="button" className={styles.secondary} onClick={copyShareLink}>
+        <button
+          type="button"
+          className={styles.secondary}
+          onClick={copyShareLink}
+          disabled={pendingAction !== null}
+        >
           <Link2 size={18} aria-hidden />
           Share
         </button>
@@ -142,11 +176,11 @@ export function ResultsView() {
       </div>
       <button
         type="button"
-        className={styles.startOver}
-        onClick={() => dispatch({ type: 'reset' })}
+        className={clsx(styles.startOver, resetArmed && styles.startOverArmed)}
+        onClick={handleResetClick}
       >
         <RotateCcw size={16} aria-hidden />
-        Start over
+        {resetArmed ? 'Click again to confirm' : 'Start over'}
       </button>
     </div>
   );

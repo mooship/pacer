@@ -13,9 +13,10 @@ In the TUI:
   Amount     Rand, optional cents: 5000, R5,000, 5000.50
 
 Keys:
-  Enter confirm   Esc back   ←/→ move cursor   F2 settings   Ctrl+C quit
-  Results: ↑/↓ move money into the bridge   PgUp/PgDn ×10   Home/End min/max
-           s save csv   i save calendar   c copy   r start over   Esc edit   q quit
+  Enter confirm   Esc back   ←/→ move cursor   e load example   F2 settings   Ctrl+C quit
+  Results: ↑/↓ ±quantum move money into the bridge   +/- or =/_ same   PgUp/PgDn ×10
+           Home/End min/max   s save csv   i save calendar   c copy
+           r r start over (press twice to confirm)   Esc edit   q quit
 
 Set NO_COLOR to disable colored output.
 `;

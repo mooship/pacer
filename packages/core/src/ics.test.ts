@@ -62,6 +62,22 @@ describe('ics', () => {
     expect(folded).toContain('\r\n ');
   });
 
+  it('folds multi-byte currency text without splitting a surrogate pair or UTF-8 sequence', () => {
+    const emojiCurrency = `💰${'€'.repeat(40)}`;
+    const folded = buildIcs(result, 500000, {
+      now: daysFromCivil(2026, 6, 20),
+      currency: emojiCurrency,
+    });
+    for (const line of folded.split('\r\n')) {
+      expect(new TextEncoder().encode(line).length).toBeLessThanOrEqual(75);
+      expect(line).not.toContain('�');
+      expect(() => Array.from(line)).not.toThrow();
+    }
+    expect(new TextDecoder('utf-8', { fatal: true }).decode(new TextEncoder().encode(folded))).toBe(
+      folded,
+    );
+  });
+
   it('falls back to a 9am reminder for a non-positive or non-integer hour', () => {
     for (const reminderHour of [0, -5, 2.5, Number.NaN]) {
       const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour });

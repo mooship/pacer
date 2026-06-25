@@ -1,4 +1,4 @@
-import { type FieldState, fmtIso, previews } from '@pacer/core';
+import { examplePlan, type FieldState, fmtIso, previews } from '@pacer/core';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
@@ -73,10 +73,7 @@ export function PlanForm() {
     state.amountInput.trim() === '';
 
   const loadExample = () => {
-    dispatch({
-      type: 'restorePlan',
-      snap: { pay: state.today, last: state.today + 30, total: 1850000, boost: 0 },
-    });
+    dispatch({ type: 'restorePlan', snap: examplePlan(state.today) });
   };
 
   const submit = () => {

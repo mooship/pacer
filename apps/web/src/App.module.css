@@ -2,7 +2,8 @@
   width: 100%;
   max-width: 560px;
   margin: 0 auto;
-  padding: 24px 16px 48px;
+  padding: calc(24px + env(safe-area-inset-top)) calc(16px + env(safe-area-inset-right))
+    calc(48px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
   display: flex;
   flex-direction: column;
   gap: 20px;

@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 22px;
+  text-align: center;
+}
+
+.title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--danger);
+}
+
+.body {
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.button {
+  padding: 14px 20px;
+  font-weight: 800;
+  color: var(--text-onMango);
+  background: linear-gradient(135deg, var(--mango), var(--mango-deep));
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-sm);
+}

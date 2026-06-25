@@ -7,6 +7,7 @@ import {
   buildSummaryText,
   type ComputeResult,
   type Config,
+  examplePlan,
   initialState,
   mood,
   type PlannerState,
@@ -21,7 +22,7 @@ import {
 } from '@pacer/core';
 import clipboardy from 'clipboardy';
 import { Box, Text, useApp, useInput } from 'ink';
-import { useEffect, useMemo, useReducer, useRef } from 'react';
+import { useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { Form } from './components/Form.js';
 import { Mascot } from './components/Mascot.js';
 import { Results } from './components/Results.js';
@@ -108,12 +109,37 @@ export function App({ config, invalidConfig }: AppProps) {
       buildIcs(results, total, { now: today(), currency: state.config.currency }),
     );
 
+  const [resetArmed, setResetArmed] = useState(false);
+  const resetTimer = useRef<NodeJS.Timeout | null>(null);
+  useEffect(
+    () => () => {
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+    },
+    [],
+  );
+
+  const handleResetKey = () => {
+    if (resetArmed) {
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+      setResetArmed(false);
+      dispatch({ type: 'reset' });
+      return;
+    }
+    setResetArmed(true);
+    dispatch({ type: 'notice', value: 'press r again to start over' });
+    resetTimer.current = setTimeout(() => setResetArmed(false), 3000);
+  };
+
   const copyToClipboard = async () => {
     if (!state.results || state.total === null) {
       return;
     }
     try {
-      await clipboardy.write(buildSummaryText(state.results, state.total, state.config.currency));
+      await clipboardy.write(buildSummaryText(state.results, state.total, state.config));
       dispatch({ type: 'notice', value: 'copied to clipboard' });
     } catch (e) {
       dispatch({ type: 'error', value: `could not copy: ${String(e)}` });
@@ -121,6 +147,13 @@ export function App({ config, invalidConfig }: AppProps) {
   };
 
   useInput((input, key) => {
+    if (resetArmed && input !== 'r') {
+      setResetArmed(false);
+      if (resetTimer.current) {
+        clearTimeout(resetTimer.current);
+      }
+    }
+
     if (F2.includes(input)) {
       dispatch({ type: 'openSettings' });
       return;
@@ -153,7 +186,7 @@ export function App({ config, invalidConfig }: AppProps) {
       } else if (input === 'c') {
         copyToClipboard();
       } else if (input === 'r') {
-        dispatch({ type: 'reset' });
+        handleResetKey();
       } else if (key.upArrow || input === '+' || input === '=') {
         dispatch({ type: 'boostUp' });
       } else if (key.downArrow || input === '-' || input === '_') {
@@ -172,7 +205,9 @@ export function App({ config, invalidConfig }: AppProps) {
       return;
     }
 
-    if (key.escape) {
+    if (input === 'e') {
+      dispatch({ type: 'restorePlan', snap: examplePlan(state.today) });
+    } else if (key.escape) {
       dispatch({ type: 'back' });
     }
   });
@@ -269,7 +304,7 @@ function Hint({ step }: { step: PlannerState['step'] }) {
     step === 'settings'
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
-        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   i → calendar   c → copy   r → start over   Esc → edit   q → quit'
-        : '  Enter → confirm   Esc → back   ←/→ move cursor   F2 → settings   Ctrl+C → quit';
+        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   i → calendar   c → copy   r r → start over   e → example   Esc → edit   q → quit'
+        : '  Enter → confirm   Esc → back   ←/→ move cursor   e → example   F2 → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

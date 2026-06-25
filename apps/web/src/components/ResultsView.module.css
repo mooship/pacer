@@ -183,6 +183,11 @@
   border-color: var(--border);
 }
 
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .primary {
   grid-column: 1 / -1;
   color: var(--text-onMango);
@@ -222,4 +227,8 @@
 
 .startOver:hover {
   color: var(--text);
+}
+
+.startOverArmed {
+  color: var(--danger);
 }

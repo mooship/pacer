@@ -22,6 +22,7 @@ export function Form({ state, previews, theme, onChange, onSubmit }: FormProps) 
         done={state.pay !== null}
         placeholder="today, +7, or 2026-07-25"
         preview={previews.pay}
+        invalid={previews.payState === 'invalid'}
         theme={theme}
         onChange={onChange}
         onSubmit={onSubmit}
@@ -34,6 +35,7 @@ export function Form({ state, previews, theme, onChange, onSubmit }: FormProps) 
         done={state.last !== null}
         placeholder="+30 or 2026-07-25"
         preview={previews.last}
+        invalid={previews.lastState === 'invalid'}
         theme={theme}
         onChange={onChange}
         onSubmit={onSubmit}
@@ -46,6 +48,7 @@ export function Form({ state, previews, theme, onChange, onSubmit }: FormProps) 
         done={state.total !== null}
         placeholder="e.g. 18500"
         preview={previews.amount}
+        invalid={previews.amountState === 'invalid'}
         theme={theme}
         onChange={onChange}
         onSubmit={onSubmit}

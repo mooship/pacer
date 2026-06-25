@@ -44,6 +44,10 @@ export function parsePlan(input: Record<string, unknown>): PlanSnapshot | null {
   return decoded.ok ? decoded.value : null;
 }
 
+export function examplePlan(today: number): PlanSnapshot {
+  return { pay: today, last: today + 30, total: 1850000, boost: 0 };
+}
+
 export function samePlan(a: PlanSnapshot | null, b: PlanSnapshot | null): boolean {
   if (a === null || b === null) {
     return a === b;
