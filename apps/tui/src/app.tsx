@@ -139,7 +139,7 @@ export function App({ config, invalidConfig }: AppProps) {
       return;
     }
     try {
-      await clipboardy.write(buildSummaryText(state.results, state.total, state.config.currency));
+      await clipboardy.write(buildSummaryText(state.results, state.total, state.config));
       dispatch({ type: 'notice', value: 'copied to clipboard' });
     } catch (e) {
       dispatch({ type: 'error', value: `could not copy: ${String(e)}` });

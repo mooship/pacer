@@ -179,7 +179,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
     set({ pendingAction: 'copy' });
     try {
       await navigator.clipboard.writeText(
-        buildSummaryText(state.results, state.total, state.config.currency),
+        buildSummaryText(state.results, state.total, state.config),
       );
       set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'copied to clipboard' }) }));
     } catch {

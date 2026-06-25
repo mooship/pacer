@@ -4,6 +4,7 @@ import { buildCsv } from './csv.js';
 import { daysFromCivil } from './date.js';
 import {
   type Action,
+  BRIDGE_LABEL,
   initialState,
   type PlannerState,
   parseSettings,
@@ -374,19 +375,16 @@ describe('planSnapshot / restorePlan', () => {
 });
 
 describe('buildSummaryText', () => {
-  it('has a summary line, a header, a row per segment, and a total', () => {
+  it('summarizes the plan as a short headline, bridge line, and cadence line', () => {
     const s = resultsState();
     if (!s.results || s.total === null) {
       throw new Error('expected results');
     }
-    const text = buildSummaryText(s.results, s.total);
-    const lines = text.trimEnd().split('\n');
-    const segments = s.results.dates.length;
+    const text = buildSummaryText(s.results, s.total, s.config);
+    const lines = text.split('\n');
     expect(text.startsWith('Pacer plan:')).toBe(true);
-    expect(text).toContain('Pay');
-    expect(text).toContain('Bridge');
-    expect(lines.length).toBe(segments + 4);
-    expect(lines[lines.length - 1].startsWith('Total')).toBe(true);
+    expect(text).toContain(BRIDGE_LABEL);
+    expect(lines.length).toBe(3);
   });
 
   it('respects a custom currency', () => {
@@ -394,9 +392,27 @@ describe('buildSummaryText', () => {
     if (!s.results || s.total === null) {
       throw new Error('expected results');
     }
-    const text = buildSummaryText(s.results, s.total, '$');
+    const text = buildSummaryText(s.results, s.total, { ...s.config, currency: '$' });
     expect(text).toContain('$');
     expect(text).not.toContain('R5');
+  });
+
+  it('stays a fixed length regardless of how many payouts the plan has', () => {
+    const longPlan = run(
+      start(daysFromCivil(2026, 1, 1)),
+      { type: 'setPayInput', value: '2026-01-01' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-12-31' },
+      { type: 'confirm' },
+      { type: 'setAmountInput', value: '240000' },
+      { type: 'confirm' },
+    );
+    if (!longPlan.results || longPlan.total === null) {
+      throw new Error('expected results');
+    }
+    expect(longPlan.results.dates.length).toBeGreaterThan(10);
+    const text = buildSummaryText(longPlan.results, longPlan.total, longPlan.config);
+    expect(text.split('\n').length).toBe(3);
   });
 });
 
