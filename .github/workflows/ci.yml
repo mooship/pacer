@@ -31,7 +31,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Cache Typecheck and Build Artifacts
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             packages/core/node_modules/.cache/tsc
