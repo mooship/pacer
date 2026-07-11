@@ -29,6 +29,6 @@
     "ink-testing-library": "^4.0.0",
     "tsup": "^8.3.5",
     "tsx": "^4.23.0",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   }
 }
