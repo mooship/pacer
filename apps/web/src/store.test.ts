@@ -25,25 +25,8 @@ describe('pacer store', () => {
     expect(s.step).toBe('results');
     expect(s.total).toBe(500000);
     expect(s.results?.amounts.reduce((a, b) => a + b, 0)).toBe(500000);
-    expect(s.boostMax).toBeGreaterThan(0);
   });
 
-  it('clamps the boost to the recurring total', () => {
-    const { dispatch } = store();
-    dispatch({ type: 'setPayInput', value: '2026-06-25' });
-    dispatch({ type: 'confirm' });
-    dispatch({ type: 'setLastInput', value: '2026-07-24' });
-    dispatch({ type: 'confirm' });
-    dispatch({ type: 'setAmountInput', value: '5000' });
-    dispatch({ type: 'confirm' });
-
-    dispatch({ type: 'boostUp' });
-    expect(store().state.boost).toBe(5000);
-    dispatch({ type: 'boostToMax' });
-    expect(store().state.boost).toBe(store().state.boostMax);
-    dispatch({ type: 'setBoost', value: 9_999_999 });
-    expect(store().state.boost).toBe(store().state.boostMax);
-  });
 
   it('persists settings to localStorage and reloads them', () => {
     const { dispatch, saveSettings } = store();

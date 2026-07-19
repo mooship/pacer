@@ -29,8 +29,6 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByText('Bridge top-up')).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: /top-up/i })).toBeInTheDocument();
   });
 
   it('shows inline invalid feedback for a bad amount and stays on the form', async () => {

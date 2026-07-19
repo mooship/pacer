@@ -187,18 +187,6 @@ export function App({ config, invalidConfig }: AppProps) {
         copyToClipboard();
       } else if (input === 'r') {
         handleResetKey();
-      } else if (key.upArrow || input === '+' || input === '=') {
-        dispatch({ type: 'boostUp' });
-      } else if (key.downArrow || input === '-' || input === '_') {
-        dispatch({ type: 'boostDown' });
-      } else if (key.pageUp) {
-        dispatch({ type: 'boostUpCoarse' });
-      } else if (key.pageDown) {
-        dispatch({ type: 'boostDownCoarse' });
-      } else if (HOME.includes(input)) {
-        dispatch({ type: 'boostToMin' });
-      } else if (END.includes(input)) {
-        dispatch({ type: 'boostToMax' });
       } else if (key.escape) {
         dispatch({ type: 'back' });
       }
@@ -260,7 +248,6 @@ export function App({ config, invalidConfig }: AppProps) {
         <Results
           results={state.results}
           total={state.total}
-          boost={state.boost}
           config={state.config}
           today={state.today}
           theme={theme}
@@ -304,7 +291,7 @@ function Hint({ step }: { step: PlannerState['step'] }) {
     step === 'settings'
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
-        ? '  ↑/↓ ±quantum   PgUp/PgDn ×10   Home/End min/max   s → csv   i → calendar   c → copy   r r → start over   e → example   Esc → edit   q → quit'
+        ? '  s → csv   i → calendar   c → copy   r r → start over   e → example   Esc → edit   q → quit'
         : '  Enter → confirm   Esc → back   ←/→ move cursor   e → example   F2 → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

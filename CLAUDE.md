@@ -45,9 +45,9 @@ pnpm --filter @pacer/web dev           # one app
 - `compute.ts` — `compute(pay, end, total, boost, cfg)` → `{ dates, segDays,
   amounts }`, plus `fmtMoney(cents, symbol?)`, `coverEnd`, `perDay`, and
   `currentSegment(result, today)` (the index of the segment covering `today`, or
-  `null`). Splits a salary into a bridge payment (pay day → first payout) plus
-  recurring allowances rounded to `cfg.quantum` (default R50); the remainder and
-  clamped `boost` go to the bridge. Uses the largest-remainder method.
+  `null`). Splits a salary into an initial payment (pay day → first payout) plus
+  recurring allowances rounded to `cfg.quantum` (default R50); the remainder goes
+  to the initial payment. Uses the largest-remainder method.
 - `config.ts` — `Config { quantum, payday, interval, currency }`, `sanitize()`,
   and a Zod `ConfigSchema` / `parseConfig` for validating persisted config.
   `currency` is the symbol (default `R`) prefixed to amounts. No file/storage
@@ -87,7 +87,7 @@ plans survive reloads and are shareable/bookmarkable (precedence: URL >
 localStorage); `restorePlan` rehydrates on load. Components use CSS Modules;
 icons are `lucide-react`; the font is Fontsource Nunito. `App.tsx` renders the
 single-screen plan form (all fields editable at once, one submit), the results
-table, the boost slider, and a settings `<dialog>`;
+table, and a settings `<dialog>`;
 results offer Copy / Share / Calendar / CSV. Mobile-first and accessible (labels,
 `aria-live`, focus management, keyboard support, reduced-motion). Installable PWA
 via `vite-plugin-pwa` (autoUpdate service worker, manifest, icons generated from

@@ -106,17 +106,16 @@
   color: var(--text-soft);
 }
 
-.bridge {
+.firstWeek {
   /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) row background */
   background: color-mix(in srgb, var(--mango) 22%, transparent) !important;
 }
 
-.bridge th {
+.firstWeek th {
   color: var(--mango-deep);
   font-weight: 800;
 }
 
-.bridgeTag,
 .todayTag {
   display: block;
   width: fit-content;

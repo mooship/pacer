@@ -1,6 +1,6 @@
 export const VERSION = '0.1.0';
 
-export const HELP = `pacer — split a salary into a bridge payment plus recurring allowances
+export const HELP = `pacer — split a salary into a first payment plus recurring allowances
 
 Usage:
   pacer            launch the interactive TUI
@@ -14,8 +14,7 @@ In the TUI:
 
 Keys:
   Enter confirm   Esc back   ←/→ move cursor   e load example   F2 settings   Ctrl+C quit
-  Results: ↑/↓ ±quantum move money into the bridge   +/- or =/_ same   PgUp/PgDn ×10
-           Home/End min/max   s save csv   i save calendar   c copy
+  Results: s save csv   i save calendar   c copy
            r r start over (press twice to confirm)   Esc edit   q quit
 
 Set NO_COLOR to disable colored output.

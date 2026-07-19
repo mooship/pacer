@@ -163,39 +163,6 @@ describe('planner', () => {
     expect(s.config).toEqual(customConfig);
   });
 
-  it('boost is clamped to recurring total', () => {
-    let s = resultsState();
-    expect(s.step).toBe('results');
-    const results = s.results;
-    if (!results || s.total === null) {
-      throw new Error('expected results');
-    }
-    const recurring = sum(results.amounts.slice(1));
-    expect(s.boostMax).toBe(recurring);
-    expect(s.boostMax).toBeLessThan(s.total);
-    for (let i = 0; i < 1000; i++) {
-      s = reducer(s, { type: 'boostUp' });
-    }
-    expect(s.boost).toBe(s.boostMax);
-    s = reducer(s, { type: 'boostUp' });
-    expect(s.boost).toBe(s.boostMax);
-    for (let i = 0; i < 2000; i++) {
-      s = reducer(s, { type: 'boostDown' });
-    }
-    expect(s.boost).toBe(0);
-  });
-
-  it('coarse and jump boost', () => {
-    let s = resultsState();
-    s = reducer(s, { type: 'boostUpCoarse' });
-    expect(s.boost).toBe(Math.min(10 * s.config.quantum, s.boostMax));
-    s = reducer(s, { type: 'boostDownCoarse' });
-    expect(s.boost).toBe(0);
-    s = reducer(s, { type: 'boostToMax' });
-    expect(s.boost).toBe(s.boostMax);
-    s = reducer(s, { type: 'boostToMin' });
-    expect(s.boost).toBe(0);
-  });
 
   it('over-long period is rejected', () => {
     const s = run(
@@ -220,11 +187,7 @@ describe('planner', () => {
     expect(s.step).toBe('amount');
   });
 
-  it('boost before results is a no-op', () => {
-    const s = run(start(), { type: 'boostUp' }, { type: 'boostDown' });
-    expect(s.boost).toBe(0);
-    expect(s.results).toBeNull();
-  });
+
 
   it('settings save persists config and recomputes', () => {
     let s = resultsState();
@@ -327,7 +290,7 @@ describe('planSnapshot / restorePlan', () => {
     expect(planSnapshot(start())).toBeNull();
     const s = resultsState();
     const snap = planSnapshot(s);
-    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total, boost: s.boost });
+    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total });
   });
 
   it('restores a plan to results with matching amounts and pre-filled inputs', () => {
@@ -347,25 +310,12 @@ describe('planSnapshot / restorePlan', () => {
     expect(planSnapshot(restored)).toEqual(snap);
   });
 
-  it('clamps a restored boost to the available maximum', () => {
-    const restored = run(start(), {
-      type: 'restorePlan',
-      snap: {
-        pay: daysFromCivil(2026, 6, 25),
-        last: daysFromCivil(2026, 7, 24),
-        total: 500000,
-        boost: 999999999,
-      },
-    });
-    expect(restored.boost).toBe(restored.boostMax);
-  });
 
   it('edits back through pre-filled inputs after restore', () => {
     const snap = {
       pay: daysFromCivil(2026, 6, 25),
       last: daysFromCivil(2026, 7, 24),
       total: 500000,
-      boost: 0,
     };
     const restored = run(start(), { type: 'restorePlan', snap });
     const back = run(restored, { type: 'back' });
@@ -446,14 +396,5 @@ describe('summaryLine', () => {
     expect(line).toContain('to reach');
   });
 
-  it('falls back to a single pace when the top-up empties the recurring payouts', () => {
-    const s = run(resultsState(), { type: 'boostToMax' });
-    if (!s.results || s.total === null) {
-      throw new Error('expected results');
-    }
-    expect(sum(s.results.amounts.slice(1))).toBe(0);
-    const line = summaryLine(s.results, s.total, s.config);
-    expect(line).toContain('to reach');
-    expect(line).not.toContain('weekly');
-  });
+
 });

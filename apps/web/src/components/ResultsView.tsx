@@ -1,5 +1,4 @@
 import {
-  BRIDGE_LABEL,
   barFractions,
   coverEnd,
   currentSegment,
@@ -15,7 +14,6 @@ import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
-import { BoostControl } from './BoostControl.js';
 import styles from './ResultsView.module.css';
 
 export function ResultsView() {
@@ -74,9 +72,6 @@ export function ResultsView() {
           Next payout in {daysToNext} day{daysToNext === 1 ? '' : 's'}.
         </p>
       ) : null}
-
-      <BoostControl />
-
       <div className={styles.tableScroll}>
         <table className={styles.table}>
           <caption className="visually-hidden">
@@ -101,11 +96,10 @@ export function ResultsView() {
             {dates.map((d, i) => (
               <tr
                 key={d}
-                className={clsx(i === 0 && styles.bridge, i === todayIdx && styles.today)}
+                className={clsx(i === 0 && styles.firstWeek, i === todayIdx && styles.today)}
               >
                 <th scope="row">
                   {fmtWdDm(d)}
-                  {i === 0 ? <span className={styles.bridgeTag}>{BRIDGE_LABEL}</span> : null}
                   {i === todayIdx ? <span className={styles.todayTag}>Today</span> : null}
                 </th>
                 <td>{fmtRange(d, coverEnd(d, segDays[i]))}</td>

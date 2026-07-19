@@ -1,12 +1,12 @@
 # pacer
 
-Splits a monthly salary into a bridge payment plus recurring allowances (weekly
+Splits a monthly salary into a first payment plus recurring allowances (weekly
 by default).
 
 Enter your pay date, the last day your salary covers, and the total amount. Pacer
-calculates a bridge payment from pay day to the first payout day, then equal
+calculates an initial payment from pay day to the first payout day, then equal
 allowances on each payout day after that. Allowance amounts are rounded to the
-nearest quantum (R50 by default); the sub-quantum remainder rides on the bridge.
+nearest quantum (R50 by default); the sub-quantum remainder rides on the first payment.
 
 Pacer ships as a **monorepo** with two front-ends over one shared core:
 
@@ -54,8 +54,7 @@ node apps/tui/dist/cli.js --help
 - **Amount** — Rand, with optional cents: `5000`, `R5,000`, or `5000.50`.
 
 Keys: **Enter** confirm · **Esc** back · **←/→** move cursor · **F2** settings ·
-**Ctrl+C** quit. On results: **↑/↓** move money into the bridge, **PgUp/PgDn**
-×10, **Home/End** min/max, **s** save CSV, **i** save calendar, **c** copy,
+**Ctrl+C** quit. On results: **s** save CSV, **i** save calendar, **c** copy,
 **r** start over, **Esc** edit, **q** quit. Set `NO_COLOR` to disable colour.
 
 ### Web app

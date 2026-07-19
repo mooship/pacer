@@ -2,7 +2,7 @@ import { type ComputeResult, compute, fmtMoney } from './compute.js';
 import { type Config, DEFAULT_CURRENCY, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
 import { fmtIso, fmtWdDmy } from './date.js';
-import { clamp, remEuclid } from './math.js';
+import { remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
 import { err, ok, type Result } from './result.js';
 import type { PlanSnapshot } from './snapshot.js';
@@ -28,8 +28,6 @@ export interface PlannerState {
   pay: number | null;
   last: number | null;
   total: number | null;
-  boost: number;
-  boostMax: number;
   results: ComputeResult | null;
   config: Config;
   settingsCursor: number;
@@ -47,13 +45,6 @@ export type Action =
   | { type: 'submit' }
   | { type: 'back' }
   | { type: 'reset' }
-  | { type: 'setBoost'; value: number }
-  | { type: 'boostUp' }
-  | { type: 'boostDown' }
-  | { type: 'boostUpCoarse' }
-  | { type: 'boostDownCoarse' }
-  | { type: 'boostToMin' }
-  | { type: 'boostToMax' }
   | { type: 'openSettings' }
   | { type: 'settingsUp' }
   | { type: 'settingsDown' }
@@ -79,8 +70,6 @@ export function initialState(config: Config, today: number): PlannerState {
     pay: null,
     last: null,
     total: null,
-    boost: 0,
-    boostMax: 0,
     results: null,
     config,
     settingsCursor: 0,
@@ -91,10 +80,6 @@ export function initialState(config: Config, today: number): PlannerState {
   };
 }
 
-export function boostMax(amounts: number[]): number {
-  return amounts.slice(1).reduce((a, b) => a + b, 0);
-}
-
 function isOnResults(s: PlannerState): boolean {
   return (s.step === 'settings' ? s.settingsReturn : s.step) === 'results';
 }
@@ -103,24 +88,16 @@ export function planSnapshot(s: PlannerState): PlanSnapshot | null {
   if (!isOnResults(s) || s.pay === null || s.last === null || s.total === null) {
     return null;
   }
-  return { pay: s.pay, last: s.last, total: s.total, boost: s.boost };
+  return { pay: s.pay, last: s.last, total: s.total };
 }
-
 function recompute(s: PlannerState): void {
   if (s.pay === null || s.last === null || s.total === null) {
     return;
   }
-  s.results = compute(s.pay, s.last, s.total, s.boost, s.config);
+  s.results = compute(s.pay, s.last, s.total, s.config);
 }
 
 function enterResults(s: PlannerState): void {
-  s.boost = 0;
-  recompute(s);
-  s.boostMax = s.results ? boostMax(s.results.amounts) : 0;
-}
-
-function setBoost(s: PlannerState, boost: number): void {
-  s.boost = clamp(boost, 0, s.boostMax);
   recompute(s);
 }
 
@@ -276,7 +253,6 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
           break;
         case 'results':
           s.total = null;
-          s.boost = 0;
           s.results = null;
           s.step = 'amount';
           break;
@@ -289,28 +265,6 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
 
     case 'reset':
       return initialState(s.config, s.today);
-
-    case 'setBoost':
-      setBoost(s, action.value);
-      return s;
-    case 'boostUp':
-      setBoost(s, s.boost + s.config.quantum);
-      return s;
-    case 'boostDown':
-      setBoost(s, s.boost - s.config.quantum);
-      return s;
-    case 'boostUpCoarse':
-      setBoost(s, s.boost + 10 * s.config.quantum);
-      return s;
-    case 'boostDownCoarse':
-      setBoost(s, s.boost - 10 * s.config.quantum);
-      return s;
-    case 'boostToMin':
-      setBoost(s, 0);
-      return s;
-    case 'boostToMax':
-      setBoost(s, s.boostMax);
-      return s;
 
     case 'openSettings': {
       if (s.step === 'settings') {
@@ -357,7 +311,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
     }
 
     case 'restorePlan': {
-      const { pay, last, total, boost } = action.snap;
+      const { pay, last, total } = action.snap;
       s.pay = pay;
       s.last = last;
       s.total = total;
@@ -365,7 +319,6 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       s.lastInput = fmtIso(last);
       s.amountInput = fmtMoney(total, '');
       enterResults(s);
-      setBoost(s, boost);
       s.step = 'results';
       return s;
     }

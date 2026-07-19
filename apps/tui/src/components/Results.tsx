@@ -22,13 +22,12 @@ const pad = (s: string, w: number): string => s.padEnd(w).slice(0, w);
 interface ResultsProps {
   results: ComputeResult;
   total: number;
-  boost: number;
   config: Config;
   today: number;
   theme: Theme;
 }
 
-export function Results({ results, total, boost, config, today, theme }: ResultsProps) {
+export function Results({ results, total, config, today, theme }: ResultsProps) {
   const { dates, segDays, amounts } = results;
   const cur = config.currency;
   const money = (cents: number) => fmtMoney(cents, cur);
@@ -51,13 +50,6 @@ export function Results({ results, total, boost, config, today, theme }: Results
           </Text>
         </Box>
       ) : null}
-      <Box>
-        <Text dimColor>{'  Bridge top-up  '}</Text>
-        <Text color={theme.yellow} bold>
-          {money(boost)}
-        </Text>
-        <Text dimColor>{`   ↑/↓ to move money into the ${BRIDGE_LABEL} payment below`}</Text>
-      </Box>
       <Box borderStyle="round" flexDirection="column" paddingX={1}>
         <Box>
           <Text color={theme.accent} bold>

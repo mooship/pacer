@@ -1,6 +1,6 @@
 import { type Config, DEFAULT_CURRENCY } from './config.js';
 import { weekday } from './date.js';
-import { clamp, idiv, remEuclid } from './math.js';
+import { idiv, remEuclid } from './math.js';
 
 export interface ComputeResult {
   dates: number[];
@@ -76,11 +76,9 @@ export function compute(
   pay: number,
   end: number,
   total: number,
-  boost: number,
   cfg: Config,
 ): ComputeResult {
   const totalDays = end - pay + 1;
-  const clampedBoost = clamp(boost, 0, total);
 
   const dates = [pay];
   const offset = remEuclid(cfg.payday - weekday(pay), 7);
@@ -98,14 +96,13 @@ export function compute(
   });
 
   const quanta = idiv(total, cfg.quantum);
-  const bridgeQuanta = distribute(quanta, segDays, totalDays)[0];
-  const weeklyQuanta = quanta - bridgeQuanta;
-  const boostQuanta = Math.min(idiv(clampedBoost, cfg.quantum), weeklyQuanta);
+  const firstQuanta = distribute(quanta, segDays, totalDays)[0];
+  const weeklyQuanta = quanta - firstQuanta;
 
   const amounts = new Array<number>(n).fill(0);
   if (n > 1) {
     const weeklyDays = totalDays - segDays[0];
-    const weekly = distribute(weeklyQuanta - boostQuanta, segDays.slice(1), weeklyDays);
+    const weekly = distribute(weeklyQuanta, segDays.slice(1), weeklyDays);
     weekly.forEach((q, i) => {
       amounts[i + 1] = q * cfg.quantum;
     });
