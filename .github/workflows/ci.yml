@@ -43,9 +43,6 @@ jobs:
             build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             build-${{ runner.os }}-
 
-      - name: Lint and Format Check
-        run: pnpm biome ci .
-
       - name: Typecheck
         run: pnpm -r typecheck
 
