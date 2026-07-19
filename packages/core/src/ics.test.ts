@@ -8,7 +8,6 @@ const result = compute(
   daysFromCivil(2026, 6, 25),
   daysFromCivil(2026, 7, 24),
   500000,
-  0,
   defaultConfig(),
 );
 const ics = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20) });

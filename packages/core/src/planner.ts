@@ -88,7 +88,7 @@ export function planSnapshot(s: PlannerState): PlanSnapshot | null {
   if (!isOnResults(s) || s.pay === null || s.last === null || s.total === null) {
     return null;
   }
-  return { pay: s.pay, last: s.last, total: s.total };
+  return { pay: s.pay, last: s.last, total: s.total, boost: 0 };
 }
 function recompute(s: PlannerState): void {
   if (s.pay === null || s.last === null || s.total === null) {

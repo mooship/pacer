@@ -53,7 +53,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /see an example/i }));
 
     expect(screen.getByRole('table')).toBeInTheDocument();
-    expect(screen.getByRole('slider', { name: /top-up/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
   });
 
   it('shows inline invalid feedback while typing an unreadable date', async () => {

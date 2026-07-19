@@ -1,5 +1,4 @@
 import {
-  BRIDGE_LABEL,
   barFractions,
   type ComputeResult,
   type Config,

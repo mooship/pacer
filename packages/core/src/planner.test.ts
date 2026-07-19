@@ -163,7 +163,6 @@ describe('planner', () => {
     expect(s.config).toEqual(customConfig);
   });
 
-
   it('over-long period is rejected', () => {
     const s = run(
       start(),
@@ -186,8 +185,6 @@ describe('planner', () => {
     );
     expect(s.step).toBe('amount');
   });
-
-
 
   it('settings save persists config and recomputes', () => {
     let s = resultsState();
@@ -290,7 +287,7 @@ describe('planSnapshot / restorePlan', () => {
     expect(planSnapshot(start())).toBeNull();
     const s = resultsState();
     const snap = planSnapshot(s);
-    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total });
+    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total, boost: 0 });
   });
 
   it('restores a plan to results with matching amounts and pre-filled inputs', () => {
@@ -310,12 +307,12 @@ describe('planSnapshot / restorePlan', () => {
     expect(planSnapshot(restored)).toEqual(snap);
   });
 
-
   it('edits back through pre-filled inputs after restore', () => {
     const snap = {
       pay: daysFromCivil(2026, 6, 25),
       last: daysFromCivil(2026, 7, 24),
       total: 500000,
+      boost: 0,
     };
     const restored = run(start(), { type: 'restorePlan', snap });
     const back = run(restored, { type: 'back' });
@@ -395,6 +392,4 @@ describe('summaryLine', () => {
     expect(line).toContain('Spend about');
     expect(line).toContain('to reach');
   });
-
-
 });

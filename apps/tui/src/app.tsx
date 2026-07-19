@@ -34,8 +34,6 @@ const EXPORT_PATH = 'pacer-budget.csv';
 const ICS_PATH = 'pacer-paydays.ics';
 
 const F2 = ['OQ', '[12~'];
-const HOME = ['[H', '[1~', 'OH'];
-const END = ['[F', '[4~', 'OF'];
 
 interface AppProps {
   config: Config;

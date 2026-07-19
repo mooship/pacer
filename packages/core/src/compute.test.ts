@@ -33,10 +33,6 @@ describe('compute', () => {
     expect(sum(amounts)).toBe(502500);
   });
 
-
-
-
-
   it('first week is four days when pay is Thursday', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
@@ -80,7 +76,7 @@ describe('compute', () => {
   it('currentSegment finds the segment covering a day, else null', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, 0, cfg());
+    const result = compute(pay, end, 500000, cfg());
     expect(currentSegment(result, pay)).toBe(0);
     expect(currentSegment(result, result.dates[1])).toBe(1);
     expect(currentSegment(result, pay - 1)).toBeNull();
@@ -90,7 +86,7 @@ describe('compute', () => {
   it('nextPayout returns days to the upcoming payout, else null', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, 0, cfg());
+    const result = compute(pay, end, 500000, cfg());
     expect(nextPayout(result, pay)).toBe(result.dates[1] - pay);
     expect(nextPayout(result, end)).toBeNull();
     expect(nextPayout(result, end + 1)).toBeNull();
@@ -99,7 +95,7 @@ describe('compute', () => {
   it('nextPayout counts down to the pay date before the plan starts', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, 0, cfg());
+    const result = compute(pay, end, 500000, cfg());
     expect(nextPayout(result, pay - 1)).toBe(1);
     expect(nextPayout(result, pay - 5)).toBe(5);
   });
