@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Lint, Typecheck, Test, and Build
+    name: Typecheck, Test, and Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
