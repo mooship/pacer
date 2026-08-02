@@ -2,8 +2,13 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { daysFromCivil, defaultConfig, type PlanSnapshot } from '@pacer/core';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import envPaths from 'env-paths';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearPlan, loadConfig, loadPlan, saveConfig, savePlan } from './config-store.js';
+
+vi.mock('env-paths', () => ({ default: vi.fn() }));
+
+const mockEnvPaths = vi.mocked(envPaths);
 
 let dir: string;
 let path: string;
@@ -11,6 +16,10 @@ let path: string;
 beforeEach(() => {
   dir = mkdtempSync(join(tmpdir(), 'pacer-'));
   path = join(dir, 'config.toml');
+  // Point the "no override" default path at the sandboxed temp dir instead
+  // of the real platform config dir, so the default-path tests stay
+  // isolated from whatever happens to exist on the host/CI machine.
+  mockEnvPaths.mockReturnValue({ config: dir } as ReturnType<typeof envPaths>);
 });
 
 afterEach(() => {
@@ -54,10 +63,10 @@ describe('config-store', () => {
     expect(loadConfig(dirAsFile)).toEqual({ config: defaultConfig(), invalid: true });
   });
 
-  it('resolves the real platform config path when no override is given', () => {
-    const result = loadConfig();
-    expect(typeof result.invalid).toBe('boolean');
-    expect(result.config).toBeTypeOf('object');
+  it('round-trips a saved config via the resolved platform config path when no override is given', () => {
+    const config = { quantum: 10000, payday: 5, interval: 14, currency: '$' };
+    saveConfig(config);
+    expect(loadConfig()).toEqual({ config, invalid: false });
   });
 });
 
@@ -105,9 +114,8 @@ describe('plan store', () => {
     expect(loadPlan(dirAsFile)).toEqual({ snap: null, invalid: true });
   });
 
-  it('resolves the real platform plan path when no override is given', () => {
-    const result = loadPlan();
-    expect(typeof result.invalid).toBe('boolean');
-    expect(result.snap === null || typeof result.snap === 'object').toBe(true);
+  it('round-trips a saved plan via the resolved platform plan path when no override is given', () => {
+    savePlan(snap);
+    expect(loadPlan()).toEqual({ snap, invalid: false });
   });
 });

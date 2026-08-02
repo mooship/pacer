@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from './config.js';
 import { buildCsv } from './csv.js';
-import { daysFromCivil } from './date.js';
+import { daysFromCivil, fmtWdDmy } from './date.js';
 import {
   type Action,
   BRIDGE_LABEL,
@@ -359,7 +359,7 @@ describe('previews', () => {
     const s = run(start(), { type: 'setPayInput', value: '2026-06-25' });
     const v = previews(s);
     expect(v.payState).toBe('ok');
-    expect(v.pay).not.toBe('');
+    expect(v.pay).toBe(fmtWdDmy(daysFromCivil(2026, 6, 25)));
   });
 
   it('reports ok with a formatted preview once a valid last day is entered', () => {

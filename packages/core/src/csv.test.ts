@@ -28,9 +28,8 @@ describe('buildCsv', () => {
     }
     const rows = csv.value.trimEnd().split('\n');
     for (const row of rows.slice(1)) {
-      expect(row.split('","').length).toBeGreaterThan(1);
+      expect(row).toMatch(/"a,b[\d,.]+"/);
     }
-    expect(csv.value).toContain('"a,b');
   });
 
   it('produces an empty per-day figure instead of NaN for an empty result', () => {
