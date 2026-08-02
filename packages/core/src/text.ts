@@ -17,7 +17,8 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
   const steadyDays = segDays.slice(1).reduce((a, b) => a + b, 0);
   const steadyPerDay = fmtMoney(perDay(steadyTotal, steadyDays), cur);
   const recurring = fmtMoney(amounts[1], cur);
-  const cadence = cfg.interval === 7 ? 'weekly' : `every ${cfg.interval} days`;
+  const cadence =
+    cfg.interval === 7 ? 'weekly' : cfg.interval === 1 ? 'daily' : `every ${cfg.interval} days`;
   return `Spend about ${steadyPerDay}/day — ${recurring} lands ${cadence} until ${fmtWdDmy(end)}.`;
 }
 

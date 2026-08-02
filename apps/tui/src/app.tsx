@@ -10,10 +10,12 @@ import {
   examplePlan,
   initialState,
   mood,
+  ok,
   type PlannerState,
   type PlanSnapshot,
   planSnapshot,
   previews,
+  type Result,
   reducer,
   SETTINGS_PAYDAY,
   samePlan,
@@ -33,8 +35,6 @@ import { colorEnabled, makeTheme, type Theme } from './theme.js';
 const EXPORT_PATH = 'pacer-budget.csv';
 const ICS_PATH = 'pacer-paydays.ics';
 
-const F2 = ['OQ', '[12~'];
-
 interface AppProps {
   config: Config;
   invalidConfig: boolean;
@@ -48,7 +48,10 @@ export function App({ config, invalidConfig }: AppProps) {
     if (invalidConfig) {
       s.notice = 'config.toml is invalid; using defaults';
     }
-    const snap = loadPlan();
+    const { snap, invalid: invalidPlan } = loadPlan();
+    if (invalidPlan && !invalidConfig) {
+      s.notice = 'plan.toml is invalid; starting fresh';
+    }
     if (snap) {
       const restored = reducer(s, { type: 'restorePlan', snap });
       restored.notice = 'restored your last plan';
@@ -70,7 +73,9 @@ export function App({ config, invalidConfig }: AppProps) {
       } else {
         clearPlan();
       }
-    } catch {}
+    } catch (e) {
+      dispatch({ type: 'error', value: `could not save your plan: ${String(e)}` });
+    }
   }, [state]);
 
   const view = previews(state);
@@ -88,12 +93,20 @@ export function App({ config, invalidConfig }: AppProps) {
     );
   };
 
-  const saveFile = (path: string, build: (results: ComputeResult, total: number) => string) => {
+  const saveFile = (
+    path: string,
+    build: (results: ComputeResult, total: number) => Result<string>,
+  ) => {
     if (!state.results || state.total === null) {
       return;
     }
+    const built = build(state.results, state.total);
+    if (!built.ok) {
+      dispatch({ type: 'error', value: `could not save: ${built.error}` });
+      return;
+    }
     try {
-      writeFileSync(path, build(state.results, state.total));
+      writeFileSync(path, built.value);
       dispatch({ type: 'notice', value: `saved to ${resolve(path)}` });
     } catch (e) {
       dispatch({ type: 'error', value: `could not save: ${String(e)}` });
@@ -104,7 +117,7 @@ export function App({ config, invalidConfig }: AppProps) {
     saveFile(EXPORT_PATH, (results, total) => buildCsv(results, total, state.config.currency));
   const saveIcs = () =>
     saveFile(ICS_PATH, (results, total) =>
-      buildIcs(results, total, { now: today(), currency: state.config.currency }),
+      ok(buildIcs(results, total, { now: today(), currency: state.config.currency })),
     );
 
   const [resetArmed, setResetArmed] = useState(false);
@@ -152,7 +165,7 @@ export function App({ config, invalidConfig }: AppProps) {
       }
     }
 
-    if (F2.includes(input)) {
+    if (key.tab) {
       dispatch({ type: 'openSettings' });
       return;
     }
@@ -290,6 +303,6 @@ function Hint({ step }: { step: PlannerState['step'] }) {
       ? '  ↑/↓ field   ←/→ change   Enter → save   Esc → cancel'
       : step === 'results'
         ? '  s → csv   i → calendar   c → copy   r r → start over   e → example   Esc → edit   q → quit'
-        : '  Enter → confirm   Esc → back   ←/→ move cursor   e → example   F2 → settings   Ctrl+C → quit';
+        : '  Enter → confirm   Esc → back   ←/→ move cursor   e → example   Tab → settings   Ctrl+C → quit';
   return <Text dimColor>{text}</Text>;
 }

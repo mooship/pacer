@@ -13,6 +13,5 @@ export function makeTheme(color: boolean): Theme {
 }
 
 export function colorEnabled(): boolean {
-  const v = process.env.NO_COLOR;
-  return v === undefined || v === '';
+  return process.env.NO_COLOR === undefined;
 }

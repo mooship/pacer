@@ -27,7 +27,6 @@ describe('pacer store', () => {
     expect(s.results?.amounts.reduce((a, b) => a + b, 0)).toBe(500000);
   });
 
-
   it('persists settings to localStorage and reloads them', () => {
     const { dispatch, saveSettings } = store();
     dispatch({ type: 'openSettings' });
@@ -91,6 +90,25 @@ describe('plan persistence', () => {
     store().dispatch({ type: 'reset' });
     expect(localStorage.getItem('pacer.plan')).toBeNull();
     expect(window.location.search).toBe('');
+  });
+
+  it('surfaces an error instead of failing silently when the URL cannot be updated', () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    reachResults();
+    expect(store().state.error).toContain('could not update the share link');
+    replaceState.mockRestore();
+  });
+
+  it('surfaces an error instead of failing silently when clearing the URL fails', () => {
+    reachResults();
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    store().dispatch({ type: 'reset' });
+    expect(store().state.error).toContain('could not update the share link');
+    replaceState.mockRestore();
   });
 });
 

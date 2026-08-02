@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { daysFromCivil, defaultConfig, type PlanSnapshot } from '@pacer/core';
@@ -45,6 +45,20 @@ describe('config-store', () => {
     writeFileSync(path, 'payday = "monday"\n');
     expect(loadConfig(path)).toEqual({ config: defaultConfig(), invalid: true });
   });
+
+  it('flags a real read error (not just a missing file) as invalid', () => {
+    // Reading a directory as a file fails with EISDIR, not ENOENT — this
+    // should surface as invalid rather than being treated as "no file yet".
+    const dirAsFile = join(dir, 'config.toml');
+    mkdirSync(dirAsFile);
+    expect(loadConfig(dirAsFile)).toEqual({ config: defaultConfig(), invalid: true });
+  });
+
+  it('resolves the real platform config path when no override is given', () => {
+    const result = loadConfig();
+    expect(typeof result.invalid).toBe('boolean');
+    expect(result.config).toBeTypeOf('object');
+  });
 });
 
 describe('plan store', () => {
@@ -60,23 +74,40 @@ describe('plan store', () => {
     planFile = join(dir, 'plan.toml');
   });
 
-  it('returns null for a missing plan', () => {
-    expect(loadPlan(planFile)).toBeNull();
+  it('returns null without flagging it invalid for a missing plan', () => {
+    expect(loadPlan(planFile)).toEqual({ snap: null, invalid: false });
   });
 
   it('round-trips a saved plan', () => {
     savePlan(snap, planFile);
-    expect(loadPlan(planFile)).toEqual(snap);
+    expect(loadPlan(planFile)).toEqual({ snap, invalid: false });
   });
 
-  it('returns null for an out-of-range plan', () => {
+  it('flags an out-of-range plan as invalid', () => {
     writeFileSync(planFile, 'pay = 100\nlast = 50\ntotal = 500000\nboost = 0\n');
-    expect(loadPlan(planFile)).toBeNull();
+    expect(loadPlan(planFile)).toEqual({ snap: null, invalid: true });
+  });
+
+  it('flags a malformed file as invalid', () => {
+    writeFileSync(planFile, 'this is = not valid toml [[[');
+    expect(loadPlan(planFile)).toEqual({ snap: null, invalid: true });
   });
 
   it('clears a saved plan', () => {
     savePlan(snap, planFile);
     clearPlan(planFile);
-    expect(loadPlan(planFile)).toBeNull();
+    expect(loadPlan(planFile)).toEqual({ snap: null, invalid: false });
+  });
+
+  it('flags a real read error (not just a missing file) as invalid', () => {
+    const dirAsFile = join(dir, 'plan.toml');
+    mkdirSync(dirAsFile);
+    expect(loadPlan(dirAsFile)).toEqual({ snap: null, invalid: true });
+  });
+
+  it('resolves the real platform plan path when no override is given', () => {
+    const result = loadPlan();
+    expect(typeof result.invalid).toBe('boolean');
+    expect(result.snap === null || typeof result.snap === 'object').toBe(true);
   });
 });

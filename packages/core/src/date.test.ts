@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { civilFromDays, daysFromCivil, fmtIso, fmtRange, weekday } from './date.js';
+import {
+  civilFromDays,
+  daysFromCivil,
+  daysInMonth,
+  fmtDmy,
+  fmtIso,
+  fmtRange,
+  fmtWdDm,
+  today,
+  weekday,
+} from './date.js';
 
 describe('date', () => {
   it('round trips common dates', () => {
@@ -12,6 +22,11 @@ describe('date', () => {
     for (const [y, m, d] of cases) {
       expect(civilFromDays(daysFromCivil(y, m, d))).toEqual([y, m, d]);
     }
+  });
+
+  it('round trips at the accepted year extremes', () => {
+    expect(civilFromDays(daysFromCivil(1, 1, 1))).toEqual([1, 1, 1]);
+    expect(civilFromDays(daysFromCivil(9999, 12, 31))).toEqual([9999, 12, 31]);
   });
 
   it('epoch is a Thursday', () => {
@@ -30,6 +45,33 @@ describe('date', () => {
     expect(weekday(daysFromCivil(2026, 6, 29))).toBe(1);
   });
 
+  it('handles pre-epoch (negative) days', () => {
+    expect(weekday(-1)).toBe(3);
+    expect(weekday(daysFromCivil(1969, 12, 25))).toBe(4);
+  });
+
+  it('daysInMonth accounts for leap years', () => {
+    expect(daysInMonth(2026, 2)).toBe(28);
+    expect(daysInMonth(2024, 2)).toBe(29);
+    expect(daysInMonth(2000, 2)).toBe(29);
+    expect(daysInMonth(1900, 2)).toBe(28);
+    expect(daysInMonth(2026, 4)).toBe(30);
+    expect(daysInMonth(2026, 1)).toBe(31);
+  });
+
+  it('fmtDmy renders day month year', () => {
+    expect(fmtDmy(daysFromCivil(2026, 7, 5))).toBe('5 Jul 2026');
+  });
+
+  it('fmtWdDm renders weekday, day, and month without a year', () => {
+    expect(fmtWdDm(daysFromCivil(2026, 6, 25))).toBe('Thu 25 Jun');
+  });
+
+  it('today reads the local calendar date', () => {
+    const now = new Date();
+    expect(today()).toBe(daysFromCivil(now.getFullYear(), now.getMonth() + 1, now.getDate()));
+  });
+
   it('fmtRange same day', () => {
     const d = daysFromCivil(2026, 6, 25);
     expect(fmtRange(d, d)).toBe('25 Jun');
@@ -45,6 +87,12 @@ describe('date', () => {
     const s = daysFromCivil(2026, 6, 29);
     const e = daysFromCivil(2026, 7, 5);
     expect(fmtRange(s, e)).toBe('29 Jun–5 Jul');
+  });
+
+  it('fmtRange cross year includes both years', () => {
+    const s = daysFromCivil(2026, 12, 29);
+    const e = daysFromCivil(2027, 1, 2);
+    expect(fmtRange(s, e)).toBe('29 Dec 2026–2 Jan 2027');
   });
 
   it('fmtIso zero-pads and round-trips through parseable form', () => {

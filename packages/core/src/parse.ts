@@ -1,5 +1,11 @@
+import { MAX_DAYS } from './constants.js';
 import { civilFromDays, daysFromCivil, daysInMonth } from './date.js';
 import { err, ok, type Result } from './result.js';
+
+// compute()'s largest-remainder distribution multiplies a per-segment weight
+// (at most MAX_DAYS) by the quanta derived from this amount; bounding it here
+// keeps that product within Number.MAX_SAFE_INTEGER even for a quantum of 1.
+const MAX_AMOUNT = Math.floor(Number.MAX_SAFE_INTEGER / MAX_DAYS);
 
 const isAsciiDigits = (s: string): boolean => s.length > 0 && /^[0-9]+$/.test(s);
 
@@ -147,6 +153,9 @@ export function parseAmount(s: string): Result<number> {
   }
   if (total <= 0) {
     return err('amount must be positive');
+  }
+  if (total > MAX_AMOUNT) {
+    return err(`amount is too large, got \`${s}\``);
   }
   return ok(total);
 }

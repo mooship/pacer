@@ -1,23 +1,39 @@
 import { describe, expect, it } from 'vitest';
-import { barFractions, compute, currentSegment, fmtMoney, nextPayout } from './compute.js';
+import {
+  barFractions,
+  type ComputeResult,
+  compute,
+  currentSegment,
+  fmtMoney,
+  nextPayout,
+  perDay,
+} from './compute.js';
 import { type Config, DEFAULT_QUANTUM, defaultConfig } from './config.js';
 import { daysFromCivil, weekday } from './date.js';
 
 const cfg = (): Config => defaultConfig();
 const sum = (xs: number[]): number => xs.reduce((a, b) => a + b, 0);
 
+function computeOk(...args: Parameters<typeof compute>): ComputeResult {
+  const r = compute(...args);
+  if (!r.ok) {
+    throw new Error(r.error);
+  }
+  return r.value;
+}
+
 describe('compute', () => {
   it('amounts sum to total', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const { amounts } = compute(pay, end, 500000, cfg());
+    const { amounts } = computeOk(pay, end, 500000, cfg());
     expect(sum(amounts)).toBe(500000);
   });
 
   it('weekly amounts are multiples of quantum', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const { amounts } = compute(pay, end, 500000, cfg());
+    const { amounts } = computeOk(pay, end, 500000, cfg());
     for (const a of amounts.slice(1)) {
       expect(a % DEFAULT_QUANTUM).toBe(0);
     }
@@ -26,7 +42,7 @@ describe('compute', () => {
   it('sub-quantum remainder goes to first week', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const { amounts } = compute(pay, end, 502500, cfg());
+    const { amounts } = computeOk(pay, end, 502500, cfg());
     for (const a of amounts.slice(1)) {
       expect(a % DEFAULT_QUANTUM).toBe(0);
     }
@@ -36,7 +52,7 @@ describe('compute', () => {
   it('first week is four days when pay is Thursday', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const { dates, segDays } = compute(pay, end, 500000, cfg());
+    const { dates, segDays } = computeOk(pay, end, 500000, cfg());
     expect(dates[0]).toBe(pay);
     expect(segDays[0]).toBe(4);
     expect(dates[1]).toBe(daysFromCivil(2026, 6, 29));
@@ -45,7 +61,7 @@ describe('compute', () => {
   it('first week is seven days when pay is Monday', () => {
     const pay = daysFromCivil(2026, 6, 22);
     const end = daysFromCivil(2026, 7, 19);
-    const { dates, segDays, amounts } = compute(pay, end, 400000, cfg());
+    const { dates, segDays, amounts } = computeOk(pay, end, 400000, cfg());
     expect(dates[0]).toBe(pay);
     expect(segDays[0]).toBe(7);
     expect(dates[1]).toBe(pay + 7);
@@ -54,7 +70,7 @@ describe('compute', () => {
 
   it('single day cycle', () => {
     const pay = daysFromCivil(2026, 6, 25);
-    const { dates, segDays, amounts } = compute(pay, pay, 100000, cfg());
+    const { dates, segDays, amounts } = computeOk(pay, pay, 100000, cfg());
     expect(dates.length).toBe(1);
     expect(segDays[0]).toBe(1);
     expect(sum(amounts)).toBe(100000);
@@ -76,7 +92,7 @@ describe('compute', () => {
   it('currentSegment finds the segment covering a day, else null', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, cfg());
+    const result = computeOk(pay, end, 500000, cfg());
     expect(currentSegment(result, pay)).toBe(0);
     expect(currentSegment(result, result.dates[1])).toBe(1);
     expect(currentSegment(result, pay - 1)).toBeNull();
@@ -86,7 +102,7 @@ describe('compute', () => {
   it('nextPayout returns days to the upcoming payout, else null', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, cfg());
+    const result = computeOk(pay, end, 500000, cfg());
     expect(nextPayout(result, pay)).toBe(result.dates[1] - pay);
     expect(nextPayout(result, end)).toBeNull();
     expect(nextPayout(result, end + 1)).toBeNull();
@@ -95,7 +111,7 @@ describe('compute', () => {
   it('nextPayout counts down to the pay date before the plan starts', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
-    const result = compute(pay, end, 500000, cfg());
+    const result = computeOk(pay, end, 500000, cfg());
     expect(nextPayout(result, pay - 1)).toBe(1);
     expect(nextPayout(result, pay - 5)).toBe(5);
   });
@@ -109,7 +125,7 @@ describe('compute', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
     const friday: Config = { ...defaultConfig(), payday: 5 };
-    const { dates } = compute(pay, end, 500000, friday);
+    const { dates } = computeOk(pay, end, 500000, friday);
     expect(dates[0]).toBe(pay);
     expect(weekday(dates[1])).toBe(5);
     expect(dates[1]).toBe(daysFromCivil(2026, 6, 26));
@@ -119,7 +135,7 @@ describe('compute', () => {
     const pay = daysFromCivil(2026, 6, 22);
     const end = daysFromCivil(2026, 8, 31);
     const fortnightly: Config = { ...defaultConfig(), interval: 14 };
-    const { dates, amounts } = compute(pay, end, 800000, fortnightly);
+    const { dates, amounts } = computeOk(pay, end, 800000, fortnightly);
     expect(dates.length).toBeGreaterThanOrEqual(3);
     for (let i = 2; i < dates.length; i++) {
       expect(dates[i] - dates[i - 1]).toBe(14);
@@ -134,10 +150,40 @@ describe('compute', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
     const r100: Config = { ...defaultConfig(), quantum: 10000 };
-    const { amounts } = compute(pay, end, 500000, r100);
+    const { amounts } = computeOk(pay, end, 500000, r100);
     expect(sum(amounts)).toBe(500000);
     for (const a of amounts.slice(1)) {
       expect(a % 10000).toBe(0);
     }
+  });
+
+  it('rejects an end date before the pay date', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const r = compute(pay, pay - 1, 500000, cfg());
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toMatch(/end must be on or after pay/);
+  });
+
+  it('holds up at the largest total parseAmount allows with a quantum of 1', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const end = daysFromCivil(2026, 7, 24);
+    const maxCents = Math.floor(Number.MAX_SAFE_INTEGER / 366);
+    const rand = Math.floor(maxCents / 100);
+    const total = rand * 100;
+    const oneCentQuantum: Config = { ...defaultConfig(), quantum: 1 };
+    const { amounts } = computeOk(pay, end, total, oneCentQuantum);
+    expect(sum(amounts)).toBe(total);
+    expect(Number.isSafeInteger(sum(amounts))).toBe(true);
+  });
+});
+
+describe('perDay', () => {
+  it('returns 0 instead of dividing by a non-positive day count', () => {
+    expect(perDay(1000, 0)).toBe(0);
+    expect(perDay(1000, -5)).toBe(0);
+  });
+
+  it('divides normally for a positive day count', () => {
+    expect(perDay(1000, 4)).toBe(250);
   });
 });

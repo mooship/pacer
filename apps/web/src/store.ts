@@ -21,8 +21,8 @@ import {
 } from '@pacer/core';
 import { create } from 'zustand';
 
-const STORAGE_KEY = 'pacer.config';
-const PLAN_KEY = 'pacer.plan';
+export const STORAGE_KEY = 'pacer.config';
+export const PLAN_KEY = 'pacer.plan';
 
 export function loadStoredConfig(): ConfigLoad {
   try {
@@ -56,18 +56,34 @@ function loadStoredPlan(): PlanSnapshot | null {
   }
 }
 
-function persistPlan(snap: PlanSnapshot): void {
+function persistPlan(snap: PlanSnapshot): string | null {
+  let error: string | null = null;
   try {
     localStorage.setItem(PLAN_KEY, JSON.stringify(snap));
+  } catch (e) {
+    error = `could not save your plan: ${String(e)}`;
+  }
+  try {
     window.history.replaceState(null, '', `?${encodePlan(snap)}`);
-  } catch {}
+  } catch (e) {
+    error ??= `could not update the share link: ${String(e)}`;
+  }
+  return error;
 }
 
-function clearStoredPlan(): void {
+function clearStoredPlan(): string | null {
+  let error: string | null = null;
   try {
     localStorage.removeItem(PLAN_KEY);
+  } catch (e) {
+    error = `could not clear your saved plan: ${String(e)}`;
+  }
+  try {
     window.history.replaceState(null, '', window.location.pathname);
-  } catch {}
+  } catch (e) {
+    error ??= `could not update the share link: ${String(e)}`;
+  }
+  return error;
 }
 
 function downloadBlob(content: string, type: string, filename: string): void {
@@ -82,17 +98,13 @@ function downloadBlob(content: string, type: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
-function syncPlan(prev: PlannerState, next: PlannerState): void {
+function syncPlan(prev: PlannerState, next: PlannerState): string | null {
   const prevSnap = planSnapshot(prev);
   const nextSnap = planSnapshot(next);
   if (samePlan(prevSnap, nextSnap)) {
-    return;
+    return null;
   }
-  if (nextSnap) {
-    persistPlan(nextSnap);
-  } else {
-    clearStoredPlan();
-  }
+  return nextSnap ? persistPlan(nextSnap) : clearStoredPlan();
 }
 
 interface PacerStore {
@@ -132,7 +144,10 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
   dispatch: (action) =>
     set((s) => {
       const next = reducer(s.state, action);
-      syncPlan(s.state, next);
+      const syncError = syncPlan(s.state, next);
+      if (syncError && !next.error) {
+        return { state: { ...next, error: syncError } };
+      }
       return { state: next };
     }),
 
@@ -154,7 +169,11 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       return;
     }
     const csv = buildCsv(state.results, state.total, state.config.currency);
-    downloadBlob(csv, 'text/csv;charset=utf-8', 'pacer-budget.csv');
+    if (!csv.ok) {
+      set((s) => ({ state: reducer(s.state, { type: 'error', value: csv.error }) }));
+      return;
+    }
+    downloadBlob(csv.value, 'text/csv;charset=utf-8', 'pacer-budget.csv');
     set((s) => ({ state: reducer(s.state, { type: 'notice', value: 'plan downloaded' }) }));
   },
 

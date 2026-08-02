@@ -1,4 +1,4 @@
-import { idiv } from './math.js';
+import { idiv, remEuclid } from './math.js';
 
 function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
@@ -53,7 +53,7 @@ export function civilFromDays(z0: number): [number, number, number] {
 }
 
 export function weekday(days: number): number {
-  return ((((days % 7) + 4) % 7) + 7) % 7;
+  return remEuclid(days + 4, 7);
 }
 
 export function today(): number {
@@ -101,8 +101,11 @@ export function fmtIso(days: number): string {
 }
 
 export function fmtRange(start: number, end: number): string {
-  const [, sm, sd] = civilFromDays(start);
-  const [, em, ed] = civilFromDays(end);
+  const [sy, sm, sd] = civilFromDays(start);
+  const [ey, em, ed] = civilFromDays(end);
+  if (sy !== ey) {
+    return `${sd} ${MON[sm]} ${sy}–${ed} ${MON[em]} ${ey}`;
+  }
   if (start === end) {
     return `${sd} ${MON[sm]}`;
   }

@@ -1,6 +1,7 @@
 import { type ComputeResult, coverEnd, fmtMoney, perDay } from './compute.js';
 import { DEFAULT_CURRENCY } from './config.js';
 import { fmtDmy, fmtRange } from './date.js';
+import { err, ok, type Result } from './result.js';
 
 function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
@@ -10,10 +11,10 @@ export function buildCsv(
   result: ComputeResult,
   total: number,
   currency = DEFAULT_CURRENCY,
-): string {
+): Result<string> {
   const { dates, segDays, amounts } = result;
   if (dates.length !== segDays.length || dates.length !== amounts.length) {
-    throw new Error('buildCsv: result arrays must have matching lengths');
+    return err('buildCsv: result arrays must have matching lengths');
   }
   let out = 'Pay date,Covers,Days,Amount,Per day\n';
   for (let i = 0; i < dates.length; i++) {
@@ -27,5 +28,5 @@ export function buildCsv(
   out += `${csvCell('Total')},,${totalDays},${csvCell(fmtMoney(total, currency))},${csvCell(
     fmtMoney(perDay(total, totalDays), currency),
   )}\n`;
-  return out;
+  return ok(out);
 }

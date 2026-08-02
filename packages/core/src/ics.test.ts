@@ -4,12 +4,16 @@ import { defaultConfig } from './config.js';
 import { daysFromCivil } from './date.js';
 import { buildIcs } from './ics.js';
 
-const result = compute(
+const computed = compute(
   daysFromCivil(2026, 6, 25),
   daysFromCivil(2026, 7, 24),
   500000,
   defaultConfig(),
 );
+if (!computed.ok) {
+  throw new Error(computed.error);
+}
+const result = computed.value;
 const ics = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20) });
 
 describe('ics', () => {
@@ -77,16 +81,35 @@ describe('ics', () => {
     );
   });
 
-  it('falls back to a 9am reminder for a non-positive or non-integer hour', () => {
-    for (const reminderHour of [0, -5, 2.5, Number.NaN]) {
+  it('falls back to a 9am reminder for a non-positive, out-of-range, or non-integer hour', () => {
+    for (const reminderHour of [0, -5, 2.5, Number.NaN, 24, 999999]) {
       const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour });
       expect(out).toContain('TRIGGER:PT9H');
     }
   });
 
+  it('honours the latest valid hour of the day', () => {
+    const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour: 23 });
+    expect(out).toContain('TRIGGER:PT23H');
+  });
+
   it('honours a valid custom reminder hour', () => {
     const out = buildIcs(result, 500000, { now: daysFromCivil(2026, 6, 20), reminderHour: 2 });
     expect(out).toContain('TRIGGER:PT2H');
+  });
+
+  it('scopes UIDs by plan so two plans sharing a payout day and amount do not collide', () => {
+    // Same dates/amounts (as could happen for two different plans that share
+    // a payout day and rounded amount by coincidence), but a different
+    // plan-level total — the UID must still differ.
+    const shared = { dates: [daysFromCivil(2026, 6, 25)], segDays: [10], amounts: [100000] };
+    const icsA = buildIcs(shared, 100000, { now: daysFromCivil(2026, 6, 20) });
+    const icsB = buildIcs(shared, 200000, { now: daysFromCivil(2026, 6, 20) });
+    const uidA = icsA.match(/UID:([^\r\n]+)/)?.[1];
+    const uidB = icsB.match(/UID:([^\r\n]+)/)?.[1];
+    expect(uidA).toBeDefined();
+    expect(uidB).toBeDefined();
+    expect(uidA).not.toBe(uidB);
   });
 
   it('produces a valid calendar with no events for an empty result', () => {

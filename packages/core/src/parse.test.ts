@@ -96,6 +96,33 @@ describe('parseAmount', () => {
   it('non-numeric rejected', () => {
     expect(parseAmount('abc').ok).toBe(false);
   });
+
+  it('empty or whitespace-only rejected', () => {
+    expect(parseAmount('').ok).toBe(false);
+    expect(parseAmount('   ').ok).toBe(false);
+  });
+
+  it('leading dot with no integer part rejected', () => {
+    expect(parseAmount('.50').ok).toBe(false);
+  });
+
+  it('trailing dot with no fraction digits rejected', () => {
+    expect(parseAmount('500.').ok).toBe(false);
+  });
+
+  it('leading plus sign rejected', () => {
+    expect(parseAmount('+500').ok).toBe(false);
+  });
+
+  it('accepts an amount right at the safe distribution ceiling', () => {
+    const maxCents = Math.floor(Number.MAX_SAFE_INTEGER / 366);
+    const rand = Math.floor(maxCents / 100);
+    expect(parseAmount(String(rand)).ok).toBe(true);
+  });
+
+  it("rejects an amount that would overflow compute()'s largest-remainder math", () => {
+    expect(parseAmount(String(Number.MAX_SAFE_INTEGER)).ok).toBe(false);
+  });
 });
 
 describe('resolveDate', () => {
@@ -140,6 +167,11 @@ describe('resolveDate', () => {
 
   it('month-day Feb 29 rolls to next leap year', () => {
     const base = daysFromCivil(2026, 6, 17);
+    expect(value(resolveDate('02-29', base))).toBe(daysFromCivil(2028, 2, 29));
+  });
+
+  it('month-day Feb 29 stays in the base year when the base year is a leap year and Feb 29 is still upcoming', () => {
+    const base = daysFromCivil(2028, 1, 1);
     expect(value(resolveDate('02-29', base))).toBe(daysFromCivil(2028, 2, 29));
   });
 

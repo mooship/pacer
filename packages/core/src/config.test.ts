@@ -69,4 +69,14 @@ describe('config', () => {
     });
     expect(parseStoredConfig('not an object').invalid).toBe(true);
   });
+
+  it('parseStoredConfig rejects a non-integer field', () => {
+    expect(parseStoredConfig({ quantum: 50.5 }).invalid).toBe(true);
+    expect(parseStoredConfig({ interval: 7.5 }).invalid).toBe(true);
+    expect(parseStoredConfig({ payday: 1.5 }).invalid).toBe(true);
+  });
+
+  it('sanitize treats a whitespace-only currency as empty', () => {
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '   ' }).currency).toBe('R');
+  });
 });

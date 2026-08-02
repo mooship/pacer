@@ -94,7 +94,10 @@ function recompute(s: PlannerState): void {
   if (s.pay === null || s.last === null || s.total === null) {
     return;
   }
-  s.results = compute(s.pay, s.last, s.total, s.config);
+  const r = compute(s.pay, s.last, s.total, s.config);
+  if (r.ok) {
+    s.results = r.value;
+  }
 }
 
 function enterResults(s: PlannerState): void {

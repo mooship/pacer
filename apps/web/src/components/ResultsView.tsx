@@ -26,6 +26,10 @@ export function ResultsView() {
   const pendingAction = usePacerStore((s) => s.pendingAction);
   const [resetArmed, setResetArmed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    summaryRef.current?.focus();
+  }, []);
   useEffect(
     () => () => {
       if (resetTimer.current) {
@@ -60,7 +64,7 @@ export function ResultsView() {
 
   return (
     <div className={styles.wrap}>
-      <p className={styles.summary}>
+      <p className={styles.summary} ref={summaryRef} tabIndex={-1}>
         {money(state.total)} from <strong>{fmtWdDmy(state.pay)}</strong> to{' '}
         <strong>{fmtWdDmy(state.last)}</strong>
       </p>

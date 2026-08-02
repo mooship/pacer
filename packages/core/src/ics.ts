@@ -54,7 +54,7 @@ function fold(line: string): string {
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {
   const { dates, segDays, amounts } = result;
   const requested = opts.reminderHour ?? 9;
-  const hour = Number.isInteger(requested) && requested > 0 ? requested : 9;
+  const hour = Number.isInteger(requested) && requested > 0 && requested <= 23 ? requested : 9;
   const cur = opts.currency ?? DEFAULT_CURRENCY;
   const stamp = `${dateStamp(opts.now)}T000000Z`;
 
@@ -78,7 +78,7 @@ export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions)
     )}/day over ${segDays[i]} day${segDays[i] === 1 ? '' : 's'}`;
     lines.push(
       'BEGIN:VEVENT',
-      `UID:${d}-${amounts[i]}@pacer`,
+      `UID:${dates[0]}-${total}-${d}-${amounts[i]}@pacer`,
       `DTSTAMP:${stamp}`,
       `DTSTART;VALUE=DATE:${dateStamp(d)}`,
       `DTEND;VALUE=DATE:${dateStamp(d + 1)}`,

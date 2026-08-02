@@ -1,23 +1,19 @@
+import { daysFromCivil, fmtIso, parseDate } from '@pacer/core';
 import { Calendar } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import styles from './Field.module.css';
 
-const ISO = /^\d{4}-\d{2}-\d{2}$/;
-
 function parseIso(value: string): Date | undefined {
-  if (!ISO.test(value)) return undefined;
-  const [y, m, d] = value.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  return Number.isNaN(date.getTime()) ? undefined : date;
+  const r = parseDate(value);
+  if (!r.ok) return undefined;
+  const [y, m, d] = r.value;
+  return new Date(y, m - 1, d);
 }
 
 function toIso(date: Date): string {
-  const y = date.getFullYear().toString();
-  const m = (date.getMonth() + 1).toString().padStart(2, '0');
-  const d = date.getDate().toString().padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return fmtIso(daysFromCivil(date.getFullYear(), date.getMonth() + 1, date.getDate()));
 }
 
 interface DatePopoverProps {
@@ -31,6 +27,7 @@ interface DatePopoverProps {
 export function DatePopover({ label, value, onChange, min, onPicked }: DatePopoverProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -40,7 +37,10 @@ export function DatePopover({ label, value, onChange, min, onPicked }: DatePopov
       }
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        setOpen(false);
+        buttonRef.current?.focus();
+      }
     };
     document.addEventListener('pointerdown', onPointerDown);
     document.addEventListener('keydown', onKey);
@@ -56,6 +56,7 @@ export function DatePopover({ label, value, onChange, min, onPicked }: DatePopov
   return (
     <span className={styles.calendarWrap} ref={wrapRef}>
       <button
+        ref={buttonRef}
         type="button"
         className={styles.calendarButton}
         onClick={() => setOpen((o) => !o)}
