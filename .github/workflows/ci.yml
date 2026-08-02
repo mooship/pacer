@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Typecheck, Test, and Build
+    name: Lint, Typecheck, Test, and Build
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -43,11 +43,14 @@ jobs:
             build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
             build-${{ runner.os }}-
 
+      - name: Lint
+        run: pnpm lint
+
       - name: Typecheck
         run: pnpm -r typecheck
 
       - name: Test
-        run: pnpm -r test
+        run: pnpm -r test --coverage
 
       - name: Build
         run: pnpm -r build

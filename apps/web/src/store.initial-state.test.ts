@@ -53,4 +53,58 @@ describe('usePacerStore initial state', () => {
     const { usePacerStore } = await import('./store.js');
     expect(usePacerStore.getState().state.notice).toBeNull();
   });
+
+  it('ignores a corrupt stored plan and starts fresh', async () => {
+    localStorage.setItem('pacer.plan', 'not json');
+    const { usePacerStore } = await import('./store.js');
+    const s = usePacerStore.getState().state;
+    expect(s.step).toBe('payDate');
+    expect(s.notice).toBeNull();
+  });
+
+  it('falls back to localStorage when the URL plan params are invalid', async () => {
+    localStorage.setItem(
+      'pacer.plan',
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+    );
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100&b=0`);
+    const { usePacerStore } = await import('./store.js');
+    const s = usePacerStore.getState().state;
+    expect(s.step).toBe('results');
+    expect(s.total).toBe(planParams.t);
+  });
+
+  it('starts fresh when both the URL and localStorage plans are invalid', async () => {
+    localStorage.setItem('pacer.plan', 'not json');
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100&b=0`);
+    const { usePacerStore } = await import('./store.js');
+    const s = usePacerStore.getState().state;
+    expect(s.step).toBe('payDate');
+    expect(s.notice).toBeNull();
+  });
+
+  it('falls back to localStorage when reading the URL plan throws', async () => {
+    localStorage.setItem(
+      'pacer.plan',
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+    );
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000&b=0`);
+    vi.doMock('@pacer/core', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@pacer/core')>();
+      return {
+        ...actual,
+        decodePlan: () => {
+          throw new Error('boom');
+        },
+      };
+    });
+    try {
+      const { usePacerStore } = await import('./store.js');
+      const s = usePacerStore.getState().state;
+      expect(s.step).toBe('results');
+      expect(s.total).toBe(planParams.t);
+    } finally {
+      vi.doUnmock('@pacer/core');
+    }
+  });
 });

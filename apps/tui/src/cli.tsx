@@ -15,6 +15,9 @@ switch (classifyArg(arg)) {
     process.exit(0);
     break;
   case 'unknown':
+    // classifyArg only returns 'unknown' when arg is defined, so the `?? ''`
+    // fallback can't actually run; kept because TS can't see that from here.
+    /* v8 ignore next */
     process.stderr.write(unknownArgMessage(arg ?? ''));
     process.exit(2);
     break;

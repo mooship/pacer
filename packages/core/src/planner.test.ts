@@ -1,16 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { defaultConfig } from './config.js';
 import { buildCsv } from './csv.js';
-import { daysFromCivil } from './date.js';
+import { daysFromCivil, fmtWdDmy } from './date.js';
 import {
   type Action,
   BRIDGE_LABEL,
+  breadcrumb,
   initialState,
+  mood,
   type PlannerState,
   parseSettings,
   planSnapshot,
   previews,
   reducer,
+  SETTINGS_PAYDAY,
+  saveSettingsAction,
 } from './planner.js';
 import { buildSummaryText, summaryLine } from './text.js';
 
@@ -84,6 +88,35 @@ describe('submit (all fields at once)', () => {
     expect(s.total).toBeNull();
     expect(s.error).not.toBeNull();
   });
+
+  it('rejects a blank pay date', () => {
+    const s = run(start(), { type: 'submit' });
+    expect(s.pay).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+
+  it('rejects an unparseable pay date', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: 'not-a-date' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.pay).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+
+  it('rejects a blank last day', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.last).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
 });
 
 describe('planner', () => {
@@ -100,6 +133,45 @@ describe('planner', () => {
     const s = run(start(today), { type: 'setPayInput', value: 'today' }, { type: 'confirm' });
     expect(s.step).toBe('lastDay');
     expect(s.pay).toBe(today);
+  });
+
+  it('unparseable pay date is rejected via confirm', () => {
+    const s = run(start(), { type: 'setPayInput', value: 'not-a-date' }, { type: 'confirm' });
+    expect(s.step).toBe('payDate');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('unparseable last day is rejected via confirm', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: 'not-a-date' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('lastDay');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('unparseable amount is rejected via confirm', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'confirm' },
+      { type: 'setAmountInput', value: 'abc' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('amount');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('confirm on lastDay with no pay set is a no-op (defensive guard)', () => {
+    const s: PlannerState = { ...start(), step: 'lastDay', lastInput: '+30' };
+    const again = reducer(s, { type: 'confirm' });
+    expect(again.step).toBe('lastDay');
+    expect(again.last).toBeNull();
   });
 
   it('relative last day is offset from pay', () => {
@@ -143,6 +215,27 @@ describe('planner', () => {
     const back = run(s, { type: 'back' });
     expect(back.step).toBe('payDate');
     expect(back.pay).toBeNull();
+  });
+
+  it('back from the amount step clears the last day and returns to lastDay', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('amount');
+    const back = run(s, { type: 'back' });
+    expect(back.step).toBe('lastDay');
+    expect(back.last).toBeNull();
+  });
+
+  it('back from the settings step returns to wherever settings was opened from', () => {
+    const s = reducer(start(), { type: 'openSettings' });
+    expect(s.step).toBe('settings');
+    const back = reducer(s, { type: 'back' });
+    expect(back.step).toBe('payDate');
   });
 
   it('reset returns to the first step, clears inputs, and preserves config', () => {
@@ -203,9 +296,22 @@ describe('planner', () => {
     expect(s.notice).toBe('settings saved');
   });
 
+  it('settingsSaved landing on results without a plan does not attempt to recompute (defensive guard)', () => {
+    const s: PlannerState = { ...start(), step: 'settings', settingsReturn: 'results' };
+    const saved = reducer(s, { type: 'settingsSaved', config: defaultConfig() });
+    expect(saved.step).toBe('results');
+    expect(saved.results).toBeNull();
+  });
+
   it('parseSettings rejects bad interval', () => {
     expect(parseSettings('50', '0', 1).ok).toBe(false);
     expect(parseSettings('50', 'abc', 1).ok).toBe(false);
+  });
+
+  it('parseSettings rejects a bad quantum before checking the interval', () => {
+    const r = parseSettings('abc', '0', 1);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain('number');
   });
 
   it('parseSettings carries and sanitizes the currency', () => {
@@ -253,7 +359,25 @@ describe('previews', () => {
     const s = run(start(), { type: 'setPayInput', value: '2026-06-25' });
     const v = previews(s);
     expect(v.payState).toBe('ok');
-    expect(v.pay).not.toBe('');
+    expect(v.pay).toBe(fmtWdDmy(daysFromCivil(2026, 6, 25)));
+  });
+
+  it('reports ok with a formatted preview once a valid last day is entered', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '2026-07-24' },
+    );
+    const v = previews(s);
+    expect(v.lastState).toBe('ok');
+    expect(v.last).toContain('30 days');
+  });
+
+  it('reports ok with a formatted preview once a valid amount is entered', () => {
+    const s = run(start(), { type: 'setAmountInput', value: '5000' });
+    const v = previews(s);
+    expect(v.amountState).toBe('ok');
+    expect(v.amount).toBe('R5,000.00');
   });
 });
 
@@ -264,7 +388,10 @@ describe('buildCsv', () => {
       throw new Error('expected results');
     }
     const csv = buildCsv(s.results, s.total);
-    const lines = csv.trimEnd().split('\n');
+    if (!csv.ok) {
+      throw new Error(csv.error);
+    }
+    const lines = csv.value.trimEnd().split('\n');
     const segments = s.results.dates.length;
     expect(lines[0]).toBe('Pay date,Covers,Days,Amount,Per day');
     expect(lines.length).toBe(segments + 2);
@@ -277,8 +404,8 @@ describe('buildCsv', () => {
       throw new Error('expected results');
     }
     const csv = buildCsv(s.results, s.total, '$');
-    expect(csv).toContain('$');
-    expect(csv).not.toContain('R');
+    expect(csv.ok && csv.value).toContain('$');
+    expect(csv.ok && csv.value).not.toContain('R');
   });
 });
 
@@ -318,6 +445,22 @@ describe('planSnapshot / restorePlan', () => {
     const back = run(restored, { type: 'back' });
     expect(back.step).toBe('amount');
     expect(back.amountInput).toBe('5,000.00');
+  });
+
+  it('restoring an internally inconsistent snapshot (defensive guard) leaves results empty', () => {
+    // restorePlan trusts its snapshot rather than re-validating it (that
+    // happens at the decodePlan/parsePlan boundary); an end-before-pay
+    // snapshot should fail compute() quietly rather than crash or show
+    // stale results.
+    const badSnap = {
+      pay: daysFromCivil(2026, 6, 25),
+      last: daysFromCivil(2026, 6, 20),
+      total: 500000,
+      boost: 0,
+    };
+    const restored = run(start(), { type: 'restorePlan', snap: badSnap });
+    expect(restored.step).toBe('results');
+    expect(restored.results).toBeNull();
   });
 });
 
@@ -391,5 +534,168 @@ describe('summaryLine', () => {
     const line = summaryLine(single.results, single.total, single.config);
     expect(line).toContain('Spend about');
     expect(line).toContain('to reach');
+  });
+});
+
+describe('mood', () => {
+  it('is idle before results with no error', () => {
+    expect(mood(start())).toBe('idle');
+  });
+
+  it('is error when the current step has an error', () => {
+    const s = run(start(), { type: 'confirm' });
+    expect(s.error).not.toBeNull();
+    expect(mood(s)).toBe('error');
+  });
+
+  it('is success once on the results step', () => {
+    expect(mood(resultsState())).toBe('success');
+  });
+
+  it('ignores an error set while on the settings step, when settings was opened from a non-results step', () => {
+    let s = reducer(start(), { type: 'openSettings' });
+    s = reducer(s, { type: 'error', value: 'bad' });
+    expect(s.step).toBe('settings');
+    expect(s.error).not.toBeNull();
+    expect(mood(s)).toBe('idle');
+  });
+
+  it('stays success in settings opened from results', () => {
+    const s = reducer(resultsState(), { type: 'openSettings' });
+    expect(mood(s)).toBe('success');
+  });
+});
+
+describe('breadcrumb', () => {
+  it('marks earlier steps done and the current step current', () => {
+    expect(breadcrumb('payDate').map((c) => c.status)).toEqual(['current', 'todo', 'todo']);
+    expect(breadcrumb('lastDay').map((c) => c.status)).toEqual(['done', 'current', 'todo']);
+    expect(breadcrumb('amount').map((c) => c.status)).toEqual(['done', 'done', 'current']);
+    expect(breadcrumb('results').map((c) => c.status)).toEqual(['done', 'done', 'done']);
+  });
+
+  it('names each step', () => {
+    expect(breadcrumb('payDate').map((c) => c.name)).toEqual(['Pay date', 'Last day', 'Amount']);
+  });
+});
+
+describe('saveSettingsAction', () => {
+  it('returns an error action without persisting when parsing fails', () => {
+    let persisted = false;
+    const action = saveSettingsAction('50', 'abc', 1, () => {
+      persisted = true;
+    });
+    expect(action.type).toBe('error');
+    expect(persisted).toBe(false);
+  });
+
+  it('returns a settingsSaved action when persistence succeeds', () => {
+    const action = saveSettingsAction('50', '7', 1, () => {});
+    expect(action.type).toBe('settingsSaved');
+  });
+
+  it('returns an error action when persistence throws', () => {
+    const action = saveSettingsAction('50', '7', 1, () => {
+      throw new Error('disk full');
+    });
+    expect(action.type).toBe('error');
+    expect(action.type === 'error' && action.value).toContain('disk full');
+  });
+});
+
+describe('parseSettings edge cases', () => {
+  it('rejects an empty interval', () => {
+    expect(parseSettings('50', '', 1).ok).toBe(false);
+  });
+
+  it('rejects a negative interval', () => {
+    expect(parseSettings('50', '-7', 1).ok).toBe(false);
+  });
+
+  it('rejects a decimal interval', () => {
+    expect(parseSettings('50', '7.5', 1).ok).toBe(false);
+  });
+
+  it('rejects an interval beyond the safe integer range', () => {
+    expect(parseSettings('50', '99999999999999999999', 1).ok).toBe(false);
+  });
+});
+
+describe('reducer: settings field actions', () => {
+  const inSettings = (): PlannerState => reducer(resultsState(), { type: 'openSettings' });
+
+  it('settingsUp/settingsDown move the cursor within bounds', () => {
+    let s = inSettings();
+    expect(s.settingsCursor).toBe(0);
+    s = reducer(s, { type: 'settingsUp' });
+    expect(s.settingsCursor).toBe(0);
+    s = reducer(s, { type: 'settingsDown' });
+    expect(s.settingsCursor).toBe(1);
+    s = reducer(s, { type: 'settingsDown' });
+    s = reducer(s, { type: 'settingsDown' });
+    s = reducer(s, { type: 'settingsDown' });
+    expect(s.settingsCursor).toBe(SETTINGS_PAYDAY + 1);
+  });
+
+  it('paydayPrev/paydayNext wrap around the week', () => {
+    let s = inSettings();
+    expect(s.config.payday).toBe(1);
+    s = reducer(s, { type: 'paydayPrev' });
+    expect(s.config.payday).toBe(0);
+    s = reducer(s, { type: 'paydayPrev' });
+    expect(s.config.payday).toBe(6);
+    s = reducer(s, { type: 'paydayNext' });
+    s = reducer(s, { type: 'paydayNext' });
+    expect(s.config.payday).toBe(1);
+  });
+
+  it('setQuantumInput/setIntervalInput/setCurrencyInput update their inputs', () => {
+    let s = inSettings();
+    s = reducer(s, { type: 'setQuantumInput', value: '100' });
+    s = reducer(s, { type: 'setIntervalInput', value: '14' });
+    s = reducer(s, { type: 'setCurrencyInput', value: '$' });
+    expect(s.quantumInput).toBe('100');
+    expect(s.intervalInput).toBe('14');
+    expect(s.currencyInput).toBe('$');
+  });
+
+  it('re-entering openSettings while already in settings is a no-op', () => {
+    const s = inSettings();
+    const again = reducer(s, { type: 'openSettings' });
+    expect(again).toEqual(s);
+  });
+});
+
+describe('reducer: notice and error actions', () => {
+  it('notice sets a notice message directly', () => {
+    const s = reducer(start(), { type: 'notice', value: 'hello' });
+    expect(s.notice).toBe('hello');
+  });
+
+  it('error sets an error message directly', () => {
+    const s = reducer(start(), { type: 'error', value: 'oops' });
+    expect(s.error).toBe('oops');
+  });
+});
+
+describe('reducer: no-op edges', () => {
+  it('confirm on the results step is a no-op', () => {
+    const s = resultsState();
+    const again = reducer(s, { type: 'confirm' });
+    expect(again.step).toBe('results');
+    expect(again.results).toEqual(s.results);
+  });
+
+  it('confirm on the settings step is a no-op', () => {
+    const s = reducer(resultsState(), { type: 'openSettings' });
+    const again = reducer(s, { type: 'confirm' });
+    expect(again.step).toBe('settings');
+  });
+
+  it('back on the payDate step is a no-op', () => {
+    const s = start();
+    const again = reducer(s, { type: 'back' });
+    expect(again.step).toBe('payDate');
+    expect(again.pay).toBeNull();
   });
 });

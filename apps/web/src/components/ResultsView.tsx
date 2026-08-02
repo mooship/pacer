@@ -26,6 +26,10 @@ export function ResultsView() {
   const pendingAction = usePacerStore((s) => s.pendingAction);
   const [resetArmed, setResetArmed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const summaryRef = useRef<HTMLParagraphElement>(null);
+  useEffect(() => {
+    summaryRef.current?.focus();
+  }, []);
   useEffect(
     () => () => {
       if (resetTimer.current) {
@@ -36,6 +40,10 @@ export function ResultsView() {
   );
   const handleResetClick = () => {
     if (resetArmed) {
+      // resetTimer.current is always set alongside resetArmed becoming
+      // true (below), so this is a type-safety guard, not a reachable
+      // false case.
+      /* v8 ignore next 3 */
       if (resetTimer.current) {
         clearTimeout(resetTimer.current);
       }
@@ -60,7 +68,7 @@ export function ResultsView() {
 
   return (
     <div className={styles.wrap}>
-      <p className={styles.summary}>
+      <p className={styles.summary} ref={summaryRef} tabIndex={-1}>
         {money(state.total)} from <strong>{fmtWdDmy(state.pay)}</strong> to{' '}
         <strong>{fmtWdDmy(state.last)}</strong>
       </p>

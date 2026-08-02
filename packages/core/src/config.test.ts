@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_INTERVAL,
+  DEFAULT_PAYDAY,
   DEFAULT_QUANTUM,
   defaultConfig,
   parseConfig,
@@ -52,6 +53,10 @@ describe('config', () => {
     expect(back.interval).toBe(DEFAULT_INTERVAL);
   });
 
+  it('fills the default payday when it is the field omitted', () => {
+    expect(parseConfig({ quantum: 10000 }).payday).toBe(DEFAULT_PAYDAY);
+  });
+
   it('invalid input falls back to defaults', () => {
     expect(parseConfig({ payday: 'oops' })).toEqual(defaultConfig());
     expect(parseConfig('not an object')).toEqual(defaultConfig());
@@ -68,5 +73,15 @@ describe('config', () => {
       invalid: true,
     });
     expect(parseStoredConfig('not an object').invalid).toBe(true);
+  });
+
+  it('parseStoredConfig rejects a non-integer field', () => {
+    expect(parseStoredConfig({ quantum: 50.5 }).invalid).toBe(true);
+    expect(parseStoredConfig({ interval: 7.5 }).invalid).toBe(true);
+    expect(parseStoredConfig({ payday: 1.5 }).invalid).toBe(true);
+  });
+
+  it('sanitize treats a whitespace-only currency as empty', () => {
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '   ' }).currency).toBe('R');
   });
 });

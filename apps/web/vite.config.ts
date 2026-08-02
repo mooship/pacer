@@ -11,5 +11,12 @@ export default defineConfig({
     restoreMocks: true,
     setupFiles: ['./src/test/setup.ts'],
     css: { modules: { classNameStrategy: 'non-scoped' } },
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.test.{ts,tsx}', 'src/main.tsx'],
+      thresholds: { 100: true },
+    },
   },
 });

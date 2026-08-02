@@ -23,12 +23,16 @@ function planPath(): string {
   return join(configDir(), 'plan.toml');
 }
 
+function isMissingFile(e: unknown): boolean {
+  return e instanceof Error && (e as NodeJS.ErrnoException).code === 'ENOENT';
+}
+
 export function loadConfig(path = configPath()): ConfigLoad {
   let body: string;
   try {
     body = readFileSync(path, 'utf8');
-  } catch {
-    return { config: defaultConfig(), invalid: false };
+  } catch (e) {
+    return { config: defaultConfig(), invalid: !isMissingFile(e) };
   }
   try {
     return parseStoredConfig(parseToml(body));
@@ -42,17 +46,23 @@ export function saveConfig(config: Config, path = configPath()): void {
   writeFileSync(path, stringifyToml(config as unknown as Record<string, unknown>));
 }
 
-export function loadPlan(path = planPath()): PlanSnapshot | null {
+export interface PlanLoad {
+  snap: PlanSnapshot | null;
+  invalid: boolean;
+}
+
+export function loadPlan(path = planPath()): PlanLoad {
   let body: string;
   try {
     body = readFileSync(path, 'utf8');
-  } catch {
-    return null;
+  } catch (e) {
+    return { snap: null, invalid: !isMissingFile(e) };
   }
   try {
-    return parsePlan(parseToml(body) as Record<string, unknown>);
+    const snap = parsePlan(parseToml(body) as Record<string, unknown>);
+    return { snap, invalid: snap === null };
   } catch {
-    return null;
+    return { snap: null, invalid: true };
   }
 }
 

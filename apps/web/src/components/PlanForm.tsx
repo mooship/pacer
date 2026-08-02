@@ -54,15 +54,25 @@ export function PlanForm() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);
   const view = previews(state);
-  const formRef = useRef<HTMLFormElement>(null);
   const [attempted, setAttempted] = useState(false);
+
+  const payRef = useRef<HTMLInputElement>(null);
+  const lastRef = useRef<HTMLInputElement>(null);
+  const amountRef = useRef<HTMLInputElement>(null);
+  const fieldRefs = {
+    'pay-date': payRef,
+    'last-day': lastRef,
+    amount: amountRef,
+  } as const;
 
   const payMin = view.payDay !== null ? fmtIso(view.payDay) : undefined;
   const showInvalid = (fieldState: FieldState) =>
     fieldState === 'invalid' || (attempted && fieldState === 'empty');
 
   useEffect(() => {
-    const inputs = [...(formRef.current?.querySelectorAll<HTMLInputElement>('input') ?? [])];
+    const inputs = [payRef.current, lastRef.current, amountRef.current].filter(
+      (el): el is HTMLInputElement => el !== null,
+    );
     const target = inputs.find((i) => i.value.trim() === '') ?? inputs[0];
     target?.focus();
   }, []);
@@ -85,7 +95,7 @@ export function PlanForm() {
     const firstBad = fields.find(([, fieldState]) => fieldState !== 'ok');
     if (firstBad) {
       setAttempted(true);
-      document.getElementById(firstBad[0])?.focus();
+      fieldRefs[firstBad[0]].current?.focus();
       return;
     }
     dispatch({ type: 'submit' });
@@ -93,7 +103,6 @@ export function PlanForm() {
 
   return (
     <form
-      ref={formRef}
       className={styles.form}
       onSubmit={(e) => {
         e.preventDefault();
@@ -124,6 +133,7 @@ export function PlanForm() {
         )}
         invalid={showInvalid(view.payState)}
         datePicker
+        inputRef={payRef}
       />
       <Chips chips={PAY_CHIPS} onPick={(value) => dispatch({ type: 'setPayInput', value })} />
 
@@ -144,6 +154,7 @@ export function PlanForm() {
         invalid={showInvalid(view.lastState)}
         datePicker
         min={payMin}
+        inputRef={lastRef}
       />
       <Chips chips={LAST_CHIPS} onPick={(value) => dispatch({ type: 'setLastInput', value })} />
 
@@ -163,6 +174,7 @@ export function PlanForm() {
         )}
         invalid={showInvalid(view.amountState)}
         inputMode="decimal"
+        inputRef={amountRef}
       />
 
       <div className={styles.actions}>

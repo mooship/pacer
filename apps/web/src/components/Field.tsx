@@ -1,6 +1,6 @@
 import { clsx } from 'clsx';
 import { Check } from 'lucide-react';
-import { type HTMLInputTypeAttribute, useRef } from 'react';
+import { type HTMLInputTypeAttribute, type RefObject, useRef } from 'react';
 import { DatePopover } from './DatePopover.js';
 import styles from './Field.module.css';
 
@@ -17,6 +17,7 @@ interface FieldProps {
   type?: HTMLInputTypeAttribute;
   datePicker?: boolean;
   min?: string;
+  inputRef?: RefObject<HTMLInputElement | null>;
 }
 
 export function Field({
@@ -32,10 +33,12 @@ export function Field({
   type = 'text',
   datePicker = false,
   min,
+  inputRef: externalRef,
 }: FieldProps) {
   const hintId = `${id}-hint`;
   const showHint = Boolean(hint);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const ownRef = useRef<HTMLInputElement>(null);
+  const inputRef = externalRef ?? ownRef;
 
   return (
     <div

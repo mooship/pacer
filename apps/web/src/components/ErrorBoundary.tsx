@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { PLAN_KEY, STORAGE_KEY } from '../store.js';
 import styles from './ErrorBoundary.module.css';
 
 interface ErrorBoundaryProps {
@@ -22,11 +23,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
   private reset = (): void => {
     try {
-      localStorage.removeItem('pacer.config');
-      localStorage.removeItem('pacer.plan');
-    } catch {
-      // localStorage may be unavailable; falls through to reload
-    }
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(PLAN_KEY);
+    } catch {}
     window.location.href = window.location.pathname;
   };
 

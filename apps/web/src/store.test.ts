@@ -27,7 +27,6 @@ describe('pacer store', () => {
     expect(s.results?.amounts.reduce((a, b) => a + b, 0)).toBe(500000);
   });
 
-
   it('persists settings to localStorage and reloads them', () => {
     const { dispatch, saveSettings } = store();
     dispatch({ type: 'openSettings' });
@@ -48,7 +47,7 @@ describe('pacer store', () => {
     dispatch({ type: 'openSettings' });
     dispatch({ type: 'setQuantumInput', value: 'abc' });
     saveSettings();
-    expect(store().state.error).not.toBeNull();
+    expect(store().state.error).toBe('amount must be a number, got `abc`');
     expect(localStorage.getItem('pacer.config')).toBeNull();
   });
 
@@ -91,6 +90,44 @@ describe('plan persistence', () => {
     store().dispatch({ type: 'reset' });
     expect(localStorage.getItem('pacer.plan')).toBeNull();
     expect(window.location.search).toBe('');
+  });
+
+  it('surfaces an error instead of failing silently when the URL cannot be updated', () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    reachResults();
+    expect(store().state.error).toContain('could not update the share link');
+    replaceState.mockRestore();
+  });
+
+  it('surfaces an error instead of failing silently when clearing the URL fails', () => {
+    reachResults();
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    store().dispatch({ type: 'reset' });
+    expect(store().state.error).toContain('could not update the share link');
+    replaceState.mockRestore();
+  });
+
+  it('surfaces an error instead of failing silently when localStorage.setItem fails', () => {
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+    reachResults();
+    expect(store().state.error).toContain('could not save your plan');
+    setItem.mockRestore();
+  });
+
+  it('surfaces an error instead of failing silently when localStorage.removeItem fails', () => {
+    reachResults();
+    const removeItem = vi.spyOn(localStorage, 'removeItem').mockImplementation(() => {
+      throw new Error('denied');
+    });
+    store().dispatch({ type: 'reset' });
+    expect(store().state.error).toContain('could not clear your saved plan');
+    removeItem.mockRestore();
   });
 });
 
@@ -150,6 +187,16 @@ describe('copyShareLink', () => {
     await store().copyShareLink();
     expect(navigator.clipboard.writeText).not.toHaveBeenCalled();
   });
+
+  it('reports an error when the clipboard write fails', async () => {
+    vi.stubGlobal('navigator', {
+      ...navigator,
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    });
+    reachResults();
+    await store().copyShareLink();
+    expect(store().state.error).toBe('could not copy link');
+  });
 });
 
 describe('exportCsv', () => {
@@ -190,6 +237,21 @@ describe('exportCsv', () => {
     store().exportCsv();
     expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
     expect(blobs).toHaveLength(0);
+  });
+
+  it('surfaces a build error instead of downloading a malformed csv', () => {
+    reachResults();
+    // buildCsv validates its input's array lengths; state.results can only
+    // reach this shape by direct injection, not through the reducer, but
+    // exportCsv should still handle it instead of downloading garbage.
+    usePacerStore.setState((s) => ({
+      state: { ...s.state, results: { dates: [0, 1], segDays: [1], amounts: [100, 200] } },
+    }));
+
+    store().exportCsv();
+
+    expect(HTMLAnchorElement.prototype.click).not.toHaveBeenCalled();
+    expect(store().state.error).toContain('matching lengths');
   });
 });
 

@@ -1,6 +1,7 @@
 import { type Config, DEFAULT_CURRENCY } from './config.js';
 import { weekday } from './date.js';
 import { idiv, remEuclid } from './math.js';
+import { err, ok, type Result } from './result.js';
 
 export interface ComputeResult {
   dates: number[];
@@ -13,7 +14,7 @@ export function coverEnd(date: number, days: number): number {
 }
 
 export function perDay(amount: number, days: number): number {
-  return idiv(amount, days);
+  return days > 0 ? idiv(amount, days) : 0;
 }
 
 export function fmtMoney(cents: number, symbol: string = DEFAULT_CURRENCY): string {
@@ -77,7 +78,11 @@ export function compute(
   end: number,
   total: number,
   cfg: Config,
-): ComputeResult {
+): Result<ComputeResult> {
+  if (end < pay) {
+    return err('end must be on or after pay');
+  }
+
   const totalDays = end - pay + 1;
 
   const dates = [pay];
@@ -95,6 +100,10 @@ export function compute(
     return next - dates[i];
   });
 
+  // Distribute across every segment first just to read off the bridge's share
+  // (index 0); that share is subtracted out so recurring installments are
+  // redistributed among themselves and stay exact multiples of quantum, while
+  // the bridge absorbs whatever quantum can't evenly cover.
   const quanta = idiv(total, cfg.quantum);
   const firstQuanta = distribute(quanta, segDays, totalDays)[0];
   const weeklyQuanta = quanta - firstQuanta;
@@ -109,5 +118,5 @@ export function compute(
   }
   amounts[0] = total - amounts.slice(1).reduce((a, b) => a + b, 0);
 
-  return { dates, segDays, amounts };
+  return ok({ dates, segDays, amounts });
 }

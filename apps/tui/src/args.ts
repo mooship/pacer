@@ -13,7 +13,7 @@ In the TUI:
   Amount     Rand, optional cents: 5000, R5,000, 5000.50
 
 Keys:
-  Enter confirm   Esc back   ←/→ move cursor   e load example   F2 settings   Ctrl+C quit
+  Enter confirm   Esc back   ←/→ move cursor   e load example   Tab settings   Ctrl+C quit
   Results: s save csv   i save calendar   c copy
            r r start over (press twice to confirm)   Esc edit   q quit
 

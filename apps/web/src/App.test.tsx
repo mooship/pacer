@@ -1,5 +1,5 @@
 import { daysFromCivil, defaultConfig, initialState } from '@pacer/core';
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { App } from './App.js';
@@ -107,5 +107,26 @@ describe('App', () => {
     const table = screen.getByRole('table');
     expect(table).toHaveTextContent('$');
     expect(table).not.toHaveTextContent('R5');
+  });
+
+  it('opens the settings dialog from the header gear button', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    expect(screen.queryByRole('heading', { name: 'Settings' })).toBeNull();
+
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
+
+    expect(screen.getByRole('heading', { name: 'Settings' })).toBeInTheDocument();
+  });
+
+  it('shows a global error via StatusMessage when the store reports one', () => {
+    render(<App />);
+
+    act(() => {
+      usePacerStore.getState().dispatch({ type: 'error', value: 'something went wrong' });
+    });
+
+    expect(screen.getByRole('alert')).toHaveTextContent('something went wrong');
   });
 });
