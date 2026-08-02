@@ -83,4 +83,37 @@ describe('SettingsDialog', () => {
     expect(usePacerStore.getState().state.config.quantum).toBe(defaultConfig().quantum);
     expect(usePacerStore.getState().state.step).toBe('payDate');
   });
+
+  it('updates the currency symbol field', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Currency symbol'));
+    await user.type(screen.getByLabelText('Currency symbol'), '$');
+
+    expect(usePacerStore.getState().state.currencyInput).toBe('$');
+  });
+
+  it('does not crash in a browser without <dialog> showModal support', () => {
+    const original = HTMLDialogElement.prototype.showModal;
+    // @ts-expect-error simulating an older browser without showModal
+    delete HTMLDialogElement.prototype.showModal;
+    try {
+      usePacerStore.getState().dispatch({ type: 'openSettings' });
+      expect(() => render(<SettingsDialog />)).not.toThrow();
+    } finally {
+      HTMLDialogElement.prototype.showModal = original;
+    }
+  });
+
+  it('goes back without saving when the dialog is cancelled natively (Escape)', () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    render(<SettingsDialog />);
+
+    const dialog = screen.getByRole('dialog', { hidden: true });
+    dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
+
+    expect(usePacerStore.getState().state.step).toBe('payDate');
+  });
 });

@@ -22,6 +22,13 @@ describe('Field', () => {
     expect(frame).toContain('today, +7, or 2026-07-25');
   });
 
+  it('renders no placeholder text when inactive, empty, and none is given', () => {
+    const { lastFrame } = render(
+      <Field label="Pay date" labelWidth={18} value="" active={false} done={false} theme={theme} />,
+    );
+    expect(lastFrame() ?? '').toContain('Pay date');
+  });
+
   it('shows the value when inactive and filled', () => {
     const { lastFrame } = render(
       <Field
@@ -49,6 +56,26 @@ describe('Field', () => {
         onSubmit={vi.fn()}
       />,
     );
+    expect(lastFrame() ?? '').toContain('5000');
+  });
+
+  it('renders an active field without crashing when no onSubmit is given', async () => {
+    const { lastFrame, stdin } = render(
+      <Field
+        label="Amount"
+        labelWidth={18}
+        value="5000"
+        active={true}
+        done={false}
+        theme={theme}
+        onChange={vi.fn()}
+      />,
+    );
+    expect(lastFrame() ?? '').toContain('5000');
+    // Pressing Enter with no onSubmit falls back to a no-op handler instead
+    // of crashing.
+    stdin.write('\r');
+    await new Promise((resolve) => setTimeout(resolve, 30));
     expect(lastFrame() ?? '').toContain('5000');
   });
 

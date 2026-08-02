@@ -88,6 +88,35 @@ describe('submit (all fields at once)', () => {
     expect(s.total).toBeNull();
     expect(s.error).not.toBeNull();
   });
+
+  it('rejects a blank pay date', () => {
+    const s = run(start(), { type: 'submit' });
+    expect(s.pay).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+
+  it('rejects an unparseable pay date', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: 'not-a-date' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.pay).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
+
+  it('rejects a blank last day', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setAmountInput', value: '5000' },
+      { type: 'submit' },
+    );
+    expect(s.last).toBeNull();
+    expect(s.error).not.toBeNull();
+  });
 });
 
 describe('planner', () => {
@@ -104,6 +133,45 @@ describe('planner', () => {
     const s = run(start(today), { type: 'setPayInput', value: 'today' }, { type: 'confirm' });
     expect(s.step).toBe('lastDay');
     expect(s.pay).toBe(today);
+  });
+
+  it('unparseable pay date is rejected via confirm', () => {
+    const s = run(start(), { type: 'setPayInput', value: 'not-a-date' }, { type: 'confirm' });
+    expect(s.step).toBe('payDate');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('unparseable last day is rejected via confirm', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: 'not-a-date' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('lastDay');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('unparseable amount is rejected via confirm', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'confirm' },
+      { type: 'setAmountInput', value: 'abc' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('amount');
+    expect(s.error).not.toBeNull();
+  });
+
+  it('confirm on lastDay with no pay set is a no-op (defensive guard)', () => {
+    const s: PlannerState = { ...start(), step: 'lastDay', lastInput: '+30' };
+    const again = reducer(s, { type: 'confirm' });
+    expect(again.step).toBe('lastDay');
+    expect(again.last).toBeNull();
   });
 
   it('relative last day is offset from pay', () => {
@@ -147,6 +215,27 @@ describe('planner', () => {
     const back = run(s, { type: 'back' });
     expect(back.step).toBe('payDate');
     expect(back.pay).toBeNull();
+  });
+
+  it('back from the amount step clears the last day and returns to lastDay', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '2026-07-24' },
+      { type: 'confirm' },
+    );
+    expect(s.step).toBe('amount');
+    const back = run(s, { type: 'back' });
+    expect(back.step).toBe('lastDay');
+    expect(back.last).toBeNull();
+  });
+
+  it('back from the settings step returns to wherever settings was opened from', () => {
+    const s = reducer(start(), { type: 'openSettings' });
+    expect(s.step).toBe('settings');
+    const back = reducer(s, { type: 'back' });
+    expect(back.step).toBe('payDate');
   });
 
   it('reset returns to the first step, clears inputs, and preserves config', () => {
@@ -207,9 +296,22 @@ describe('planner', () => {
     expect(s.notice).toBe('settings saved');
   });
 
+  it('settingsSaved landing on results without a plan does not attempt to recompute (defensive guard)', () => {
+    const s: PlannerState = { ...start(), step: 'settings', settingsReturn: 'results' };
+    const saved = reducer(s, { type: 'settingsSaved', config: defaultConfig() });
+    expect(saved.step).toBe('results');
+    expect(saved.results).toBeNull();
+  });
+
   it('parseSettings rejects bad interval', () => {
     expect(parseSettings('50', '0', 1).ok).toBe(false);
     expect(parseSettings('50', 'abc', 1).ok).toBe(false);
+  });
+
+  it('parseSettings rejects a bad quantum before checking the interval', () => {
+    const r = parseSettings('abc', '0', 1);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain('number');
   });
 
   it('parseSettings carries and sanitizes the currency', () => {
@@ -258,6 +360,24 @@ describe('previews', () => {
     const v = previews(s);
     expect(v.payState).toBe('ok');
     expect(v.pay).not.toBe('');
+  });
+
+  it('reports ok with a formatted preview once a valid last day is entered', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'setLastInput', value: '2026-07-24' },
+    );
+    const v = previews(s);
+    expect(v.lastState).toBe('ok');
+    expect(v.last).toContain('30 days');
+  });
+
+  it('reports ok with a formatted preview once a valid amount is entered', () => {
+    const s = run(start(), { type: 'setAmountInput', value: '5000' });
+    const v = previews(s);
+    expect(v.amountState).toBe('ok');
+    expect(v.amount).toBe('R5,000.00');
   });
 });
 
@@ -325,6 +445,22 @@ describe('planSnapshot / restorePlan', () => {
     const back = run(restored, { type: 'back' });
     expect(back.step).toBe('amount');
     expect(back.amountInput).toBe('5,000.00');
+  });
+
+  it('restoring an internally inconsistent snapshot (defensive guard) leaves results empty', () => {
+    // restorePlan trusts its snapshot rather than re-validating it (that
+    // happens at the decodePlan/parsePlan boundary); an end-before-pay
+    // snapshot should fail compute() quietly rather than crash or show
+    // stale results.
+    const badSnap = {
+      pay: daysFromCivil(2026, 6, 25),
+      last: daysFromCivil(2026, 6, 20),
+      total: 500000,
+      boost: 0,
+    };
+    const restored = run(start(), { type: 'restorePlan', snap: badSnap });
+    expect(restored.step).toBe('results');
+    expect(restored.results).toBeNull();
   });
 });
 

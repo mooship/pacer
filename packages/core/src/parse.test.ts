@@ -34,8 +34,16 @@ describe('parseDate', () => {
     expect(parseDate('2026-13-01').ok).toBe(false);
   });
 
+  it('non-numeric month rejected', () => {
+    expect(parseDate('2026-ab-01').ok).toBe(false);
+  });
+
   it('day out of range rejected', () => {
     expect(parseDate('2026-06-31').ok).toBe(false);
+  });
+
+  it('non-numeric day rejected', () => {
+    expect(parseDate('2026-06-ab').ok).toBe(false);
   });
 
   it('year out of range rejected', () => {
@@ -120,8 +128,31 @@ describe('parseAmount', () => {
     expect(parseAmount(String(rand)).ok).toBe(true);
   });
 
-  it("rejects an amount that would overflow compute()'s largest-remainder math", () => {
+  it('rejects an integer part so large it overflows a safe integer on its own', () => {
+    expect(parseAmount('99999999999999999999').ok).toBe(false);
+  });
+
+  it('rejects an integer part that is itself safe but overflows once scaled to cents', () => {
+    // Number.MAX_SAFE_INTEGER parses fine as an integer, but multiplying by
+    // 100 to shift it into cents overflows Number.isSafeInteger.
     expect(parseAmount(String(Number.MAX_SAFE_INTEGER)).ok).toBe(false);
+  });
+
+  it('rejects an amount where adding cents overflows a safe integer', () => {
+    // rand*100 alone is a safe integer, but adding the fractional cents
+    // tips the total over Number.MAX_SAFE_INTEGER.
+    const rand = Math.floor(Number.MAX_SAFE_INTEGER / 100);
+    expect(rand * 100).toBeLessThanOrEqual(Number.MAX_SAFE_INTEGER);
+    const r = parseAmount(`${rand}.99`);
+    expect(r.ok).toBe(false);
+  });
+
+  it("rejects an amount that would overflow compute()'s largest-remainder math", () => {
+    const maxCents = Math.floor(Number.MAX_SAFE_INTEGER / 366);
+    const rand = Math.floor(maxCents / 100) + 1;
+    const r = parseAmount(String(rand));
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain('too large');
   });
 });
 
@@ -179,8 +210,16 @@ describe('resolveDate', () => {
     expect(resolveDate('13-01', daysFromCivil(2026, 6, 17)).ok).toBe(false);
   });
 
+  it('month-day non-numeric month rejected', () => {
+    expect(resolveDate('ab-15', daysFromCivil(2026, 6, 17)).ok).toBe(false);
+  });
+
   it('month-day day out of range rejected', () => {
     expect(resolveDate('02-30', daysFromCivil(2026, 6, 17)).ok).toBe(false);
+  });
+
+  it('month-day non-numeric day rejected', () => {
+    expect(resolveDate('06-ab', daysFromCivil(2026, 6, 17)).ok).toBe(false);
   });
 
   it('bad offset rejected', () => {

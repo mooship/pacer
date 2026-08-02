@@ -82,4 +82,26 @@ describe('usePacerStore initial state', () => {
     expect(s.step).toBe('payDate');
     expect(s.notice).toBeNull();
   });
+
+  it('falls back to localStorage when reading the URL plan throws', async () => {
+    localStorage.setItem(
+      'pacer.plan',
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+    );
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000&b=0`);
+    vi.doMock('@pacer/core', async (importOriginal) => {
+      const actual = await importOriginal<typeof import('@pacer/core')>();
+      return {
+        ...actual,
+        decodePlan: () => {
+          throw new Error('boom');
+        },
+      };
+    });
+    const { usePacerStore } = await import('./store.js');
+    const s = usePacerStore.getState().state;
+    expect(s.step).toBe('results');
+    expect(s.total).toBe(planParams.t);
+    vi.doUnmock('@pacer/core');
+  });
 });

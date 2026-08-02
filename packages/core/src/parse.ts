@@ -82,6 +82,10 @@ function resolveMonthDay(s: string, m: number, d: number, base: number): Result<
       return ok(days);
     }
   }
+  // Unreachable: MAX_LEAP_GAP_YEARS covers the longest possible gap between
+  // Gregorian leap years, so the loop above always finds a match. Kept as a
+  // safety net so this function always returns a Result.
+  /* v8 ignore next */
   return err(`day out of range in \`${s}\``);
 }
 

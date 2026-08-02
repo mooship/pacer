@@ -37,6 +37,32 @@ describe('DatePopover', () => {
     expect(button).toHaveFocus();
   });
 
+  it('stays open when a non-Escape key is pressed', async () => {
+    const user = userEvent.setup();
+    render(<DatePopover label="Pay date" value="" onChange={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
+    await user.keyboard('a');
+
+    expect(screen.getByRole('dialog', { name: /pay date calendar/i })).toBeInTheDocument();
+  });
+
+  it('ignores a deselect (no date) from the day picker', async () => {
+    const onChange = vi.fn();
+    const user = userEvent.setup();
+    render(<DatePopover label="Pay date" value="2026-06-25" onChange={onChange} />);
+
+    await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
+    // Clicking the already-selected day asks react-day-picker to deselect,
+    // which calls onSelect(undefined) rather than a Date.
+    await user.click(
+      screen.getByRole('gridcell', { name: '25' }).querySelector('button') as HTMLElement,
+    );
+
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('dialog', { name: /pay date calendar/i })).toBeInTheDocument();
+  });
+
   it('closes when clicking outside the popover', async () => {
     const user = userEvent.setup();
     render(

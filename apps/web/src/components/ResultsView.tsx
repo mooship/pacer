@@ -40,6 +40,10 @@ export function ResultsView() {
   );
   const handleResetClick = () => {
     if (resetArmed) {
+      // resetTimer.current is always set alongside resetArmed becoming
+      // true (below), so this is a type-safety guard, not a reachable
+      // false case.
+      /* v8 ignore next 3 */
       if (resetTimer.current) {
         clearTimeout(resetTimer.current);
       }

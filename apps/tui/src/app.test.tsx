@@ -15,6 +15,21 @@ vi.mock('node:fs', async (importOriginal) => {
   return { ...actual, writeFileSync: (...args: unknown[]) => writeFileSyncMock(...args) };
 });
 
+const buildCsvErrorOnce = { armed: false };
+vi.mock('@pacer/core', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@pacer/core')>();
+  return {
+    ...actual,
+    buildCsv: (...args: Parameters<typeof actual.buildCsv>) => {
+      if (buildCsvErrorOnce.armed) {
+        buildCsvErrorOnce.armed = false;
+        return { ok: false as const, error: 'mismatched rows' };
+      }
+      return actual.buildCsv(...args);
+    },
+  };
+});
+
 const loadPlanMock = vi.fn((): PlanLoad => ({ snap: null as PlanSnapshot | null, invalid: false }));
 const savePlanMock = vi.fn();
 const clearPlanMock = vi.fn();
@@ -66,8 +81,10 @@ beforeEach(() => {
   writeFileSyncMock.mockReset();
   loadPlanMock.mockReturnValue({ snap: null, invalid: false });
   savePlanMock.mockClear();
+  savePlanMock.mockImplementation(() => {});
   clearPlanMock.mockClear();
   saveConfigMock.mockClear();
+  buildCsvErrorOnce.armed = false;
 });
 
 afterEach(() => {
@@ -235,5 +252,53 @@ describe('App', () => {
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Amount');
     expect(frame).not.toContain('Total');
+  });
+
+  it('goes back with Escape from the initial form step (a no-op on payDate)', async () => {
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await press(stdin, ESC);
+    expect(lastFrame() ?? '').toContain('Pay date');
+  });
+
+  it('shows an error notice when saving the csv export returns a build error', async () => {
+    buildCsvErrorOnce.armed = true;
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await submitPlan(stdin);
+    await press(stdin, 's');
+    expect(lastFrame() ?? '').toContain('could not save: mismatched rows');
+    expect(writeFileSyncMock).not.toHaveBeenCalled();
+  });
+
+  it('shows an error notice when the plan autosave effect fails', async () => {
+    savePlanMock.mockImplementation(() => {
+      throw new Error('disk full');
+    });
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await submitPlan(stdin);
+    await tick();
+    expect(lastFrame() ?? '').toContain('could not save your plan: Error: disk full');
+  });
+
+  it('clears the pending reset timer on unmount without throwing', async () => {
+    const { stdin, unmount } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await submitPlan(stdin);
+    await press(stdin, 'r');
+    expect(() => unmount()).not.toThrow();
+  });
+
+  it('types into the settings quantum, currency, and interval fields', async () => {
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await press(stdin, TAB);
+    await type(stdin, '9');
+    await press(stdin, DOWN);
+    await type(stdin, '$');
+    await press(stdin, DOWN);
+    await press(stdin, DOWN);
+    await type(stdin, '4');
+
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('9');
+    expect(frame).toContain('$');
+    expect(frame).toContain('4');
   });
 });

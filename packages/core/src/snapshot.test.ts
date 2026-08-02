@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_DAYS } from './constants.js';
 import { daysFromCivil } from './date.js';
-import { decodePlan, encodePlan, type PlanSnapshot, parsePlan, samePlan } from './snapshot.js';
+import {
+  decodePlan,
+  encodePlan,
+  examplePlan,
+  type PlanSnapshot,
+  parsePlan,
+  samePlan,
+} from './snapshot.js';
 
 const sample: PlanSnapshot = {
   pay: daysFromCivil(2026, 6, 25),
@@ -49,6 +56,26 @@ describe('snapshot', () => {
   it('rejects a negative boost', () => {
     const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total, b: -1 });
     expect(decoded.ok).toBe(false);
+  });
+
+  it('rejects a field beyond the safe integer range', () => {
+    const decoded = decodePlan({
+      p: '99999999999999999999',
+      l: sample.last,
+      t: sample.total,
+      b: 0,
+    });
+    expect(decoded.ok).toBe(false);
+  });
+
+  it('examplePlan builds a 30-day worked example from today', () => {
+    const today = daysFromCivil(2026, 6, 17);
+    expect(examplePlan(today)).toEqual({
+      pay: today,
+      last: today + 30,
+      total: 1850000,
+      boost: 0,
+    });
   });
 
   it('parsePlan reads a stored snapshot by its own field names', () => {

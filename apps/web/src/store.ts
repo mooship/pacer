@@ -129,6 +129,10 @@ function buildInitialState(): PlannerState {
   if (snap) {
     const restored = reducer(base, { type: 'restorePlan', snap });
     const saved = planSnapshot(restored);
+    // saved is never null here: snap only ever comes from decodePlan/
+    // parsePlan, which already guarantee pay/last/total are set, and
+    // restorePlan always lands on the results step.
+    /* v8 ignore next 3 */
     if (saved) {
       persistPlan(saved);
     }

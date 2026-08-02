@@ -112,6 +112,13 @@ describe('ics', () => {
     expect(uidA).not.toBe(uidB);
   });
 
+  it('uses the singular "day" for a one-day segment', () => {
+    const oneDay = { dates: [daysFromCivil(2026, 6, 25)], segDays: [1], amounts: [100000] };
+    const out = buildIcs(oneDay, 100000, { now: daysFromCivil(2026, 6, 20) });
+    expect(out).toContain('over 1 day');
+    expect(out).not.toContain('over 1 days');
+  });
+
   it('produces a valid calendar with no events for an empty result', () => {
     const empty = buildIcs({ dates: [], segDays: [], amounts: [] }, 0, {
       now: daysFromCivil(2026, 6, 20),

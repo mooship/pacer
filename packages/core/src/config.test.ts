@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_INTERVAL,
+  DEFAULT_PAYDAY,
   DEFAULT_QUANTUM,
   defaultConfig,
   parseConfig,
@@ -50,6 +51,10 @@ describe('config', () => {
     expect(back.payday).toBe(5);
     expect(back.quantum).toBe(DEFAULT_QUANTUM);
     expect(back.interval).toBe(DEFAULT_INTERVAL);
+  });
+
+  it('fills the default payday when it is the field omitted', () => {
+    expect(parseConfig({ quantum: 10000 }).payday).toBe(DEFAULT_PAYDAY);
   });
 
   it('invalid input falls back to defaults', () => {

@@ -29,6 +29,11 @@ describe('date', () => {
     expect(civilFromDays(daysFromCivil(9999, 12, 31))).toEqual([9999, 12, 31]);
   });
 
+  it('round trips proleptic years before year 1, exercising the negative-era branches', () => {
+    expect(civilFromDays(daysFromCivil(0, 1, 1))).toEqual([0, 1, 1]);
+    expect(civilFromDays(daysFromCivil(-400, 6, 15))).toEqual([-400, 6, 15]);
+  });
+
   it('epoch is a Thursday', () => {
     expect(weekday(0)).toBe(4);
   });
@@ -57,6 +62,11 @@ describe('date', () => {
     expect(daysInMonth(1900, 2)).toBe(28);
     expect(daysInMonth(2026, 4)).toBe(30);
     expect(daysInMonth(2026, 1)).toBe(31);
+  });
+
+  it('daysInMonth returns 0 for an out-of-range month', () => {
+    expect(daysInMonth(2026, 0)).toBe(0);
+    expect(daysInMonth(2026, 13)).toBe(0);
   });
 
   it('fmtDmy renders day month year', () => {

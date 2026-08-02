@@ -97,6 +97,10 @@ export function App({ config, invalidConfig }: AppProps) {
     path: string,
     build: (results: ComputeResult, total: number) => Result<string>,
   ) => {
+    // Unreachable: saveFile is only invoked from the results-step key
+    // handler below, and entering that step always sets both fields
+    // together. Kept as a safety net against future call sites.
+    /* v8 ignore next 3 */
     if (!state.results || state.total === null) {
       return;
     }
@@ -133,6 +137,10 @@ export function App({ config, invalidConfig }: AppProps) {
 
   const handleResetKey = () => {
     if (resetArmed) {
+      // resetTimer.current is always set alongside resetArmed becoming
+      // true (below), so this is a type-safety guard, not a reachable
+      // false case.
+      /* v8 ignore next 3 */
       if (resetTimer.current) {
         clearTimeout(resetTimer.current);
       }
@@ -146,6 +154,8 @@ export function App({ config, invalidConfig }: AppProps) {
   };
 
   const copyToClipboard = async () => {
+    // Unreachable for the same reason as saveFile's guard above.
+    /* v8 ignore next 3 */
     if (!state.results || state.total === null) {
       return;
     }
@@ -160,6 +170,9 @@ export function App({ config, invalidConfig }: AppProps) {
   useInput((input, key) => {
     if (resetArmed && input !== 'r') {
       setResetArmed(false);
+      // Same type-safety guard as handleResetKey's — never false in
+      // practice since resetTimer.current is set alongside resetArmed.
+      /* v8 ignore next 3 */
       if (resetTimer.current) {
         clearTimeout(resetTimer.current);
       }
@@ -212,12 +225,22 @@ export function App({ config, invalidConfig }: AppProps) {
   });
 
   const onFormChange = (value: string) => {
-    if (state.step === 'payDate') {
-      dispatch({ type: 'setPayInput', value });
-    } else if (state.step === 'lastDay') {
-      dispatch({ type: 'setLastInput', value });
-    } else if (state.step === 'amount') {
-      dispatch({ type: 'setAmountInput', value });
+    switch (state.step) {
+      case 'payDate':
+        dispatch({ type: 'setPayInput', value });
+        break;
+      case 'lastDay':
+        dispatch({ type: 'setLastInput', value });
+        break;
+      case 'amount':
+        dispatch({ type: 'setAmountInput', value });
+        break;
+      // Form's fields only fire onFormChange while active, i.e. while step
+      // matches one of the cases above; this default is an unreachable
+      // type-safety net.
+      /* v8 ignore next 2 */
+      default:
+        break;
     }
   };
 

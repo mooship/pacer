@@ -45,4 +45,17 @@ describe('PlanForm', () => {
 
     expect(screen.getByLabelText('Last day it covers')).toHaveFocus();
   });
+
+  it('falls back to focusing the pay date when every field is already filled', () => {
+    usePacerStore.setState((s) => ({
+      state: {
+        ...s.state,
+        payInput: '2026-06-25',
+        lastInput: '2026-07-24',
+        amountInput: '5000',
+      },
+    }));
+    render(<PlanForm />);
+    expect(screen.getByLabelText('Pay date')).toHaveFocus();
+  });
 });

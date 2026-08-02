@@ -103,6 +103,19 @@ describe('ResultsView', () => {
     vi.unstubAllGlobals();
   });
 
+  it('omits the countdown once the plan has finished', () => {
+    usePacerStore.setState((s) => ({ state: { ...s.state, today: (s.state.last ?? 0) + 1000 } }));
+    render(<ResultsView />);
+    expect(screen.queryByText(/Next payout/)).toBeNull();
+  });
+
+  it('uses the singular "day" when the next payout is tomorrow', () => {
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: (s.pay ?? 0) - 1 } });
+    render(<ResultsView />);
+    expect(screen.getByText('Next payout in 1 day.')).toBeInTheDocument();
+  });
+
   it('disables Copy and Share while an action is pending', () => {
     usePacerStore.setState({ pendingAction: 'copy' });
     render(<ResultsView />);
