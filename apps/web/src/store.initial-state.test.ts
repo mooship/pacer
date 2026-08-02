@@ -98,10 +98,13 @@ describe('usePacerStore initial state', () => {
         },
       };
     });
-    const { usePacerStore } = await import('./store.js');
-    const s = usePacerStore.getState().state;
-    expect(s.step).toBe('results');
-    expect(s.total).toBe(planParams.t);
-    vi.doUnmock('@pacer/core');
+    try {
+      const { usePacerStore } = await import('./store.js');
+      const s = usePacerStore.getState().state;
+      expect(s.step).toBe('results');
+      expect(s.total).toBe(planParams.t);
+    } finally {
+      vi.doUnmock('@pacer/core');
+    }
   });
 });

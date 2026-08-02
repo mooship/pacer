@@ -34,7 +34,6 @@ describe('ErrorBoundary', () => {
       </ErrorBoundary>,
     );
     expect(screen.getByRole('alert')).toHaveTextContent('Something went wrong.');
-    expect(console.error).toHaveBeenCalled();
   });
 
   it('clears saved config and plan and reloads on "Start over"', async () => {

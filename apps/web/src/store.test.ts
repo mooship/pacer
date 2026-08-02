@@ -47,7 +47,7 @@ describe('pacer store', () => {
     dispatch({ type: 'openSettings' });
     dispatch({ type: 'setQuantumInput', value: 'abc' });
     saveSettings();
-    expect(store().state.error).not.toBeNull();
+    expect(store().state.error).toBe('amount must be a number, got `abc`');
     expect(localStorage.getItem('pacer.config')).toBeNull();
   });
 

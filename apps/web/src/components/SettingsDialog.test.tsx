@@ -95,13 +95,15 @@ describe('SettingsDialog', () => {
     expect(usePacerStore.getState().state.currencyInput).toBe('$');
   });
 
-  it('does not crash in a browser without <dialog> showModal support', () => {
+  it('still renders its fields in a browser without <dialog> showModal support', () => {
     const original = HTMLDialogElement.prototype.showModal;
     // @ts-expect-error simulating an older browser without showModal
     delete HTMLDialogElement.prototype.showModal;
     try {
       usePacerStore.getState().dispatch({ type: 'openSettings' });
-      expect(() => render(<SettingsDialog />)).not.toThrow();
+      render(<SettingsDialog />);
+      expect(screen.getByRole('heading', { name: 'Settings', hidden: true })).toBeInTheDocument();
+      expect(screen.getByLabelText('Currency symbol')).toBeInTheDocument();
     } finally {
       HTMLDialogElement.prototype.showModal = original;
     }

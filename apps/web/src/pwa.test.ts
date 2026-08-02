@@ -1,7 +1,10 @@
 import { readFileSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { pwaOptions, THEME_COLOR } from './pwa.js';
+
+const indexHtmlPath = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'index.html');
 
 describe('pwa config', () => {
   it('registers an auto-updating service worker', () => {
@@ -26,7 +29,7 @@ describe('pwa config', () => {
   });
 
   it('keeps the index.html theme-color in sync with the manifest', () => {
-    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    const html = readFileSync(indexHtmlPath, 'utf8');
     expect(html).toContain(`content="${THEME_COLOR}"`);
   });
 });
