@@ -262,7 +262,12 @@ describe('App', () => {
     const { stdin, stdout } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await submitPlan(stdin);
     await press(stdin, 'q');
-    expect(stdout.frames.length).toBeGreaterThan(0);
+    const framesAtExit = stdout.frames.length;
+    // Ink's exit() unmounts the tree, so further keystrokes should reach no
+    // input handler and produce no new frames — proof the app actually quit,
+    // not just that it had rendered something at some point.
+    await press(stdin, 'r');
+    expect(stdout.frames.length).toBe(framesAtExit);
   });
 
   it('goes back a step with Escape from results', async () => {
@@ -308,6 +313,8 @@ describe('App', () => {
   it('types into the settings quantum, currency, and interval fields', async () => {
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await press(stdin, TAB);
+    // quantumInput starts as "50.00"; DOWN moves to Currency ("R"); DOWN,DOWN
+    // from there passes over Payday to reach Interval ("7").
     await type(stdin, '9');
     await press(stdin, DOWN);
     await type(stdin, '$');
@@ -316,8 +323,8 @@ describe('App', () => {
     await type(stdin, '4');
 
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('9');
-    expect(frame).toContain('$');
-    expect(frame).toContain('4');
+    expect(frame).toContain('50.009');
+    expect(frame).toContain('R$');
+    expect(frame).toContain('74');
   });
 });

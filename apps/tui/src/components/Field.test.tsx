@@ -59,7 +59,7 @@ describe('Field', () => {
     expect(lastFrame() ?? '').toContain('5000');
   });
 
-  it('renders an active field without crashing when no onSubmit is given', async () => {
+  it('renders an active field without crashing when no onSubmit is given', () => {
     const { lastFrame, stdin } = render(
       <Field
         label="Amount"
@@ -72,11 +72,11 @@ describe('Field', () => {
       />,
     );
     expect(lastFrame() ?? '').toContain('5000');
-    // Pressing Enter with no onSubmit falls back to a no-op handler instead
-    // of crashing.
-    stdin.write('\r');
-    await new Promise((resolve) => setTimeout(resolve, 30));
-    expect(lastFrame() ?? '').toContain('5000');
+    // Ink dispatches keystrokes synchronously (stdin.write -> a synchronous
+    // 'readable' emit -> the input handler), so pressing Enter with no
+    // onSubmit falling back to a no-op would throw right here, with no
+    // wait needed to observe it.
+    expect(() => stdin.write('\r')).not.toThrow();
   });
 
   it('renders a preview arrow when a preview is supplied', () => {

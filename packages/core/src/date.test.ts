@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   civilFromDays,
   daysFromCivil,
@@ -77,9 +77,27 @@ describe('date', () => {
     expect(fmtWdDm(daysFromCivil(2026, 6, 25))).toBe('Thu 25 Jun');
   });
 
-  it('today reads the local calendar date', () => {
-    const now = new Date();
-    expect(today()).toBe(daysFromCivil(now.getFullYear(), now.getMonth() + 1, now.getDate()));
+  describe('today', () => {
+    beforeEach(() => {
+      // Pin the clock instead of reading it twice (once here, once inside
+      // today()): a real midnight rollover between those two reads would
+      // make this test flake once a day.
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('reads the local calendar date', () => {
+      vi.setSystemTime(new Date(2026, 5, 25, 23, 59, 59));
+      expect(today()).toBe(daysFromCivil(2026, 6, 25));
+    });
+
+    it('reads the date right at the start of the day', () => {
+      vi.setSystemTime(new Date(2026, 0, 1, 0, 0, 0));
+      expect(today()).toBe(daysFromCivil(2026, 1, 1));
+    });
   });
 
   it('fmtRange same day', () => {
