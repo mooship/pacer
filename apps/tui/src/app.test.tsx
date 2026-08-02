@@ -61,6 +61,28 @@ async function press(stdin: { write: (data: string) => void }, key: string): Pro
   await tick();
 }
 
+// A single tick is enough to let Ink process a keystroke, but async effects
+// chained off of it (e.g. an awaited clipboard write's catch handler, then
+// a dispatch, then a re-render) can take longer under system load. Poll
+// instead of trusting a fixed delay.
+async function waitForFrame(
+  lastFrame: () => string | undefined,
+  predicate: (frame: string) => boolean,
+  timeoutMs = 2000,
+): Promise<string> {
+  const start = Date.now();
+  for (;;) {
+    const frame = lastFrame() ?? '';
+    if (predicate(frame)) {
+      return frame;
+    }
+    if (Date.now() - start > timeoutMs) {
+      throw new Error(`timed out waiting for frame condition; last frame:\n${frame}`);
+    }
+    await tick();
+  }
+}
+
 async function type(stdin: { write: (data: string) => void }, text: string): Promise<void> {
   for (const ch of text) {
     await press(stdin, ch);
@@ -202,9 +224,8 @@ describe('App', () => {
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await submitPlan(stdin);
     await press(stdin, 'c');
-    await tick();
+    await waitForFrame(lastFrame, (f) => f.includes('copied to clipboard'));
     expect(clipboardWrite).toHaveBeenCalledTimes(1);
-    expect(lastFrame() ?? '').toContain('copied to clipboard');
   });
 
   it('shows an error notice when copying to the clipboard fails', async () => {
@@ -212,8 +233,7 @@ describe('App', () => {
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await submitPlan(stdin);
     await press(stdin, 'c');
-    await tick();
-    expect(lastFrame() ?? '').toContain('could not copy');
+    await waitForFrame(lastFrame, (f) => f.includes('could not copy'));
   });
 
   it('requires pressing r twice within the window to reset', async () => {
@@ -275,8 +295,7 @@ describe('App', () => {
     });
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await submitPlan(stdin);
-    await tick();
-    expect(lastFrame() ?? '').toContain('could not save your plan: Error: disk full');
+    await waitForFrame(lastFrame, (f) => f.includes('could not save your plan: Error: disk full'));
   });
 
   it('clears the pending reset timer on unmount without throwing', async () => {
