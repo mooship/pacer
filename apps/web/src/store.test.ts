@@ -81,7 +81,7 @@ describe('plan persistence', () => {
   it('persists a plan snapshot to localStorage and the URL on results', () => {
     reachResults();
     const stored = JSON.parse(localStorage.getItem('pacer.plan') ?? '{}');
-    expect(stored).toMatchObject({ total: 500000, boost: 0 });
+    expect(stored).toMatchObject({ total: 500000 });
     expect(window.location.search).toContain('t=500000');
   });
 

@@ -50,22 +50,7 @@ const fill = (c: Partial<Config>): Config =>
     currency: c.currency ?? DEFAULT_CURRENCY,
   });
 
-const LenientSchema = z
-  .object({
-    quantum: fields.quantum.catch(DEFAULT_QUANTUM),
-    payday: fields.payday.catch(DEFAULT_PAYDAY),
-    interval: fields.interval.catch(DEFAULT_INTERVAL),
-    currency: fields.currency.catch(DEFAULT_CURRENCY),
-  })
-  .partial()
-  .transform(fill);
-
 const StrictSchema = z.object(fields).partial().transform(fill);
-
-export function parseConfig(input: unknown): Config {
-  const result = LenientSchema.safeParse(input);
-  return result.success ? result.data : defaultConfig();
-}
 
 export interface ConfigLoad {
   config: Config;

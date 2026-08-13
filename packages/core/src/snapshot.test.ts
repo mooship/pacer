@@ -14,7 +14,6 @@ const sample: PlanSnapshot = {
   pay: daysFromCivil(2026, 6, 25),
   last: daysFromCivil(2026, 7, 24),
   total: 500000,
-  boost: 15000,
 };
 
 describe('snapshot', () => {
@@ -24,37 +23,32 @@ describe('snapshot', () => {
   });
 
   it('decodes from a plain record', () => {
-    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total, b: sample.boost });
+    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total });
     expect(decoded).toEqual({ ok: true, value: sample });
   });
 
   it('rejects missing fields', () => {
-    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total });
+    const decoded = decodePlan({ p: sample.pay, l: sample.last });
     expect(decoded.ok).toBe(false);
   });
 
   it('rejects non-integer fields', () => {
-    const decoded = decodePlan({ p: '1.5', l: sample.last, t: sample.total, b: 0 });
+    const decoded = decodePlan({ p: '1.5', l: sample.last, t: sample.total });
     expect(decoded.ok).toBe(false);
   });
 
   it('rejects a non-positive amount', () => {
-    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: 0, b: 0 });
+    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: 0 });
     expect(decoded.ok).toBe(false);
   });
 
   it('rejects an end before the pay date', () => {
-    const decoded = decodePlan({ p: sample.pay, l: sample.pay - 1, t: sample.total, b: 0 });
+    const decoded = decodePlan({ p: sample.pay, l: sample.pay - 1, t: sample.total });
     expect(decoded.ok).toBe(false);
   });
 
   it('rejects a period longer than a year', () => {
-    const decoded = decodePlan({ p: 0, l: MAX_DAYS, t: sample.total, b: 0 });
-    expect(decoded.ok).toBe(false);
-  });
-
-  it('rejects a negative boost', () => {
-    const decoded = decodePlan({ p: sample.pay, l: sample.last, t: sample.total, b: -1 });
+    const decoded = decodePlan({ p: 0, l: MAX_DAYS, t: sample.total });
     expect(decoded.ok).toBe(false);
   });
 
@@ -63,7 +57,6 @@ describe('snapshot', () => {
       p: '99999999999999999999',
       l: sample.last,
       t: sample.total,
-      b: 0,
     });
     expect(decoded.ok).toBe(false);
   });
@@ -74,7 +67,6 @@ describe('snapshot', () => {
       pay: today,
       last: today + 30,
       total: 1850000,
-      boost: 0,
     });
   });
 
@@ -85,7 +77,7 @@ describe('snapshot', () => {
 
   it('samePlan compares snapshots by value and handles null', () => {
     expect(samePlan(sample, { ...sample })).toBe(true);
-    expect(samePlan(sample, { ...sample, boost: 0 })).toBe(false);
+    expect(samePlan(sample, { ...sample, total: sample.total + 1 })).toBe(false);
     expect(samePlan(null, null)).toBe(true);
     expect(samePlan(sample, null)).toBe(false);
   });

@@ -5,7 +5,6 @@ const planParams = {
   p: daysFromCivil(2026, 6, 25),
   l: daysFromCivil(2026, 7, 24),
   t: 500000,
-  b: 0,
 };
 
 describe('usePacerStore initial state', () => {
@@ -18,7 +17,7 @@ describe('usePacerStore initial state', () => {
   it('restores a stored plan straight to results', async () => {
     localStorage.setItem(
       'pacer.plan',
-      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t }),
     );
     const { usePacerStore } = await import('./store.js');
     const s = usePacerStore.getState().state;
@@ -28,7 +27,7 @@ describe('usePacerStore initial state', () => {
   });
 
   it('restores a plan from the URL ahead of localStorage', async () => {
-    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000&b=0`);
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000`);
     const { usePacerStore } = await import('./store.js');
     const s = usePacerStore.getState().state;
     expect(s.step).toBe('results');
@@ -65,9 +64,9 @@ describe('usePacerStore initial state', () => {
   it('falls back to localStorage when the URL plan params are invalid', async () => {
     localStorage.setItem(
       'pacer.plan',
-      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t }),
     );
-    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100&b=0`);
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100`);
     const { usePacerStore } = await import('./store.js');
     const s = usePacerStore.getState().state;
     expect(s.step).toBe('results');
@@ -76,7 +75,7 @@ describe('usePacerStore initial state', () => {
 
   it('starts fresh when both the URL and localStorage plans are invalid', async () => {
     localStorage.setItem('pacer.plan', 'not json');
-    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100&b=0`);
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.p - 1}&t=100`);
     const { usePacerStore } = await import('./store.js');
     const s = usePacerStore.getState().state;
     expect(s.step).toBe('payDate');
@@ -86,9 +85,9 @@ describe('usePacerStore initial state', () => {
   it('falls back to localStorage when reading the URL plan throws', async () => {
     localStorage.setItem(
       'pacer.plan',
-      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t, boost: 0 }),
+      JSON.stringify({ pay: planParams.p, last: planParams.l, total: planParams.t }),
     );
-    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000&b=0`);
+    window.history.replaceState(null, '', `/?p=${planParams.p}&l=${planParams.l}&t=400000`);
     vi.doMock('@pacer/core', async (importOriginal) => {
       const actual = await importOriginal<typeof import('@pacer/core')>();
       return {

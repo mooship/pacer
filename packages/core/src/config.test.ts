@@ -1,13 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  DEFAULT_INTERVAL,
-  DEFAULT_PAYDAY,
-  DEFAULT_QUANTUM,
-  defaultConfig,
-  parseConfig,
-  parseStoredConfig,
-  sanitize,
-} from './config.js';
+import { defaultConfig, parseStoredConfig, sanitize } from './config.js';
 
 describe('config', () => {
   it('sanitize clamps out of range', () => {
@@ -35,37 +27,13 @@ describe('config', () => {
     );
   });
 
-  it('currency fills default when missing and round trips', () => {
-    expect(parseConfig({ payday: 5 }).currency).toBe('R');
-    const c = { ...defaultConfig(), currency: '€' };
-    expect(parseConfig(c)).toEqual(c);
-  });
-
-  it('parseConfig round trips defaults', () => {
-    const c = defaultConfig();
-    expect(parseConfig(c)).toEqual(c);
-  });
-
-  it('partial input fills defaults', () => {
-    const back = parseConfig({ payday: 5 });
-    expect(back.payday).toBe(5);
-    expect(back.quantum).toBe(DEFAULT_QUANTUM);
-    expect(back.interval).toBe(DEFAULT_INTERVAL);
-  });
-
-  it('fills the default payday when it is the field omitted', () => {
-    expect(parseConfig({ quantum: 10000 }).payday).toBe(DEFAULT_PAYDAY);
-  });
-
-  it('invalid input falls back to defaults', () => {
-    expect(parseConfig({ payday: 'oops' })).toEqual(defaultConfig());
-    expect(parseConfig('not an object')).toEqual(defaultConfig());
-    expect(parseConfig(null)).toEqual(defaultConfig());
-  });
-
   it('parseStoredConfig fills defaults and reports validity', () => {
     expect(parseStoredConfig({ payday: 5 })).toEqual({
       config: { ...defaultConfig(), payday: 5 },
+      invalid: false,
+    });
+    expect(parseStoredConfig({ quantum: 10000 })).toEqual({
+      config: { ...defaultConfig(), quantum: 10000 },
       invalid: false,
     });
     expect(parseStoredConfig({ payday: 'oops' })).toEqual({

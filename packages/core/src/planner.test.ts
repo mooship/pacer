@@ -414,7 +414,7 @@ describe('planSnapshot / restorePlan', () => {
     expect(planSnapshot(start())).toBeNull();
     const s = resultsState();
     const snap = planSnapshot(s);
-    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total, boost: 0 });
+    expect(snap).toEqual({ pay: s.pay, last: s.last, total: s.total });
   });
 
   it('restores a plan to results with matching amounts and pre-filled inputs', () => {
@@ -439,7 +439,6 @@ describe('planSnapshot / restorePlan', () => {
       pay: daysFromCivil(2026, 6, 25),
       last: daysFromCivil(2026, 7, 24),
       total: 500000,
-      boost: 0,
     };
     const restored = run(start(), { type: 'restorePlan', snap });
     const back = run(restored, { type: 'back' });
@@ -456,7 +455,6 @@ describe('planSnapshot / restorePlan', () => {
       pay: daysFromCivil(2026, 6, 25),
       last: daysFromCivil(2026, 6, 20),
       total: 500000,
-      boost: 0,
     };
     const restored = run(start(), { type: 'restorePlan', snap: badSnap });
     expect(restored.step).toBe('results');
