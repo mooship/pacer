@@ -50,6 +50,22 @@ describe('Results', () => {
     expect(lastFrame() ?? '').toContain('Next payout in 3 days.');
   });
 
+  it('uses singular "day" when the next payout is tomorrow', () => {
+    const pay = daysFromCivil(2026, 6, 25);
+    const end = daysFromCivil(2026, 7, 24);
+    const results = computeOk(pay, end, 500000, defaultConfig());
+    const { lastFrame } = render(
+      <Results
+        results={results}
+        total={500000}
+        config={defaultConfig()}
+        today={pay - 1}
+        theme={theme}
+      />,
+    );
+    expect(lastFrame() ?? '').toContain('Next payout in 1 day.');
+  });
+
   it('omits the countdown once the plan has finished', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 24);
