@@ -76,7 +76,6 @@ describe('plan store', () => {
     pay: daysFromCivil(2026, 6, 25),
     last: daysFromCivil(2026, 7, 24),
     total: 500000,
-    boost: 15000,
   };
 
   beforeEach(() => {
@@ -93,7 +92,7 @@ describe('plan store', () => {
   });
 
   it('flags an out-of-range plan as invalid', () => {
-    writeFileSync(planFile, 'pay = 100\nlast = 50\ntotal = 500000\nboost = 0\n');
+    writeFileSync(planFile, 'pay = 100\nlast = 50\ntotal = 500000\n');
     expect(loadPlan(planFile)).toEqual({ snap: null, invalid: true });
   });
 

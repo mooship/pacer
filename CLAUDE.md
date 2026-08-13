@@ -42,27 +42,27 @@ pnpm --filter @pacer/web dev           # one app
   relative to the base date passed in, rolling forward a year once that
   month/day has already passed. All return a `Result<T>` =
   `{ ok: true; value } | { ok: false; error }`.
-- `compute.ts` — `compute(pay, end, total, boost, cfg)` → `{ dates, segDays,
+- `compute.ts` — `compute(pay, end, total, cfg)` → `{ dates, segDays,
   amounts }`, plus `fmtMoney(cents, symbol?)`, `coverEnd`, `perDay`, and
   `currentSegment(result, today)` (the index of the segment covering `today`, or
   `null`). Splits a salary into an initial payment (pay day → first payout) plus
   recurring allowances rounded to `cfg.quantum` (default R50); the remainder goes
   to the initial payment. Uses the largest-remainder method.
 - `config.ts` — `Config { quantum, payday, interval, currency }`, `sanitize()`,
-  and a Zod `ConfigSchema` / `parseConfig` for validating persisted config.
-  `currency` is the symbol (default `R`) prefixed to amounts. No file/storage
-  I/O (that lives in the apps).
+  and `parseStoredConfig` (Zod-validated, used by both apps) for validating
+  persisted config. `currency` is the symbol (default `R`) prefixed to amounts.
+  No file/storage I/O (that lives in the apps).
 - `csv.ts` — `buildCsv(result, total)`; shared by TUI file export and SPA
   download.
 - `ics.ts` — `buildIcs(result, total, { now })`; an RFC 5545 calendar (one
   all-day `VEVENT` + reminder `VALARM` per payout). Shared by TUI export and SPA
   download. Pass a fixed `now` in tests for deterministic `DTSTAMP`s.
-- `snapshot.ts` — `PlanSnapshot { pay, last, total, boost }` plus `encodePlan`
-  (→ `p/l/t/b` query string) and `decodePlan` (validated `Result<PlanSnapshot>`,
+- `snapshot.ts` — `PlanSnapshot { pay, last, total }` plus `encodePlan`
+  (→ `p/l/t` query string) and `decodePlan` (validated `Result<PlanSnapshot>`,
   same guards as the reducer). Powers plan persistence and shareable URLs.
 - `planner.ts` — the framework-agnostic state machine: `PlannerState`,
   `initialState`, `reducer(state, action)`, `parseSettings`, and selectors
-  (`previews`, `breadcrumb`, `boostMax`, `planSnapshot`). This is the shared brain
+  (`previews`, `breadcrumb`, `planSnapshot`). This is the shared brain
   of both UIs; persistence is performed by the apps, which then dispatch
   `settingsSaved`. `restorePlan` rehydrates a `PlanSnapshot` straight to results.
 

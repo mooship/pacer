@@ -141,7 +141,6 @@ describe('App', () => {
         pay: daysFromCivil(2026, 6, 25),
         last: daysFromCivil(2026, 7, 24),
         total: 500000,
-        boost: 0,
       },
       invalid: false,
     });

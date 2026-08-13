@@ -5,7 +5,6 @@ export interface PlanSnapshot {
   pay: number;
   last: number;
   total: number;
-  boost: number;
 }
 
 type Params = URLSearchParams | Record<string, unknown>;
@@ -35,32 +34,30 @@ export function encodePlan(s: PlanSnapshot): string {
     p: String(s.pay),
     l: String(s.last),
     t: String(s.total),
-    b: String(s.boost),
   }).toString();
 }
 
 export function parsePlan(input: Record<string, unknown>): PlanSnapshot | null {
-  const decoded = decodePlan({ p: input.pay, l: input.last, t: input.total, b: input.boost });
+  const decoded = decodePlan({ p: input.pay, l: input.last, t: input.total });
   return decoded.ok ? decoded.value : null;
 }
 
 export function examplePlan(today: number): PlanSnapshot {
-  return { pay: today, last: today + 30, total: 1850000, boost: 0 };
+  return { pay: today, last: today + 30, total: 1850000 };
 }
 
 export function samePlan(a: PlanSnapshot | null, b: PlanSnapshot | null): boolean {
   if (a === null || b === null) {
     return a === b;
   }
-  return a.pay === b.pay && a.last === b.last && a.total === b.total && a.boost === b.boost;
+  return a.pay === b.pay && a.last === b.last && a.total === b.total;
 }
 
 export function decodePlan(params: Params): Result<PlanSnapshot> {
   const pay = intField(params, 'p');
   const last = intField(params, 'l');
   const total = intField(params, 't');
-  const boost = intField(params, 'b');
-  if (pay === null || last === null || total === null || boost === null) {
+  if (pay === null || last === null || total === null) {
     return err('plan is missing required fields');
   }
   if (total <= 0) {
@@ -72,8 +69,5 @@ export function decodePlan(params: Params): Result<PlanSnapshot> {
   if (last - pay + 1 > MAX_DAYS) {
     return err("plan can't be longer than a year");
   }
-  if (boost < 0) {
-    return err('plan boost must be zero or more');
-  }
-  return ok({ pay, last, total, boost });
+  return ok({ pay, last, total });
 }

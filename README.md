@@ -11,7 +11,7 @@ nearest quantum (R50 by default); the sub-quantum remainder rides on the first p
 Pacer ships as a **monorepo** with two front-ends over one shared core:
 
 - **`@pacer/core`** — pure, framework-agnostic logic (date math, parsing, the
-  allocation algorithm, CSV export, and the step/boost/settings state machine),
+  allocation algorithm, CSV export, and the step/settings state machine),
   fully unit-tested.
 - **`@pacer/tui`** — an [Ink](https://github.com/vadimdemedes/ink) terminal app.
 - **`@pacer/web`** — a React single-page app, deployable to Cloudflare Workers.
