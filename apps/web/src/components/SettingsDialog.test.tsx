@@ -28,7 +28,7 @@ describe('SettingsDialog', () => {
     usePacerStore.getState().dispatch({ type: 'openSettings' });
     render(<SettingsDialog />);
     expect(screen.getByLabelText(/Quantum/)).toHaveValue('50.00');
-    expect(screen.getByLabelText('Currency')).toHaveValue('ZAR');
+    expect(screen.getByLabelText('Currency')).toHaveValue('USD');
     expect(screen.getByLabelText('Every (days)')).toHaveValue('7');
     expect(screen.getByText('Mon')).toBeInTheDocument();
   });

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   CURRENCY_CODES,
   currencyDigits,
+  currencyForRegion,
   currencyName,
   currencySymbol,
   isCurrencyCode,
@@ -46,5 +47,34 @@ describe('currency', () => {
 
   it('currencyName returns the code itself for an unrecognized currency', () => {
     expect(currencyName('NOPE')).toBe('NOPE');
+  });
+
+  it('currencyForRegion maps well-known regions to their currency', () => {
+    expect(currencyForRegion('US')).toBe('USD');
+    expect(currencyForRegion('ZA')).toBe('ZAR');
+    expect(currencyForRegion('DE')).toBe('EUR');
+    expect(currencyForRegion('FR')).toBe('EUR');
+    expect(currencyForRegion('JP')).toBe('JPY');
+    expect(currencyForRegion('GB')).toBe('GBP');
+    expect(currencyForRegion('IN')).toBe('INR');
+    expect(currencyForRegion('AU')).toBe('AUD');
+  });
+
+  it('currencyForRegion is case-insensitive', () => {
+    expect(currencyForRegion('us')).toBe('USD');
+    expect(currencyForRegion('Za')).toBe('ZAR');
+  });
+
+  it('currencyForRegion returns null for an unknown region', () => {
+    expect(currencyForRegion('XX')).toBeNull();
+    expect(currencyForRegion('')).toBeNull();
+  });
+
+  it('every region in the lookup maps to a real ISO 4217 code', () => {
+    for (const region of ['US', 'ZA', 'DE', 'FR', 'JP', 'GB', 'IN', 'AU', 'BR', 'CN', 'ZW']) {
+      const currency = currencyForRegion(region);
+      expect(currency).not.toBeNull();
+      expect(isCurrencyCode(currency as string)).toBe(true);
+    }
   });
 });

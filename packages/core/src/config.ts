@@ -5,7 +5,7 @@ import { clamp, remEuclid } from './math.js';
 export const DEFAULT_QUANTUM = 5000;
 export const DEFAULT_PAYDAY = 1;
 export const DEFAULT_INTERVAL = 7;
-export const DEFAULT_CURRENCY = 'ZAR';
+export const DEFAULT_CURRENCY = 'USD';
 
 export interface Config {
   quantum: number;

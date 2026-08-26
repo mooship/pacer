@@ -34,7 +34,7 @@ describe('buildCsv', () => {
 
   it('produces an empty per-day figure instead of NaN for an empty result', () => {
     const csv = buildCsv({ dates: [], segDays: [], amounts: [] }, 0);
-    expect(csv.ok && csv.value).toContain('"Total",,0,"R 0.00","R 0.00"');
+    expect(csv.ok && csv.value).toContain('"Total",,0,"$0.00","$0.00"');
   });
 
   it('returns an error when the result arrays have mismatched lengths', () => {

@@ -78,10 +78,10 @@ describe('compute', () => {
   });
 
   it('fmtMoney groups thousands and cents for the default currency', () => {
-    expect(fmtMoney(500000)).toBe('R 5,000.00');
-    expect(fmtMoney(502550)).toBe('R 5,025.50');
-    expect(fmtMoney(99)).toBe('R 0.99');
-    expect(fmtMoney(1234567)).toBe('R 12,345.67');
+    expect(fmtMoney(500000)).toBe('$5,000.00');
+    expect(fmtMoney(502550)).toBe('$5,025.50');
+    expect(fmtMoney(99)).toBe('$0.99');
+    expect(fmtMoney(1234567)).toBe('$12,345.67');
   });
 
   it('fmtMoney formats other ISO currencies with their own symbol and decimals', () => {

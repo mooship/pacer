@@ -5,6 +5,7 @@ import {
   buildSummaryText,
   type Config,
   type ConfigLoad,
+  currencyForRegion,
   decodePlan,
   defaultConfig,
   encodePlan,
@@ -24,10 +25,28 @@ import { create } from 'zustand';
 export const STORAGE_KEY = 'pacer.config';
 export const PLAN_KEY = 'pacer.plan';
 
+function detectLocaleCurrency(): string | null {
+  try {
+    const region = new Intl.Locale(navigator.language).maximize().region;
+    // maximize() always fills in a region via CLDR likely-subtags data for
+    // any locale Intl.Locale accepts; the empty check only satisfies
+    // region's `string | undefined` type.
+    /* v8 ignore next */
+    return region ? currencyForRegion(region) : null;
+  } catch {
+    return null;
+  }
+}
+
 export function loadStoredConfig(): ConfigLoad {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    return parseStoredConfig(raw ? JSON.parse(raw) : {});
+    if (raw === null) {
+      const result = parseStoredConfig({});
+      const detected = detectLocaleCurrency();
+      return detected ? { ...result, config: { ...result.config, currency: detected } } : result;
+    }
+    return parseStoredConfig(JSON.parse(raw));
   } catch {
     return { config: defaultConfig(), invalid: true };
   }

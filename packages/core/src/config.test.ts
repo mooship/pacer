@@ -24,10 +24,10 @@ describe('config', () => {
   });
 
   it('sanitize falls back to the default when the currency is not a real ISO code', () => {
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '' }).currency).toBe('ZAR');
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '$' }).currency).toBe('ZAR');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '' }).currency).toBe('USD');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '$' }).currency).toBe('USD');
     expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: 'USDX' }).currency).toBe(
-      'ZAR',
+      'USD',
     );
   });
 
@@ -55,7 +55,7 @@ describe('config', () => {
 
   it('sanitize treats a whitespace-only currency as empty', () => {
     expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '   ' }).currency).toBe(
-      'ZAR',
+      'USD',
     );
   });
 });

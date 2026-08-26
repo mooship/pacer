@@ -284,7 +284,7 @@ describe('planner', () => {
     s = reducer(s, { type: 'openSettings' });
     expect(s.step).toBe('settings');
     expect(s.quantumInput).toBe('50.00');
-    expect(s.currencyInput).toBe('ZAR');
+    expect(s.currencyInput).toBe('USD');
     const parsed = parseSettings('100', '14', s.config.payday);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
@@ -321,7 +321,7 @@ describe('planner', () => {
       expect(parsed.value.currency).toBe('USD');
     }
     const blank = parseSettings('50', '7', 1, '');
-    expect(blank.ok && blank.value.currency).toBe('ZAR');
+    expect(blank.ok && blank.value.currency).toBe('USD');
   });
 });
 
@@ -377,7 +377,7 @@ describe('previews', () => {
     const s = run(start(), { type: 'setAmountInput', value: '5000' });
     const v = previews(s);
     expect(v.amountState).toBe('ok');
-    expect(v.amount).toBe('R 5,000.00');
+    expect(v.amount).toBe('$5,000.00');
   });
 });
 

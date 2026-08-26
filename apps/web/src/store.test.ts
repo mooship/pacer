@@ -310,19 +310,48 @@ describe('copyToClipboard', () => {
 });
 
 describe('loadStoredConfig', () => {
+  const setLanguage = (language: string) => {
+    Object.defineProperty(navigator, 'language', { value: language, configurable: true });
+  };
+  const originalLanguage = navigator.language;
+
+  afterEach(() => {
+    setLanguage(originalLanguage);
+  });
+
   it('reads a persisted config back', () => {
     localStorage.setItem(
       'pacer.config',
       JSON.stringify({ quantum: 10000, payday: 3, interval: 7 }),
     );
     expect(loadStoredConfig()).toEqual({
-      config: { quantum: 10000, payday: 3, interval: 7, currency: 'ZAR' },
+      config: { quantum: 10000, payday: 3, interval: 7, currency: 'USD' },
       invalid: false,
     });
   });
 
-  it('falls back to defaults when nothing is stored', () => {
+  it('falls back to defaults when nothing is stored and locale detection is unavailable', () => {
+    setLanguage('not-a-locale-tag-!!!');
     expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: false });
+  });
+
+  it('detects the currency from the browser locale on a first-ever visit', () => {
+    setLanguage('en-GB');
+    expect(loadStoredConfig()).toEqual({
+      config: { ...defaultConfig(), currency: 'GBP' },
+      invalid: false,
+    });
+  });
+
+  it('falls back to the default currency when the locale has no known mapping', () => {
+    setLanguage('en-AQ');
+    expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: false });
+  });
+
+  it('does not override an already-stored currency with locale detection', () => {
+    setLanguage('en-GB');
+    localStorage.setItem('pacer.config', JSON.stringify({ currency: 'JPY' }));
+    expect(loadStoredConfig().config.currency).toBe('JPY');
   });
 
   it('falls back to defaults for unparseable storage', () => {
