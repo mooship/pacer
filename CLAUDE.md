@@ -5,7 +5,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Overview
 
 Pacer is a **pnpm-workspace monorepo**. One shared core package holds all the
-logic; two apps render it. Money is represented as `number` **cents** throughout.
+logic; two apps render it. Money is represented as `number` **minor units**
+throughout (cents for most currencies, but the exponent follows the
+configured ISO 4217 currency — e.g. 0 for JPY, 3 for KWD).
 
 ```
 packages/core   # @pacer/core — pure logic, no UI, fully tested
@@ -38,20 +40,29 @@ pnpm --filter @pacer/web dev           # one app
 - `date.ts` — date math via Hinnant's proleptic Gregorian algorithm. Days are
   `number` days-since-1970-01-01. `today()` reads the local calendar date.
 - `parse.ts` — `parseDate`, `parseDateDays`, `resolveDate` (blank/`today`/`+N`/
-  `-N`/`MM-DD`/absolute), and `parseAmount` (→ cents). `MM-DD` infers the year
-  relative to the base date passed in, rolling forward a year once that
-  month/day has already passed. All return a `Result<T>` =
-  `{ ok: true; value } | { ok: false; error }`.
+  `-N`/`MM-DD`/absolute), and `parseAmount(s, digits?)` (→ minor units, default
+  2 decimal places). `MM-DD` infers the year relative to the base date passed
+  in, rolling forward a year once that month/day has already passed. All
+  return a `Result<T>` = `{ ok: true; value } | { ok: false; error }`.
 - `compute.ts` — `compute(pay, end, total, cfg)` → `{ dates, segDays,
-  amounts }`, plus `fmtMoney(cents, symbol?)`, `coverEnd`, `perDay`, and
-  `currentSegment(result, today)` (the index of the segment covering `today`, or
-  `null`). Splits a salary into an initial payment (pay day → first payout) plus
-  recurring allowances rounded to `cfg.quantum` (default R50); the remainder goes
-  to the initial payment. Uses the largest-remainder method.
+  amounts }`, plus `fmtMoney(units, currency?)`, `fmtAmount(units, currency?)`
+  (a plain, symbol-less grouped number for editable round-trip fields),
+  `coverEnd`, `perDay`, and `currentSegment(result, today)` (the index of the
+  segment covering `today`, or `null`). Splits a salary into an initial
+  payment (pay day → first payout) plus recurring allowances rounded to
+  `cfg.quantum` (default R50); the remainder goes to the initial payment.
+  Uses the largest-remainder method.
+- `currency.ts` — `CURRENCY_CODES` (every ISO 4217 code Intl supports),
+  `isCurrencyCode`, `currencyDigits` (minor-unit exponent per currency, e.g. 0
+  for JPY, 3 for KWD), `currencySymbol`, and `currencyName`. `fmtMoney` and
+  `fmtAmount` use these to format each currency with its own symbol, decimal
+  places, and grouping via `Intl.NumberFormat`, instead of a hardcoded
+  2-decimal, comma-grouped format.
 - `config.ts` — `Config { quantum, payday, interval, currency }`, `sanitize()`,
   and `parseStoredConfig` (Zod-validated, used by both apps) for validating
-  persisted config. `currency` is the symbol (default `R`) prefixed to amounts.
-  No file/storage I/O (that lives in the apps).
+  persisted config. `currency` is an ISO 4217 code (default `ZAR`); invalid or
+  unrecognized codes fall back to the default. No file/storage I/O (that lives
+  in the apps).
 - `csv.ts` — `buildCsv(result, total)`; shared by TUI file export and SPA
   download.
 - `ics.ts` — `buildIcs(result, total, { now })`; an RFC 5545 calendar (one

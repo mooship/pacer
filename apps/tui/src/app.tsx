@@ -7,6 +7,7 @@ import {
   buildSummaryText,
   type ComputeResult,
   type Config,
+  CURRENCY_CODES,
   examplePlan,
   initialState,
   mood,
@@ -17,6 +18,7 @@ import {
   previews,
   type Result,
   reducer,
+  SETTINGS_CURRENCY,
   SETTINGS_PAYDAY,
   samePlan,
   saveSettingsAction,
@@ -80,6 +82,17 @@ export function App({ config, invalidConfig }: AppProps) {
 
   const view = previews(state);
   const mascotMood = mood(state);
+
+  const cycleCurrency = (dir: 1 | -1) => {
+    // Only reachable once settings is open, which always seeds
+    // currencyInput from config.currency (always a real ISO code), so idx
+    // is never -1 in practice; kept as a safety net against future misuse.
+    const idx = CURRENCY_CODES.indexOf(state.currencyInput);
+    /* v8 ignore next */
+    const base = idx === -1 ? 0 : idx;
+    const next = CURRENCY_CODES[(base + dir + CURRENCY_CODES.length) % CURRENCY_CODES.length];
+    dispatch({ type: 'setCurrencyInput', value: next });
+  };
 
   const saveSettings = () => {
     dispatch(
@@ -192,7 +205,14 @@ export function App({ config, invalidConfig }: AppProps) {
         dispatch({ type: 'paydayPrev' });
       } else if (key.rightArrow && state.settingsCursor === SETTINGS_PAYDAY) {
         dispatch({ type: 'paydayNext' });
-      } else if (key.return && state.settingsCursor === SETTINGS_PAYDAY) {
+      } else if (key.leftArrow && state.settingsCursor === SETTINGS_CURRENCY) {
+        cycleCurrency(-1);
+      } else if (key.rightArrow && state.settingsCursor === SETTINGS_CURRENCY) {
+        cycleCurrency(1);
+      } else if (
+        key.return &&
+        (state.settingsCursor === SETTINGS_PAYDAY || state.settingsCursor === SETTINGS_CURRENCY)
+      ) {
         saveSettings();
       } else if (key.escape) {
         dispatch({ type: 'back' });
@@ -266,7 +286,6 @@ export function App({ config, invalidConfig }: AppProps) {
           theme={theme}
           onQuantumChange={(value) => dispatch({ type: 'setQuantumInput', value })}
           onIntervalChange={(value) => dispatch({ type: 'setIntervalInput', value })}
-          onCurrencyChange={(value) => dispatch({ type: 'setCurrencyInput', value })}
           onSubmit={saveSettings}
         />
       ) : (

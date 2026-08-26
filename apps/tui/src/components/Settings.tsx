@@ -1,4 +1,5 @@
 import {
+  currencyName,
   type PlannerState,
   SETTINGS_CURRENCY,
   SETTINGS_INTERVAL,
@@ -16,7 +17,6 @@ interface SettingsProps {
   theme: Theme;
   onQuantumChange: (value: string) => void;
   onIntervalChange: (value: string) => void;
-  onCurrencyChange: (value: string) => void;
   onSubmit: () => void;
 }
 
@@ -25,14 +25,14 @@ export function Settings({
   theme,
   onQuantumChange,
   onIntervalChange,
-  onCurrencyChange,
   onSubmit,
 }: SettingsProps) {
   const paydayActive = state.settingsCursor === SETTINGS_PAYDAY;
+  const currencyActive = state.settingsCursor === SETTINGS_CURRENCY;
   return (
     <Box flexDirection="column">
       <Field
-        label={`Quantum (${state.config.currency})`}
+        label={`Quantum (${state.currencyInput})`}
         labelWidth={14}
         value={state.quantumInput}
         active={state.settingsCursor === SETTINGS_QUANTUM}
@@ -41,16 +41,12 @@ export function Settings({
         onChange={onQuantumChange}
         onSubmit={onSubmit}
       />
-      <Field
-        label="Currency"
-        labelWidth={14}
-        value={state.currencyInput}
-        active={state.settingsCursor === SETTINGS_CURRENCY}
-        done={state.settingsCursor !== SETTINGS_CURRENCY}
-        theme={theme}
-        onChange={onCurrencyChange}
-        onSubmit={onSubmit}
-      />
+      <Box>
+        <Text dimColor={!currencyActive}>{`  ${'Currency'.padEnd(14)}`}</Text>
+        <Text color={currencyActive ? theme.accent : undefined}>
+          {`‹ ${state.currencyInput} · ${currencyName(state.currencyInput)} ›`}
+        </Text>
+      </Box>
       <Box>
         <Text dimColor={!paydayActive}>{`  ${'Payout day'.padEnd(14)}`}</Text>
         <Text color={paydayActive ? theme.accent : undefined}>

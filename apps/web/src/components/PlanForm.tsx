@@ -1,4 +1,4 @@
-import { examplePlan, type FieldState, fmtIso, previews } from '@pacer/core';
+import { currencySymbol, examplePlan, type FieldState, fmtIso, previews } from '@pacer/core';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
@@ -160,7 +160,7 @@ export function PlanForm() {
 
       <Field
         id="amount"
-        label={`Amount (${state.config.currency})`}
+        label={`Amount (${currencySymbol(state.config.currency)})`}
         value={state.amountInput}
         onChange={(value) => dispatch({ type: 'setAmountInput', value })}
         complete={view.amountState === 'ok'}

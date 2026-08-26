@@ -1,4 +1,4 @@
-import type { PlannerState, Previews } from '@pacer/core';
+import { currencySymbol, type PlannerState, type Previews } from '@pacer/core';
 import { Box, Text } from 'ink';
 import type { Theme } from '../theme.js';
 import { Field } from './Field.js';
@@ -41,7 +41,7 @@ export function Form({ state, previews, theme, onChange, onSubmit }: FormProps) 
         onSubmit={onSubmit}
       />
       <Field
-        label={`Amount (${state.config.currency})`}
+        label={`Amount (${currencySymbol(state.config.currency)})`}
         labelWidth={18}
         value={state.amountInput}
         active={state.step === 'amount'}

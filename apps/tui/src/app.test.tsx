@@ -185,6 +185,28 @@ describe('App', () => {
     expect(frame).toContain('Pay date');
   });
 
+  it('cycles the settings currency with left/right arrows', async () => {
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await press(stdin, TAB);
+    await press(stdin, DOWN);
+    expect(lastFrame() ?? '').toContain('‹ ZAR');
+    await press(stdin, RIGHT);
+    expect(lastFrame() ?? '').toContain('‹ ZMW');
+    await press(stdin, LEFT);
+    expect(lastFrame() ?? '').toContain('‹ ZAR');
+  });
+
+  it('saves settings with Enter on the currency field', async () => {
+    const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
+    await press(stdin, TAB);
+    await press(stdin, DOWN);
+    await press(stdin, ENTER);
+    expect(saveConfigMock).toHaveBeenCalledTimes(1);
+    const frame = lastFrame() ?? '';
+    expect(frame).toContain('settings saved');
+    expect(frame).toContain('Pay date');
+  });
+
   it('loads the example plan with e and jumps straight to results', async () => {
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await press(stdin, 'e');
@@ -309,21 +331,22 @@ describe('App', () => {
     expect(() => unmount()).not.toThrow();
   });
 
-  it('types into the settings quantum, currency, and interval fields', async () => {
+  it('types into the settings quantum and interval fields, and cycles the currency', async () => {
     const { lastFrame, stdin } = render(<App config={defaultConfig()} invalidConfig={false} />);
     await press(stdin, TAB);
-    // quantumInput starts as "50.00"; DOWN moves to Currency ("R"); DOWN,DOWN
-    // from there passes over Payday to reach Interval ("7").
+    // quantumInput starts as "50.00"; DOWN moves to Currency ("ZAR"); RIGHT
+    // cycles to the next ISO code; DOWN,DOWN from there passes over Payday
+    // to reach Interval ("7").
     await type(stdin, '9');
     await press(stdin, DOWN);
-    await type(stdin, '$');
+    await press(stdin, RIGHT);
     await press(stdin, DOWN);
     await press(stdin, DOWN);
     await type(stdin, '4');
 
     const frame = lastFrame() ?? '';
     expect(frame).toContain('50.009');
-    expect(frame).toContain('R$');
+    expect(frame).toContain('ZMW');
     expect(frame).toContain('74');
   });
 });

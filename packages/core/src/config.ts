@@ -1,11 +1,11 @@
 import { z } from 'zod';
+import { isCurrencyCode } from './currency.js';
 import { clamp, remEuclid } from './math.js';
 
 export const DEFAULT_QUANTUM = 5000;
 export const DEFAULT_PAYDAY = 1;
 export const DEFAULT_INTERVAL = 7;
-export const DEFAULT_CURRENCY = 'R';
-export const MAX_CURRENCY_LEN = 3;
+export const DEFAULT_CURRENCY = 'ZAR';
 
 export interface Config {
   quantum: number;
@@ -22,8 +22,8 @@ export const defaultConfig = (): Config => ({
 });
 
 function sanitizeCurrency(currency: string): string {
-  const trimmed = currency.trim().slice(0, MAX_CURRENCY_LEN);
-  return trimmed === '' ? DEFAULT_CURRENCY : trimmed;
+  const upper = currency.trim().toUpperCase();
+  return isCurrencyCode(upper) ? upper : DEFAULT_CURRENCY;
 }
 
 export function sanitize(config: Config): Config {

@@ -6,7 +6,9 @@ by default).
 Enter your pay date, the last day your salary covers, and the total amount. Pacer
 calculates an initial payment from pay day to the first payout day, then equal
 allowances on each payout day after that. Allowance amounts are rounded to the
-nearest quantum (R50 by default); the sub-quantum remainder rides on the first payment.
+nearest quantum (R50 by default); the sub-quantum remainder rides on the first
+payment. Any ISO 4217 currency is supported — amounts are formatted with each
+currency's own symbol, decimal places, and grouping.
 
 Pacer ships as a **monorepo** with two front-ends over one shared core:
 
@@ -66,7 +68,7 @@ pnpm --filter @pacer/web deploy     # deploy to Cloudflare Workers (needs auth)
 ```
 
 Mobile-first, keyboard-accessible, with a light/dark "sunny" theme. Settings
-(quantum, payout day, interval, and currency symbol) and the plan are stored in
+(quantum, payout day, interval, and currency) and the plan are stored in
 `localStorage`; the schedule exports as a CSV download. Results lead with a
 plain-language pace, a per-segment bar, and a "today" marker.
 

@@ -239,7 +239,7 @@ describe('planner', () => {
   });
 
   it('reset returns to the first step, clears inputs, and preserves config', () => {
-    const customConfig = { quantum: 1000, payday: 3, interval: 14, currency: 'R' };
+    const customConfig = { quantum: 1000, payday: 3, interval: 14, currency: 'USD' };
     const s = run(
       resultsState(),
       { type: 'settingsSaved', config: customConfig },
@@ -284,7 +284,7 @@ describe('planner', () => {
     s = reducer(s, { type: 'openSettings' });
     expect(s.step).toBe('settings');
     expect(s.quantumInput).toBe('50.00');
-    expect(s.currencyInput).toBe('R');
+    expect(s.currencyInput).toBe('ZAR');
     const parsed = parseSettings('100', '14', s.config.payday);
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
@@ -315,13 +315,13 @@ describe('planner', () => {
   });
 
   it('parseSettings carries and sanitizes the currency', () => {
-    const parsed = parseSettings('50', '7', 1, ' $ ');
+    const parsed = parseSettings('50', '7', 1, ' usd ');
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
-      expect(parsed.value.currency).toBe('$');
+      expect(parsed.value.currency).toBe('USD');
     }
     const blank = parseSettings('50', '7', 1, '');
-    expect(blank.ok && blank.value.currency).toBe('R');
+    expect(blank.ok && blank.value.currency).toBe('ZAR');
   });
 });
 
@@ -377,7 +377,7 @@ describe('previews', () => {
     const s = run(start(), { type: 'setAmountInput', value: '5000' });
     const v = previews(s);
     expect(v.amountState).toBe('ok');
-    expect(v.amount).toBe('R5,000.00');
+    expect(v.amount).toBe('R 5,000.00');
   });
 });
 
@@ -652,9 +652,17 @@ describe('reducer: settings field actions', () => {
     s = reducer(s, { type: 'setQuantumInput', value: '100' });
     s = reducer(s, { type: 'setIntervalInput', value: '14' });
     s = reducer(s, { type: 'setCurrencyInput', value: '$' });
-    expect(s.quantumInput).toBe('100');
+    expect(s.quantumInput).toBe('100.00');
     expect(s.intervalInput).toBe('14');
     expect(s.currencyInput).toBe('$');
+  });
+
+  it('setCurrencyInput leaves an unparseable quantum input untouched', () => {
+    let s = inSettings();
+    s = reducer(s, { type: 'setQuantumInput', value: 'not a number' });
+    s = reducer(s, { type: 'setCurrencyInput', value: 'USD' });
+    expect(s.quantumInput).toBe('not a number');
+    expect(s.currencyInput).toBe('USD');
   });
 
   it('re-entering openSettings while already in settings is a no-op', () => {

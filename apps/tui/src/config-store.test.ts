@@ -32,7 +32,7 @@ describe('config-store', () => {
   });
 
   it('round-trips a saved config', () => {
-    const config = { quantum: 10000, payday: 5, interval: 14, currency: '$' };
+    const config = { quantum: 10000, payday: 5, interval: 14, currency: 'USD' };
     saveConfig(config, path);
     expect(loadConfig(path)).toEqual({ config, invalid: false });
   });
@@ -64,7 +64,7 @@ describe('config-store', () => {
   });
 
   it('round-trips a saved config via the resolved platform config path when no override is given', () => {
-    const config = { quantum: 10000, payday: 5, interval: 14, currency: '$' };
+    const config = { quantum: 10000, payday: 5, interval: 14, currency: 'USD' };
     saveConfig(config);
     expect(loadConfig()).toEqual({ config, invalid: false });
   });

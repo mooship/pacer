@@ -1,4 +1,4 @@
-import { MAX_CURRENCY_LEN, WD } from '@pacer/core';
+import { CURRENCY_CODES, currencyName, currencySymbol, WD } from '@pacer/core';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
@@ -47,7 +47,7 @@ export function SettingsDialog() {
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="quantum">
-            Quantum ({state.config.currency})
+            Quantum ({currencySymbol(state.currencyInput)})
           </label>
           <input
             id="quantum"
@@ -62,17 +62,21 @@ export function SettingsDialog() {
 
         <div className={styles.field}>
           <label className={styles.label} htmlFor="currency">
-            Currency symbol
+            Currency
           </label>
-          <input
+          <select
             id="currency"
             className={styles.input}
             value={state.currencyInput}
-            maxLength={MAX_CURRENCY_LEN}
-            autoComplete="off"
             onChange={(e) => dispatch({ type: 'setCurrencyInput', value: e.target.value })}
-          />
-          <p className={styles.help}>Shown before amounts, e.g. R, $, or €.</p>
+          >
+            {CURRENCY_CODES.map((code) => (
+              <option key={code} value={code}>
+                {code} — {currencyName(code)}
+              </option>
+            ))}
+          </select>
+          <p className={styles.help}>Used to format amounts throughout the plan.</p>
         </div>
 
         <fieldset className={styles.field}>

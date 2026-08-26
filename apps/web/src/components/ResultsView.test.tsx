@@ -33,7 +33,7 @@ describe('ResultsView', () => {
 
   it('focuses the summary on mount so keyboard/screen-reader users land somewhere meaningful', () => {
     render(<ResultsView />);
-    expect(screen.getByText(/R5,000\.00 from/)).toHaveFocus();
+    expect(screen.getByText(/R 5,000\.00 from/)).toHaveFocus();
   });
 
   it('goes back to editing on Edit', async () => {

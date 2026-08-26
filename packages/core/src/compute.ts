@@ -1,7 +1,10 @@
 import { type Config, DEFAULT_CURRENCY } from './config.js';
+import { currencyDigits } from './currency.js';
 import { weekday } from './date.js';
 import { idiv, remEuclid } from './math.js';
 import { err, ok, type Result } from './result.js';
+
+const DISPLAY_LOCALE = 'en';
 
 export interface ComputeResult {
   dates: number[];
@@ -17,21 +20,28 @@ export function perDay(amount: number, days: number): number {
   return days > 0 ? idiv(amount, days) : 0;
 }
 
-export function fmtMoney(cents: number, symbol: string = DEFAULT_CURRENCY): string {
-  const neg = cents < 0;
-  const abs = Math.abs(cents);
-  const rand = idiv(abs, 100);
-  const frac = abs % 100;
-  const digits = rand.toString();
-  const len = digits.length;
-  let grouped = '';
-  for (let i = 0; i < len; i++) {
-    if (i > 0 && (len - i) % 3 === 0) {
-      grouped += ',';
-    }
-    grouped += digits[i];
+export function fmtMoney(units: number, currency: string = DEFAULT_CURRENCY): string {
+  const digits = currencyDigits(currency);
+  try {
+    return new Intl.NumberFormat(DISPLAY_LOCALE, {
+      style: 'currency',
+      currency,
+      currencyDisplay: 'narrowSymbol',
+    }).format(units / 10 ** digits);
+  } catch {
+    // Not a real ISO 4217 code: treat it as a literal prefix, the same way
+    // this function behaved before it grew currency-aware formatting.
+    const neg = units < 0;
+    return `${neg ? '-' : ''}${currency}${fmtAmount(Math.abs(units), currency)}`;
   }
-  return `${neg ? '-' : ''}${symbol}${grouped}.${frac.toString().padStart(2, '0')}`;
+}
+
+export function fmtAmount(units: number, currency: string = DEFAULT_CURRENCY): string {
+  const digits = currencyDigits(currency);
+  return new Intl.NumberFormat(DISPLAY_LOCALE, {
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits,
+  }).format(units / 10 ** digits);
 }
 
 export function currentSegment(result: ComputeResult, today: number): number | null {

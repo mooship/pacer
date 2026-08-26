@@ -3,27 +3,31 @@ import { defaultConfig, parseStoredConfig, sanitize } from './config.js';
 
 describe('config', () => {
   it('sanitize clamps out of range', () => {
-    expect(sanitize({ quantum: 0, payday: 9, interval: 999, currency: 'R' })).toEqual({
+    expect(sanitize({ quantum: 0, payday: 9, interval: 999, currency: 'ZAR' })).toEqual({
       quantum: 1,
       payday: 2,
       interval: 366,
-      currency: 'R',
+      currency: 'ZAR',
     });
-    expect(sanitize({ quantum: -100, payday: -1, interval: 0, currency: 'R' })).toEqual({
+    expect(sanitize({ quantum: -100, payday: -1, interval: 0, currency: 'ZAR' })).toEqual({
       quantum: 1,
       payday: 6,
       interval: 1,
-      currency: 'R',
+      currency: 'ZAR',
     });
   });
 
-  it('sanitize trims currency, caps length, and falls back when empty', () => {
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '  $  ' }).currency).toBe(
-      '$',
-    );
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '' }).currency).toBe('R');
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: 'USDX' }).currency).toBe(
+  it('sanitize trims and uppercases a valid currency code', () => {
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '  usd  ' }).currency).toBe(
       'USD',
+    );
+  });
+
+  it('sanitize falls back to the default when the currency is not a real ISO code', () => {
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '' }).currency).toBe('ZAR');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '$' }).currency).toBe('ZAR');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: 'USDX' }).currency).toBe(
+      'ZAR',
     );
   });
 
@@ -50,6 +54,8 @@ describe('config', () => {
   });
 
   it('sanitize treats a whitespace-only currency as empty', () => {
-    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '   ' }).currency).toBe('R');
+    expect(sanitize({ quantum: 5000, payday: 1, interval: 7, currency: '   ' }).currency).toBe(
+      'ZAR',
+    );
   });
 });

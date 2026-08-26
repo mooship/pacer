@@ -31,7 +31,7 @@ describe('Results', () => {
     expect(frame).toContain('Pay');
     expect(frame).toContain('Covers');
     expect(frame).toContain('Total');
-    expect(frame).toContain('R5,000.00');
+    expect(frame).toContain('R 5,000.00');
   });
 
   it('shows the next payout countdown when the plan has not started', () => {
@@ -110,6 +110,6 @@ describe('Results', () => {
         theme={theme}
       />,
     );
-    expect(lastFrame() ?? '').toContain('R1,000.00');
+    expect(lastFrame() ?? '').toContain('R 1,000.00');
   });
 });

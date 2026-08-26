@@ -2,6 +2,7 @@ export * from './compute.js';
 export * from './config.js';
 export * from './constants.js';
 export * from './csv.js';
+export * from './currency.js';
 export * from './date.js';
 export * from './ics.js';
 export * from './parse.js';

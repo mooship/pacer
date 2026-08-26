@@ -28,7 +28,7 @@ describe('SettingsDialog', () => {
     usePacerStore.getState().dispatch({ type: 'openSettings' });
     render(<SettingsDialog />);
     expect(screen.getByLabelText(/Quantum/)).toHaveValue('50.00');
-    expect(screen.getByLabelText('Currency symbol')).toHaveValue('R');
+    expect(screen.getByLabelText('Currency')).toHaveValue('ZAR');
     expect(screen.getByLabelText('Every (days)')).toHaveValue('7');
     expect(screen.getByText('Mon')).toBeInTheDocument();
   });
@@ -84,15 +84,14 @@ describe('SettingsDialog', () => {
     expect(usePacerStore.getState().state.step).toBe('payDate');
   });
 
-  it('updates the currency symbol field', async () => {
+  it('updates the currency field', async () => {
     usePacerStore.getState().dispatch({ type: 'openSettings' });
     const user = userEvent.setup();
     render(<SettingsDialog />);
 
-    await user.clear(screen.getByLabelText('Currency symbol'));
-    await user.type(screen.getByLabelText('Currency symbol'), '$');
+    await user.selectOptions(screen.getByLabelText('Currency'), 'USD');
 
-    expect(usePacerStore.getState().state.currencyInput).toBe('$');
+    expect(usePacerStore.getState().state.currencyInput).toBe('USD');
   });
 
   it('still renders its fields in a browser without <dialog> showModal support', () => {
@@ -103,7 +102,7 @@ describe('SettingsDialog', () => {
       usePacerStore.getState().dispatch({ type: 'openSettings' });
       render(<SettingsDialog />);
       expect(screen.getByRole('heading', { name: 'Settings', hidden: true })).toBeInTheDocument();
-      expect(screen.getByLabelText('Currency symbol')).toBeInTheDocument();
+      expect(screen.getByLabelText('Currency')).toBeInTheDocument();
     } finally {
       HTMLDialogElement.prototype.showModal = original;
     }

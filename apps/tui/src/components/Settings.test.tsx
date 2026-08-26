@@ -11,7 +11,7 @@ function settingsState(overrides: Partial<ReturnType<typeof initialState>> = {})
     step: 'settings' as const,
     quantumInput: '50.00',
     intervalInput: '7',
-    currencyInput: 'R',
+    currencyInput: 'ZAR',
     settingsCursor: 0,
     ...overrides,
   };
@@ -25,13 +25,14 @@ describe('Settings', () => {
         theme={theme}
         onQuantumChange={vi.fn()}
         onIntervalChange={vi.fn()}
-        onCurrencyChange={vi.fn()}
         onSubmit={vi.fn()}
       />,
     );
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Quantum');
     expect(frame).toContain('Currency');
+    expect(frame).toContain('ZAR');
+    expect(frame).toContain('South African Rand');
     expect(frame).toContain('Payout day');
     expect(frame).toContain('Every (days)');
     expect(frame).toContain('Mon');
@@ -44,7 +45,6 @@ describe('Settings', () => {
         theme={theme}
         onQuantumChange={vi.fn()}
         onIntervalChange={vi.fn()}
-        onCurrencyChange={vi.fn()}
         onSubmit={vi.fn()}
       />,
     );
@@ -58,7 +58,6 @@ describe('Settings', () => {
         theme={theme}
         onQuantumChange={vi.fn()}
         onIntervalChange={vi.fn()}
-        onCurrencyChange={vi.fn()}
         onSubmit={vi.fn()}
       />,
     );
@@ -72,7 +71,6 @@ describe('Settings', () => {
         theme={theme}
         onQuantumChange={vi.fn()}
         onIntervalChange={vi.fn()}
-        onCurrencyChange={vi.fn()}
         onSubmit={vi.fn()}
       />,
     );
