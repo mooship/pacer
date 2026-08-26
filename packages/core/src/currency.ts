@@ -1,4 +1,4 @@
-const FORMAT_LOCALE = 'en';
+export const FORMAT_LOCALE = 'en';
 
 export const CURRENCY_CODES: readonly string[] = Object.freeze(Intl.supportedValuesOf('currency'));
 
@@ -8,15 +8,22 @@ export function isCurrencyCode(code: string): boolean {
 
 const DEFAULT_DIGITS = 2;
 
-function formatterFor(code: string): Intl.NumberFormat | null {
+const formatterCache = new Map<string, Intl.NumberFormat>();
+
+export function formatterFor(code: string): Intl.NumberFormat | null {
   if (!isCurrencyCode(code)) {
     return null;
   }
-  return new Intl.NumberFormat(FORMAT_LOCALE, {
-    style: 'currency',
-    currency: code,
-    currencyDisplay: 'narrowSymbol',
-  });
+  let formatter = formatterCache.get(code);
+  if (!formatter) {
+    formatter = new Intl.NumberFormat(FORMAT_LOCALE, {
+      style: 'currency',
+      currency: code,
+      currencyDisplay: 'narrowSymbol',
+    });
+    formatterCache.set(code, formatter);
+  }
+  return formatter;
 }
 
 export function currencyDigits(code: string): number {
@@ -30,6 +37,8 @@ export function currencySymbol(code: string): string {
   return part ? part.value : code;
 }
 
+const currencyDisplayNames = new Intl.DisplayNames([FORMAT_LOCALE], { type: 'currency' });
+
 export function currencyName(code: string): string {
   if (!isCurrencyCode(code)) {
     return code;
@@ -37,14 +46,14 @@ export function currencyName(code: string): string {
   // Every code in CURRENCY_CODES has a display name, so `.of()` is never
   // undefined here; the fallback only satisfies its `string | undefined` type.
   /* v8 ignore next */
-  return new Intl.DisplayNames([FORMAT_LOCALE], { type: 'currency' }).of(code) ?? code;
+  return currencyDisplayNames.of(code) ?? code;
 }
 
 // ISO 3166-1 alpha-2 region -> the region's principal ISO 4217 currency.
 // Used to guess a visitor's currency from their locale; not exhaustive of
 // every territory, but covers the countries a browser locale is likely to
 // report.
-const REGION_CURRENCY: Readonly<Record<string, string>> = {
+export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   // Africa
   DZ: 'DZD',
   AO: 'AOA',

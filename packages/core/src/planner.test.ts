@@ -13,7 +13,6 @@ import {
   planSnapshot,
   previews,
   reducer,
-  SETTINGS_PAYDAY,
   saveSettingsAction,
 } from './planner.js';
 import { buildSummaryText, summaryLine } from './text.js';
@@ -621,19 +620,6 @@ describe('parseSettings edge cases', () => {
 
 describe('reducer: settings field actions', () => {
   const inSettings = (): PlannerState => reducer(resultsState(), { type: 'openSettings' });
-
-  it('settingsUp/settingsDown move the cursor within bounds', () => {
-    let s = inSettings();
-    expect(s.settingsCursor).toBe(0);
-    s = reducer(s, { type: 'settingsUp' });
-    expect(s.settingsCursor).toBe(0);
-    s = reducer(s, { type: 'settingsDown' });
-    expect(s.settingsCursor).toBe(1);
-    s = reducer(s, { type: 'settingsDown' });
-    s = reducer(s, { type: 'settingsDown' });
-    s = reducer(s, { type: 'settingsDown' });
-    expect(s.settingsCursor).toBe(SETTINGS_PAYDAY + 1);
-  });
 
   it('paydayPrev/paydayNext wrap around the week', () => {
     let s = inSettings();

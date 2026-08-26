@@ -12,12 +12,6 @@ export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
 export const BRIDGE_LABEL = 'Bridge';
 
-export const SETTINGS_QUANTUM = 0;
-export const SETTINGS_CURRENCY = 1;
-export const SETTINGS_PAYDAY = 2;
-export const SETTINGS_INTERVAL = 3;
-export const SETTINGS_CURSOR_MAX = SETTINGS_INTERVAL;
-
 export interface PlannerState {
   step: Step;
   payInput: string;
@@ -31,7 +25,6 @@ export interface PlannerState {
   total: number | null;
   results: ComputeResult | null;
   config: Config;
-  settingsCursor: number;
   quantumInput: string;
   intervalInput: string;
   currencyInput: string;
@@ -47,8 +40,6 @@ export type Action =
   | { type: 'back' }
   | { type: 'reset' }
   | { type: 'openSettings' }
-  | { type: 'settingsUp' }
-  | { type: 'settingsDown' }
   | { type: 'paydayPrev' }
   | { type: 'paydayNext' }
   | { type: 'setQuantumInput'; value: string }
@@ -73,7 +64,6 @@ export function initialState(config: Config, today: number): PlannerState {
     total: null,
     results: null,
     config,
-    settingsCursor: 0,
     quantumInput: '',
     intervalInput: '',
     currencyInput: '',
@@ -275,19 +265,12 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
         return s;
       }
       s.settingsReturn = s.step;
-      s.settingsCursor = 0;
       s.quantumInput = fmtAmount(s.config.quantum, s.config.currency);
       s.intervalInput = s.config.interval.toString();
       s.currencyInput = s.config.currency;
       s.step = 'settings';
       return s;
     }
-    case 'settingsUp':
-      s.settingsCursor = Math.max(0, s.settingsCursor - 1);
-      return s;
-    case 'settingsDown':
-      s.settingsCursor = Math.min(SETTINGS_CURSOR_MAX, s.settingsCursor + 1);
-      return s;
     case 'paydayPrev':
       s.config = { ...s.config, payday: remEuclid(s.config.payday - 1, 7) };
       return s;

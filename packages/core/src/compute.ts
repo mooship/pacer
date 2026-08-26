@@ -1,10 +1,8 @@
 import { type Config, DEFAULT_CURRENCY } from './config.js';
-import { currencyDigits } from './currency.js';
+import { currencyDigits, FORMAT_LOCALE, formatterFor } from './currency.js';
 import { weekday } from './date.js';
 import { idiv, remEuclid } from './math.js';
 import { err, ok, type Result } from './result.js';
-
-const DISPLAY_LOCALE = 'en';
 
 export interface ComputeResult {
   dates: number[];
@@ -21,24 +19,19 @@ export function perDay(amount: number, days: number): number {
 }
 
 export function fmtMoney(units: number, currency: string = DEFAULT_CURRENCY): string {
-  const digits = currencyDigits(currency);
-  try {
-    return new Intl.NumberFormat(DISPLAY_LOCALE, {
-      style: 'currency',
-      currency,
-      currencyDisplay: 'narrowSymbol',
-    }).format(units / 10 ** digits);
-  } catch {
-    // Not a real ISO 4217 code: treat it as a literal prefix, the same way
-    // this function behaved before it grew currency-aware formatting.
-    const neg = units < 0;
-    return `${neg ? '-' : ''}${currency}${fmtAmount(Math.abs(units), currency)}`;
+  const formatter = formatterFor(currency);
+  if (formatter) {
+    return formatter.format(units / 10 ** currencyDigits(currency));
   }
+  // Not a real ISO 4217 code: treat it as a literal prefix, the same way
+  // this function behaved before it grew currency-aware formatting.
+  const neg = units < 0;
+  return `${neg ? '-' : ''}${currency}${fmtAmount(Math.abs(units), currency)}`;
 }
 
 export function fmtAmount(units: number, currency: string = DEFAULT_CURRENCY): string {
   const digits = currencyDigits(currency);
-  return new Intl.NumberFormat(DISPLAY_LOCALE, {
+  return new Intl.NumberFormat(FORMAT_LOCALE, {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,
   }).format(units / 10 ** digits);

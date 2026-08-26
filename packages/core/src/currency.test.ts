@@ -6,6 +6,7 @@ import {
   currencyName,
   currencySymbol,
   isCurrencyCode,
+  REGION_CURRENCY,
 } from './currency.js';
 
 describe('currency', () => {
@@ -70,11 +71,11 @@ describe('currency', () => {
     expect(currencyForRegion('')).toBeNull();
   });
 
-  it('every region in the lookup maps to a real ISO 4217 code', () => {
-    for (const region of ['US', 'ZA', 'DE', 'FR', 'JP', 'GB', 'IN', 'AU', 'BR', 'CN', 'ZW']) {
-      const currency = currencyForRegion(region);
-      expect(currency).not.toBeNull();
-      expect(isCurrencyCode(currency as string)).toBe(true);
+  it('every region in the lookup table maps to a real ISO 4217 code', () => {
+    const regions = Object.keys(REGION_CURRENCY);
+    expect(regions.length).toBeGreaterThan(200);
+    for (const region of regions) {
+      expect(isCurrencyCode(REGION_CURRENCY[region])).toBe(true);
     }
   });
 });
