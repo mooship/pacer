@@ -33,7 +33,7 @@ describe('ics', () => {
   });
 
   it('labels the first event as the bridge with its amount', () => {
-    expect(ics).toContain('SUMMARY:Pacer: R700.00 (Bridge)');
+    expect(ics).toContain('SUMMARY:Pacer: $700.00 (Bridge)');
   });
 
   it('includes a reminder alarm', () => {

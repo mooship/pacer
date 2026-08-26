@@ -4,6 +4,7 @@ import {
   type ComputeResult,
   compute,
   currentSegment,
+  fmtAmount,
   fmtMoney,
   nextPayout,
   perDay,
@@ -76,17 +77,28 @@ describe('compute', () => {
     expect(sum(amounts)).toBe(100000);
   });
 
-  it('fmtMoney groups thousands and cents', () => {
-    expect(fmtMoney(500000)).toBe('R5,000.00');
-    expect(fmtMoney(502550)).toBe('R5,025.50');
-    expect(fmtMoney(99)).toBe('R0.99');
-    expect(fmtMoney(1234567)).toBe('R12,345.67');
+  it('fmtMoney groups thousands and cents for the default currency', () => {
+    expect(fmtMoney(500000)).toBe('$5,000.00');
+    expect(fmtMoney(502550)).toBe('$5,025.50');
+    expect(fmtMoney(99)).toBe('$0.99');
+    expect(fmtMoney(1234567)).toBe('$12,345.67');
   });
 
-  it('fmtMoney uses a custom currency symbol', () => {
-    expect(fmtMoney(500000, '$')).toBe('$5,000.00');
-    expect(fmtMoney(500000, '')).toBe('5,000.00');
-    expect(fmtMoney(-1500, '€')).toBe('-€15.00');
+  it('fmtMoney formats other ISO currencies with their own symbol and decimals', () => {
+    expect(fmtMoney(500000, 'USD')).toBe('$5,000.00');
+    expect(fmtMoney(-1500, 'EUR')).toBe('-€15.00');
+    expect(fmtMoney(1234, 'JPY')).toBe('¥1,234');
+    expect(fmtMoney(1234500, 'KWD')).toBe('KWD 1,234.500');
+  });
+
+  it('fmtMoney falls back to a literal negative prefix for an unrecognized currency', () => {
+    expect(fmtMoney(-500000, '$')).toBe('-$5,000.00');
+  });
+
+  it('fmtAmount formats a plain grouped number without a currency symbol', () => {
+    expect(fmtAmount(500000)).toBe('5,000.00');
+    expect(fmtAmount(1234, 'JPY')).toBe('1,234');
+    expect(fmtAmount(1234500, 'KWD')).toBe('1,234.500');
   });
 
   it('currentSegment finds the segment covering a day, else null', () => {

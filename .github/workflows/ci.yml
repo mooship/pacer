@@ -35,7 +35,6 @@ jobs:
         with:
           path: |
             packages/core/node_modules/.cache/tsc
-            apps/tui/node_modules/.cache/tsc
             apps/web/node_modules/.cache/tsc
             apps/web/node_modules/.vite
           key: build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}

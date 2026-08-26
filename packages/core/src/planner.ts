@@ -1,6 +1,7 @@
-import { type ComputeResult, compute, fmtMoney } from './compute.js';
+import { type ComputeResult, compute, fmtAmount, fmtMoney } from './compute.js';
 import { type Config, DEFAULT_CURRENCY, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
+import { currencyDigits } from './currency.js';
 import { fmtIso, fmtWdDmy } from './date.js';
 import { remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
@@ -10,12 +11,6 @@ import type { PlanSnapshot } from './snapshot.js';
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
 export const BRIDGE_LABEL = 'Bridge';
-
-export const SETTINGS_QUANTUM = 0;
-export const SETTINGS_CURRENCY = 1;
-export const SETTINGS_PAYDAY = 2;
-export const SETTINGS_INTERVAL = 3;
-export const SETTINGS_CURSOR_MAX = SETTINGS_INTERVAL;
 
 export interface PlannerState {
   step: Step;
@@ -30,7 +25,6 @@ export interface PlannerState {
   total: number | null;
   results: ComputeResult | null;
   config: Config;
-  settingsCursor: number;
   quantumInput: string;
   intervalInput: string;
   currencyInput: string;
@@ -46,8 +40,6 @@ export type Action =
   | { type: 'back' }
   | { type: 'reset' }
   | { type: 'openSettings' }
-  | { type: 'settingsUp' }
-  | { type: 'settingsDown' }
   | { type: 'paydayPrev' }
   | { type: 'paydayNext' }
   | { type: 'setQuantumInput'; value: string }
@@ -72,7 +64,6 @@ export function initialState(config: Config, today: number): PlannerState {
     total: null,
     results: null,
     config,
-    settingsCursor: 0,
     quantumInput: '',
     intervalInput: '',
     currencyInput: '',
@@ -124,7 +115,7 @@ export function parseSettings(
   payday: number,
   currencyInput = DEFAULT_CURRENCY,
 ): Result<Config> {
-  const quantum = parseAmount(quantumInput);
+  const quantum = parseAmount(quantumInput, currencyDigits(currencyInput));
   if (!quantum.ok) {
     return quantum;
   }
@@ -198,7 +189,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
           s.step = 'amount';
         }
       } else if (s.step === 'amount') {
-        const r = parseAmount(s.amountInput);
+        const r = parseAmount(s.amountInput, currencyDigits(s.config.currency));
         if (r.ok) {
           s.total = r.value;
           enterResults(s);
@@ -229,7 +220,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
         s.error = lastR.error;
         return s;
       }
-      const amtR = parseAmount(s.amountInput);
+      const amtR = parseAmount(s.amountInput, currencyDigits(s.config.currency));
       if (!amtR.ok) {
         s.error = amtR.error;
         return s;
@@ -274,19 +265,12 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
         return s;
       }
       s.settingsReturn = s.step;
-      s.settingsCursor = 0;
-      s.quantumInput = fmtMoney(s.config.quantum, '');
+      s.quantumInput = fmtAmount(s.config.quantum, s.config.currency);
       s.intervalInput = s.config.interval.toString();
       s.currencyInput = s.config.currency;
       s.step = 'settings';
       return s;
     }
-    case 'settingsUp':
-      s.settingsCursor = Math.max(0, s.settingsCursor - 1);
-      return s;
-    case 'settingsDown':
-      s.settingsCursor = Math.min(SETTINGS_CURSOR_MAX, s.settingsCursor + 1);
-      return s;
     case 'paydayPrev':
       s.config = { ...s.config, payday: remEuclid(s.config.payday - 1, 7) };
       return s;
@@ -299,9 +283,14 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
     case 'setIntervalInput':
       s.intervalInput = action.value;
       return s;
-    case 'setCurrencyInput':
+    case 'setCurrencyInput': {
+      const parsed = parseAmount(s.quantumInput, currencyDigits(s.currencyInput));
+      if (parsed.ok) {
+        s.quantumInput = fmtAmount(parsed.value, action.value);
+      }
       s.currencyInput = action.value;
       return s;
+    }
 
     case 'settingsSaved': {
       s.config = action.config;
@@ -320,7 +309,7 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       s.total = total;
       s.payInput = fmtIso(pay);
       s.lastInput = fmtIso(last);
-      s.amountInput = fmtMoney(total, '');
+      s.amountInput = fmtAmount(total, s.config.currency);
       enterResults(s);
       s.step = 'results';
       return s;
@@ -377,7 +366,7 @@ export function previews(s: PlannerState): Previews {
   let amount = '';
   let amountState: FieldState = 'empty';
   if (s.amountInput.trim() !== '') {
-    const r = parseAmount(s.amountInput);
+    const r = parseAmount(s.amountInput, currencyDigits(s.config.currency));
     if (r.ok) {
       amount = fmtMoney(r.value, s.config.currency);
       amountState = 'ok';

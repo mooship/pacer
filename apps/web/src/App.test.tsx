@@ -16,7 +16,7 @@ describe('App', () => {
     expect(screen.getByRole('heading', { name: 'Pacer' })).toBeInTheDocument();
     expect(screen.getByLabelText('Pay date')).toBeEnabled();
     expect(screen.getByLabelText('Last day it covers')).toBeEnabled();
-    expect(screen.getByLabelText('Amount (R)')).toBeEnabled();
+    expect(screen.getByLabelText('Amount ($)')).toBeEnabled();
   });
 
   it('plans from all fields with a single submit', async () => {
@@ -25,7 +25,7 @@ describe('App', () => {
 
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
     await user.type(screen.getByLabelText('Last day it covers'), '2026-07-24');
-    await user.type(screen.getByLabelText('Amount (R)'), '5000');
+    await user.type(screen.getByLabelText('Amount ($)'), '5000');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 
     expect(screen.getByRole('table')).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe('App', () => {
 
     await user.type(screen.getByLabelText('Pay date'), '2026-06-25');
     await user.type(screen.getByLabelText('Last day it covers'), '+30');
-    const amount = screen.getByLabelText('Amount (R)');
+    const amount = screen.getByLabelText('Amount ($)');
     await user.type(amount, 'abc');
     await user.click(screen.getByRole('button', { name: /plan it/i }));
 

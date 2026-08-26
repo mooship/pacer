@@ -89,6 +89,19 @@ describe('parseAmount', () => {
     expect(parseAmount('5000.567').ok).toBe(false);
   });
 
+  it('honors a custom digit count for currencies with different minor units', () => {
+    expect(value(parseAmount('5000', 0))).toBe(5000);
+    expect(parseAmount('5000.50', 0).ok).toBe(false);
+    expect(value(parseAmount('1234.500', 3))).toBe(1234500);
+    expect(parseAmount('1234.5000', 3).ok).toBe(false);
+  });
+
+  it('uses the singular "decimal place" in the error for a 1-digit currency', () => {
+    const r = parseAmount('1234.55', 1);
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain('1 decimal place,');
+  });
+
   it('stray letter rejected', () => {
     expect(parseAmount('5R0').ok).toBe(false);
   });

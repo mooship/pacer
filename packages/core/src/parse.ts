@@ -120,7 +120,7 @@ export function resolveDate(s: string, base: number): Result<number> {
   return parseDateDays(t);
 }
 
-export function parseAmount(s: string): Result<number> {
+export function parseAmount(s: string, digits = 2): Result<number> {
   let t = s.trim();
   const symbol = t.match(/^[^\d.\-+]+/);
   if (symbol) {
@@ -134,24 +134,26 @@ export function parseAmount(s: string): Result<number> {
   if (!isAsciiDigits(intClean)) {
     return err(`amount must be a number, got \`${s}\``);
   }
-  const rand = parseIntStrict(intClean);
-  if (rand === null) {
+  const whole = parseIntStrict(intClean);
+  if (whole === null) {
     return err(`amount is too large, got \`${s}\``);
   }
 
-  let cents = 0;
+  const scale = 10 ** digits;
+  let frac = 0;
   if (fracRaw !== null) {
-    if (fracRaw.length === 0 || fracRaw.length > 2 || !isAsciiDigits(fracRaw)) {
-      return err(`amount can have at most 2 decimal places, got \`${s}\``);
+    if (fracRaw.length === 0 || fracRaw.length > digits || !isAsciiDigits(fracRaw)) {
+      const noun = digits === 1 ? 'decimal place' : 'decimal places';
+      return err(`amount can have at most ${digits} ${noun}, got \`${s}\``);
     }
-    cents = Number(fracRaw.padEnd(2, '0'));
+    frac = Number(fracRaw.padEnd(digits, '0'));
   }
 
-  const scaled = rand * 100;
+  const scaled = whole * scale;
   if (!Number.isSafeInteger(scaled)) {
     return err(`amount is too large, got \`${s}\``);
   }
-  const total = checkedAdd(scaled, cents);
+  const total = checkedAdd(scaled, frac);
   if (total === null) {
     return err(`amount is too large, got \`${s}\``);
   }

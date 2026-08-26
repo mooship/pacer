@@ -2,7 +2,7 @@
   "name": "pacer-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "Splits a salary into an initial payment plus recurring allowances — TUI + web SPA over a shared core.",
+  "description": "Splits a salary into an initial payment plus recurring allowances — a web SPA over a shared core.",
   "license": "GPL-3.0",
   "packageManager": "pnpm@10.33.0",
   "engines": {
@@ -16,7 +16,6 @@
     "typecheck": "pnpm -r typecheck",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "tui": "pnpm --filter @pacer/tui dev",
     "web": "pnpm --filter @pacer/web dev",
     "prepare": "lefthook install"
   },
