@@ -100,6 +100,7 @@ export function SettingsDialog() {
               <ChevronRight size={18} aria-hidden />
             </button>
           </div>
+          <p className={styles.help}>Day of the week recurring allowances land on.</p>
         </fieldset>
 
         <div className={styles.field}>
@@ -114,6 +115,7 @@ export function SettingsDialog() {
             autoComplete="off"
             onChange={(e) => dispatch({ type: 'setIntervalInput', value: e.target.value })}
           />
+          <p className={styles.help}>How many days between recurring allowance payouts.</p>
         </div>
 
         {state.error ? (

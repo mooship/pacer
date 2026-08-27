@@ -72,6 +72,24 @@
   background: color-mix(in srgb, var(--surface-sunk) 55%, transparent);
 }
 
+.table th[scope="row"] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.table thead th[scope="col"]:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.table tbody tr:nth-child(even) th[scope="row"] {
+  background: color-mix(in srgb, var(--surface-sunk) 55%, var(--surface));
+}
+
 .num {
   text-align: right;
 }
@@ -116,6 +134,11 @@
   font-weight: 800;
 }
 
+.firstWeek th[scope="row"] {
+  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) sticky background */
+  background: color-mix(in srgb, var(--mango) 22%, var(--surface)) !important;
+}
+
 .todayTag {
   display: block;
   width: fit-content;
@@ -144,14 +167,49 @@
   font-weight: 800;
 }
 
+.today th[scope="row"] {
+  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) sticky background */
+  background: color-mix(in srgb, var(--sky) 18%, var(--surface)) !important;
+}
+
 .today .bar {
   background: var(--sky);
+}
+
+.firstWeek.today {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mango) 26%, transparent),
+    color-mix(in srgb, var(--sky) 22%, transparent)
+    /* biome-ignore lint/complexity/noImportantStyles: must win over both single-state row backgrounds above */
+  ) !important;
+}
+
+.firstWeek.today th {
+  color: var(--mango-deep);
+}
+
+.firstWeek.today th[scope="row"] {
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mango) 26%, var(--surface)),
+    color-mix(in srgb, var(--sky) 22%, var(--surface))
+    /* biome-ignore lint/complexity/noImportantStyles: must win over the single-state and nth-child(even) sticky backgrounds */
+  ) !important;
 }
 
 .table tfoot th,
 .table tfoot td {
   border-top: 2px solid var(--border);
   font-weight: 800;
+}
+
+.table tfoot th[scope="row"] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--surface);
+  box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.2);
 }
 
 .actions {

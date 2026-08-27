@@ -1,4 +1,11 @@
-import { currencySymbol, examplePlan, type FieldState, fmtIso, previews } from '@pacer/core';
+import {
+  currencySymbol,
+  examplePlan,
+  type FieldState,
+  fmtIso,
+  type LastReason,
+  previews,
+} from '@pacer/core';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
@@ -17,6 +24,30 @@ const hintFor = (
   }
   if (state === 'empty') {
     return attempted ? requiredMsg : undefined;
+  }
+  return preview;
+};
+
+const LAST_INVALID_MSG: Record<Exclude<LastReason, null>, string> = {
+  blocked: 'Enter a valid pay date first.',
+  before: 'That date is before pay day — try a later one.',
+  bad: 'Hmm, try +30, 07-25, or a date.',
+};
+
+const lastHintFor = (
+  attempted: boolean,
+  state: FieldState,
+  reason: LastReason,
+  preview: string,
+): string | undefined => {
+  if (state === 'invalid') {
+    // previews() always pairs lastState 'invalid' with a non-null lastReason,
+    // so the fallback below is a type-safety guard, not a reachable case.
+    /* v8 ignore next */
+    return reason ? LAST_INVALID_MSG[reason] : LAST_INVALID_MSG.bad;
+  }
+  if (state === 'empty') {
+    return attempted ? 'Enter the last day this pay covers.' : undefined;
   }
   return preview;
 };
@@ -123,7 +154,7 @@ export function PlanForm() {
         value={state.payInput}
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
         complete={view.payState === 'ok'}
-        placeholder="today, +7, 07-25, or 2026-07-25"
+        placeholder="today, +7, or 07-25"
         hint={hintFor(
           attempted,
           view.payState,
@@ -143,14 +174,8 @@ export function PlanForm() {
         value={state.lastInput}
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         complete={view.lastState === 'ok'}
-        placeholder="+30, 07-25, or 2026-07-25"
-        hint={hintFor(
-          attempted,
-          view.lastState,
-          view.last,
-          'That date is before pay day — try a later one.',
-          'Enter the last day this pay covers.',
-        )}
+        placeholder="+30 or 07-25"
+        hint={lastHintFor(attempted, view.lastState, view.lastReason, view.last)}
         invalid={showInvalid(view.lastState)}
         datePicker
         min={payMin}

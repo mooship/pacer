@@ -326,6 +326,8 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
 
 export type FieldState = 'empty' | 'ok' | 'invalid';
 
+export type LastReason = 'blocked' | 'before' | 'bad' | null;
+
 export interface Previews {
   pay: string;
   last: string;
@@ -333,6 +335,7 @@ export interface Previews {
   payDay: number | null;
   payState: FieldState;
   lastState: FieldState;
+  lastReason: LastReason;
   amountState: FieldState;
 }
 
@@ -353,13 +356,23 @@ export function previews(s: PlannerState): Previews {
 
   let last = '';
   let lastState: FieldState = 'empty';
-  if (payDay !== null && s.lastInput.trim() !== '') {
-    const r = resolveLast(s.lastInput, payDay);
-    if (r.ok) {
-      last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
-      lastState = 'ok';
-    } else {
+  let lastReason: LastReason = null;
+  if (s.lastInput.trim() !== '') {
+    if (payDay === null) {
       lastState = 'invalid';
+      lastReason = 'blocked';
+    } else {
+      const dateR = resolveDate(s.lastInput, payDay);
+      if (!dateR.ok) {
+        lastState = 'invalid';
+        lastReason = 'bad';
+      } else if (dateR.value < payDay) {
+        lastState = 'invalid';
+        lastReason = 'before';
+      } else {
+        last = `${fmtWdDmy(dateR.value)} · ${dateR.value - payDay + 1} days`;
+        lastState = 'ok';
+      }
     }
   }
 
@@ -375,7 +388,7 @@ export function previews(s: PlannerState): Previews {
     }
   }
 
-  return { pay, last, amount, payDay, payState, lastState, amountState };
+  return { pay, last, amount, payDay, payState, lastState, lastReason, amountState };
 }
 
 export type Mood = 'idle' | 'success' | 'error';
