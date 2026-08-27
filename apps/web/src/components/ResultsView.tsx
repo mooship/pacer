@@ -104,7 +104,11 @@ export function ResultsView() {
             {dates.map((d, i) => (
               <tr
                 key={d}
-                className={clsx(i === 0 && styles.firstWeek, i === todayIdx && styles.today)}
+                className={clsx(
+                  i % 2 === 1 && styles.evenRow,
+                  i === 0 && styles.firstWeek,
+                  i === todayIdx && styles.today,
+                )}
               >
                 <th scope="row">
                   {fmtWdDm(d)}

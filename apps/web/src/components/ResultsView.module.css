@@ -68,8 +68,36 @@
   background: var(--surface-sunk);
 }
 
-.table tbody tr:nth-child(even) {
-  background: color-mix(in srgb, var(--surface-sunk) 55%, transparent);
+/*
+ * Each row state below sets --row-bg (translucent, layered over the app
+ * background for the row itself) and --row-bg-solid (the same tint mixed
+ * against --surface instead, opaque so the sticky first cell doesn't let
+ * scrolled-under text show through). Keep .evenRow declared before
+ * .firstWeek/.today in this file — a row that's both needs the state color
+ * to win, and with matching one-class specificity that's decided by source
+ * order, not !important.
+ */
+.table tbody tr {
+  background: var(--row-bg, transparent);
+}
+
+.evenRow {
+  --row-bg: color-mix(in srgb, var(--surface-sunk) 55%, transparent);
+  --row-bg-solid: color-mix(in srgb, var(--surface-sunk) 55%, var(--surface));
+}
+
+.table th[scope="row"] {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--row-bg-solid, var(--surface));
+  box-shadow: 2px 0 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.table thead th[scope="col"]:first-child {
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .num {
@@ -107,8 +135,8 @@
 }
 
 .firstWeek {
-  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) row background */
-  background: color-mix(in srgb, var(--mango) 22%, transparent) !important;
+  --row-bg: color-mix(in srgb, var(--mango) 22%, transparent);
+  --row-bg-solid: color-mix(in srgb, var(--mango) 22%, var(--surface));
 }
 
 .firstWeek th {
@@ -136,8 +164,8 @@
 }
 
 .today {
-  /* biome-ignore lint/complexity/noImportantStyles: must win over the nth-child(even) row background */
-  background: color-mix(in srgb, var(--sky) 18%, transparent) !important;
+  --row-bg: color-mix(in srgb, var(--sky) 18%, transparent);
+  --row-bg-solid: color-mix(in srgb, var(--sky) 18%, var(--surface));
 }
 
 .today th {
@@ -146,6 +174,23 @@
 
 .today .bar {
   background: var(--sky);
+}
+
+.firstWeek.today {
+  --row-bg: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mango) 26%, transparent),
+    color-mix(in srgb, var(--sky) 22%, transparent)
+  );
+  --row-bg-solid: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--mango) 26%, var(--surface)),
+    color-mix(in srgb, var(--sky) 22%, var(--surface))
+  );
+}
+
+.firstWeek.today th {
+  color: var(--mango-deep);
 }
 
 .table tfoot th,

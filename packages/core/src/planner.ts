@@ -5,7 +5,7 @@ import { currencyDigits } from './currency.js';
 import { fmtIso, fmtWdDmy } from './date.js';
 import { remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
-import { err, ok, type Result } from './result.js';
+import { type Err, err, type Ok, ok, type Result } from './result.js';
 import type { PlanSnapshot } from './snapshot.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
@@ -95,16 +95,20 @@ function enterResults(s: PlannerState): void {
   recompute(s);
 }
 
-function resolveLast(lastInput: string, pay: number): Result<number> {
+export type LastReason = 'before' | 'bad' | 'tooLong';
+
+type LastResult = Ok<number> | (Err & { reason: LastReason });
+
+function resolveLast(lastInput: string, pay: number): LastResult {
   const r = resolveDate(lastInput, pay);
   if (!r.ok) {
-    return r;
+    return { ...r, reason: 'bad' };
   }
   if (r.value < pay) {
-    return err('must be on or after the pay date');
+    return { ...err('must be on or after the pay date'), reason: 'before' };
   }
   if (r.value - pay + 1 > MAX_DAYS) {
-    return err("period can't be longer than a year");
+    return { ...err("period can't be longer than a year"), reason: 'tooLong' };
   }
   return ok(r.value);
 }
@@ -333,6 +337,7 @@ export interface Previews {
   payDay: number | null;
   payState: FieldState;
   lastState: FieldState;
+  lastReason: LastReason | null;
   amountState: FieldState;
 }
 
@@ -353,13 +358,19 @@ export function previews(s: PlannerState): Previews {
 
   let last = '';
   let lastState: FieldState = 'empty';
-  if (payDay !== null && s.lastInput.trim() !== '') {
-    const r = resolveLast(s.lastInput, payDay);
-    if (r.ok) {
-      last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
-      lastState = 'ok';
-    } else {
+  let lastReason: LastReason | null = null;
+  if (s.lastInput.trim() !== '') {
+    if (payDay === null) {
       lastState = 'invalid';
+    } else {
+      const r = resolveLast(s.lastInput, payDay);
+      if (r.ok) {
+        last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
+        lastState = 'ok';
+      } else {
+        lastState = 'invalid';
+        lastReason = r.reason;
+      }
     }
   }
 
@@ -375,7 +386,7 @@ export function previews(s: PlannerState): Previews {
     }
   }
 
-  return { pay, last, amount, payDay, payState, lastState, amountState };
+  return { pay, last, amount, payDay, payState, lastState, lastReason, amountState };
 }
 
 export type Mood = 'idle' | 'success' | 'error';

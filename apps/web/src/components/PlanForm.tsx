@@ -1,4 +1,11 @@
-import { currencySymbol, examplePlan, type FieldState, fmtIso, previews } from '@pacer/core';
+import {
+  currencySymbol,
+  examplePlan,
+  type FieldState,
+  fmtIso,
+  type LastReason,
+  previews,
+} from '@pacer/core';
 import { Sparkles, Wand2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
@@ -20,6 +27,18 @@ const hintFor = (
   }
   return preview;
 };
+
+const LAST_INVALID_MSG: Record<LastReason, string> = {
+  before: 'That date is before pay day — try a later one.',
+  bad: 'Hmm, try +30, 07-25, or a date.',
+  tooLong: "That's more than a year of pay — try a nearer date.",
+};
+
+// previews() only leaves lastReason null when payState isn't 'ok' (last day
+// can't be resolved without a pay date yet); once payState is 'ok', a
+// lastState of 'invalid' always came from resolveLast(), which sets a reason.
+const lastInvalidMsg = (payState: FieldState, reason: LastReason | null): string =>
+  payState !== 'ok' ? 'Enter a valid pay date first.' : LAST_INVALID_MSG[reason as LastReason];
 
 const PAY_CHIPS: { label: string; value: string }[] = [
   { label: 'Today', value: 'today' },
@@ -123,7 +142,7 @@ export function PlanForm() {
         value={state.payInput}
         onChange={(value) => dispatch({ type: 'setPayInput', value })}
         complete={view.payState === 'ok'}
-        placeholder="today, +7, 07-25, or 2026-07-25"
+        placeholder="today, +7, or 07-25"
         hint={hintFor(
           attempted,
           view.payState,
@@ -143,12 +162,12 @@ export function PlanForm() {
         value={state.lastInput}
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         complete={view.lastState === 'ok'}
-        placeholder="+30, 07-25, or 2026-07-25"
+        placeholder="+30 or 07-25"
         hint={hintFor(
           attempted,
           view.lastState,
           view.last,
-          'That date is before pay day — try a later one.',
+          lastInvalidMsg(view.payState, view.lastReason),
           'Enter the last day this pay covers.',
         )}
         invalid={showInvalid(view.lastState)}
