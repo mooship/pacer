@@ -5,7 +5,7 @@ import { currencyDigits } from './currency.js';
 import { fmtIso, fmtWdDmy } from './date.js';
 import { remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
-import { err, ok, type Result } from './result.js';
+import { type Err, err, type Ok, ok, type Result } from './result.js';
 import type { PlanSnapshot } from './snapshot.js';
 
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
@@ -95,16 +95,20 @@ function enterResults(s: PlannerState): void {
   recompute(s);
 }
 
-function resolveLast(lastInput: string, pay: number): Result<number> {
+export type LastReason = 'before' | 'bad' | 'tooLong';
+
+type LastResult = Ok<number> | (Err & { reason: LastReason });
+
+function resolveLast(lastInput: string, pay: number): LastResult {
   const r = resolveDate(lastInput, pay);
   if (!r.ok) {
-    return r;
+    return { ...r, reason: 'bad' };
   }
   if (r.value < pay) {
-    return err('must be on or after the pay date');
+    return { ...err('must be on or after the pay date'), reason: 'before' };
   }
   if (r.value - pay + 1 > MAX_DAYS) {
-    return err("period can't be longer than a year");
+    return { ...err("period can't be longer than a year"), reason: 'tooLong' };
   }
   return ok(r.value);
 }
@@ -326,8 +330,6 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
 
 export type FieldState = 'empty' | 'ok' | 'invalid';
 
-export type LastReason = 'blocked' | 'before' | 'bad' | null;
-
 export interface Previews {
   pay: string;
   last: string;
@@ -335,7 +337,7 @@ export interface Previews {
   payDay: number | null;
   payState: FieldState;
   lastState: FieldState;
-  lastReason: LastReason;
+  lastReason: LastReason | null;
   amountState: FieldState;
 }
 
@@ -356,22 +358,18 @@ export function previews(s: PlannerState): Previews {
 
   let last = '';
   let lastState: FieldState = 'empty';
-  let lastReason: LastReason = null;
+  let lastReason: LastReason | null = null;
   if (s.lastInput.trim() !== '') {
     if (payDay === null) {
       lastState = 'invalid';
-      lastReason = 'blocked';
     } else {
-      const dateR = resolveDate(s.lastInput, payDay);
-      if (!dateR.ok) {
-        lastState = 'invalid';
-        lastReason = 'bad';
-      } else if (dateR.value < payDay) {
-        lastState = 'invalid';
-        lastReason = 'before';
-      } else {
-        last = `${fmtWdDmy(dateR.value)} · ${dateR.value - payDay + 1} days`;
+      const r = resolveLast(s.lastInput, payDay);
+      if (r.ok) {
+        last = `${fmtWdDmy(r.value)} · ${r.value - payDay + 1} days`;
         lastState = 'ok';
+      } else {
+        lastState = 'invalid';
+        lastReason = r.reason;
       }
     }
   }

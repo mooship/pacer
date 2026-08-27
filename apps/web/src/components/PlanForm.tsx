@@ -28,29 +28,17 @@ const hintFor = (
   return preview;
 };
 
-const LAST_INVALID_MSG: Record<Exclude<LastReason, null>, string> = {
-  blocked: 'Enter a valid pay date first.',
+const LAST_INVALID_MSG: Record<LastReason, string> = {
   before: 'That date is before pay day — try a later one.',
   bad: 'Hmm, try +30, 07-25, or a date.',
+  tooLong: "That's more than a year of pay — try a nearer date.",
 };
 
-const lastHintFor = (
-  attempted: boolean,
-  state: FieldState,
-  reason: LastReason,
-  preview: string,
-): string | undefined => {
-  if (state === 'invalid') {
-    // previews() always pairs lastState 'invalid' with a non-null lastReason,
-    // so the fallback below is a type-safety guard, not a reachable case.
-    /* v8 ignore next */
-    return reason ? LAST_INVALID_MSG[reason] : LAST_INVALID_MSG.bad;
-  }
-  if (state === 'empty') {
-    return attempted ? 'Enter the last day this pay covers.' : undefined;
-  }
-  return preview;
-};
+// previews() only leaves lastReason null when payState isn't 'ok' (last day
+// can't be resolved without a pay date yet); once payState is 'ok', a
+// lastState of 'invalid' always came from resolveLast(), which sets a reason.
+const lastInvalidMsg = (payState: FieldState, reason: LastReason | null): string =>
+  payState !== 'ok' ? 'Enter a valid pay date first.' : LAST_INVALID_MSG[reason as LastReason];
 
 const PAY_CHIPS: { label: string; value: string }[] = [
   { label: 'Today', value: 'today' },
@@ -175,7 +163,13 @@ export function PlanForm() {
         onChange={(value) => dispatch({ type: 'setLastInput', value })}
         complete={view.lastState === 'ok'}
         placeholder="+30 or 07-25"
-        hint={lastHintFor(attempted, view.lastState, view.lastReason, view.last)}
+        hint={hintFor(
+          attempted,
+          view.lastState,
+          view.last,
+          lastInvalidMsg(view.payState, view.lastReason),
+          'Enter the last day this pay covers.',
+        )}
         invalid={showInvalid(view.lastState)}
         datePicker
         min={payMin}

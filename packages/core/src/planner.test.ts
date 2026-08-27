@@ -356,7 +356,7 @@ describe('previews', () => {
     expect(v.lastReason).toBe('before');
   });
 
-  it('marks the last day as blocked (not empty) when pay day is not yet valid', () => {
+  it('marks the last day as invalid with no reason when pay day is not yet valid', () => {
     const s = run(
       start(),
       { type: 'setPayInput', value: 'not-a-date' },
@@ -365,7 +365,7 @@ describe('previews', () => {
     const v = previews(s);
     expect(v.payDay).toBeNull();
     expect(v.lastState).toBe('invalid');
-    expect(v.lastReason).toBe('blocked');
+    expect(v.lastReason).toBeNull();
   });
 
   it('marks an unparseable last day as invalid once pay day is valid', () => {
@@ -378,6 +378,18 @@ describe('previews', () => {
     const v = previews(s);
     expect(v.lastState).toBe('invalid');
     expect(v.lastReason).toBe('bad');
+  });
+
+  it('marks a last day more than a year out as invalid', () => {
+    const s = run(
+      start(),
+      { type: 'setPayInput', value: '2026-06-25' },
+      { type: 'confirm' },
+      { type: 'setLastInput', value: '+400' },
+    );
+    const v = previews(s);
+    expect(v.lastState).toBe('invalid');
+    expect(v.lastReason).toBe('tooLong');
   });
 
   it('reports ok with a formatted preview for valid inputs', () => {
