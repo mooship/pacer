@@ -22,6 +22,7 @@ in core.
 ```bash
 pnpm install         # install the workspace + git hooks
 pnpm test            # run every package's tests (Vitest)
+pnpm -r test --coverage   # same, with the 100% coverage gate CI enforces
 pnpm typecheck       # tsc --noEmit across all packages
 pnpm lint            # Biome lint + format check
 pnpm build           # build core, web
@@ -30,6 +31,10 @@ pnpm web             # run the Vite dev server
 pnpm --filter @pacer/core test         # one package's tests
 pnpm --filter @pacer/web dev           # one app
 ```
+
+`pnpm test` alone does not check coverage. Run `pnpm -r test --coverage`
+before treating any change as finished — CI runs the same command and fails
+the build under 100%.
 
 ## Architecture
 
@@ -111,3 +116,36 @@ Static Assets (`wrangler.jsonc`).
   install`.
 - TypeScript is strict (`tsconfig.base.json`); prefer `Result<T>` over throwing
   in core logic.
+
+## Engineering Principles
+
+Every change — feature, fix, or refactor — is expected to hold to all of the
+following. These are not aspirational; coverage is enforced by CI and the
+rest is enforced by review.
+
+- **TDD.** Write the failing test first, or alongside the smallest change
+  that makes it pass, then refactor. A behavior change with no test
+  exercising it is not finished work.
+- **100% test coverage, no exceptions.** Both `packages/core` and `apps/web`
+  set `thresholds: { 100: true }` in their `vitest.config.ts`; CI runs
+  `pnpm -r test --coverage` and fails the build under 100%. A branch that is
+  genuinely unreachable (a type-safety guard, not a real code path) is
+  documented with a one-line comment and `/* v8 ignore next [N] */` — never
+  a lowered threshold, and never a test written just to pad the number
+  without asserting real behavior.
+- **SOLID**, with particular weight on **Open/Closed**: extend behavior by
+  adding a new pure function, currency code, or reducer case rather than
+  editing the branches of an already-tested function. `compute.ts`,
+  `parse.ts`, and `currency.ts` are kept as small, single-purpose functions
+  for exactly this reason — a new date format, currency, or export field
+  should slot in beside what's there, not fork existing logic apart.
+- **DRY.** Shared logic lives in `@pacer/core`, once. `apps/web` stays a thin
+  rendering layer over it — the same calculation or validation appearing in
+  a component as well as in core is a sign it belongs only in core.
+- **KISS.** Prefer the direct implementation over the clever one. This
+  codebase favors flat `Result<T>` returns and plain functions over
+  abstractions (classes, generics, indirection layers) that don't earn their
+  keep.
+- **YAGNI.** Don't add config knobs, parameters, or abstraction points for a
+  use case nobody has asked for yet. A one-off calculation doesn't need a
+  strategy pattern; a single currency format doesn't need a plugin system.
