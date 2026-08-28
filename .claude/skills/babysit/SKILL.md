@@ -26,10 +26,12 @@ If you validate a fix with plain `pnpm test` and call it done, you can push
 something CI immediately rejects for coverage — always use the `--coverage`
 form as your local proxy for CI, not the short one.
 
-The Node engine in `package.json` requires `>=24`. If the environment
-running these commands is on an older Node (pnpm prints `WARN Unsupported
-engine`), that's a harmless environment mismatch — every command still
-works. Don't "fix" it by editing `engines` in `package.json`.
+The Node engine in `package.json` requires `>=22`. CI runs the full job
+twice per trigger, once each on Node 22 and Node 24 (`ci.yml`'s
+`strategy.matrix.node-version`) — a fix that only passes on one of the two
+is not done; reproduce on both before calling it green. If the environment
+running these commands is on a Node below 22, pnpm prints `WARN Unsupported
+engine` and that's a real floor, not something to work around.
 
 ## Coverage: 100%, no exceptions, both packages
 
@@ -54,8 +56,10 @@ Both `packages/core/vitest.config.ts` and `apps/web/vitest.config.ts` set
 ## CI has more checks than `ci.yml` shows
 
 `.github/workflows/ci.yml` defines exactly one job — "Lint, Typecheck, Test,
-and Build" (lint → typecheck → test --coverage → build), triggered on push
-to `main`, every PR, and a weekly Saturday cron. But a PR's check list will
+and Build" (lint → typecheck → test --coverage → build) — matrixed over
+Node 22 and 24, so it runs twice per trigger (`Node 22` / `Node 24` in the
+check list), on push to `main`, every PR, and a weekly Saturday cron. But a
+PR's check list will
 usually show more than that job:
 
 - **CodeQL** ("Analyze (actions)", "Analyze (javascript-typescript)") —
