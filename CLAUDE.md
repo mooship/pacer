@@ -43,11 +43,13 @@ with no `--coverage` flag. CI's `Test` step runs `pnpm -r test --coverage`.
 Validate any change with the `--coverage` form, or you can pass locally and
 still fail CI.
 
-Requires **Node >=24** (`package.json` `engines`, pinned in `.nvmrc` as
-`24`) and pnpm pinned via `packageManager: "pnpm@10.33.0"`. On an older Node
-(e.g. this sandbox runs Node 22), pnpm prints `WARN Unsupported engine` —
-every command still works; it's a harmless environment mismatch, not
-something to "fix" by editing `engines`.
+Requires **Node >=22** (`package.json` `engines`; `.nvmrc` pins `24` as the
+local dev default) and pnpm pinned via `packageManager: "pnpm@10.33.0"`. CI
+(`ci.yml`) runs the full lint/typecheck/test/build matrix on **both Node 22
+and 24** — a change that only works on one of those two is a CI failure, not
+a pass. On a Node version below 22, pnpm prints `WARN Unsupported engine`;
+every command still works, but that's a real floor now, not a harmless
+mismatch to ignore.
 
 ## Architecture
 
@@ -233,8 +235,9 @@ allowance.
 ## CI & PR conventions
 
 `.github/workflows/ci.yml` defines one job (lint → typecheck → test
---coverage → build) on push to `main`, every PR, and a weekly Saturday cron.
-GitHub's check list on a PR shows more than this file defines — CodeQL,
+--coverage → build), run twice per trigger via a `strategy.matrix` over
+`node-version: [22, 24]`, on push to `main`, every PR, and a weekly Saturday
+cron. GitHub's check list on a PR shows more than this file defines — CodeQL,
 a Semgrep Cloud Platform scan, and a Cloudflare "Workers Builds" native
 integration are all configured outside this repo's `.github/`. Repo-specific
 detail on triaging these, the 100%-coverage gate, and the merge convention

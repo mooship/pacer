@@ -12,8 +12,12 @@ permissions:
 
 jobs:
   build-and-test:
-    name: Lint, Typecheck, Test, and Build
+    name: Lint, Typecheck, Test, and Build (Node ${{ matrix.node-version }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node-version: [22, 24]
     steps:
       - name: Checkout Code
         uses: actions/checkout@v7
@@ -24,7 +28,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
           cache: pnpm
 
       - name: Install Dependencies
@@ -37,10 +41,10 @@ jobs:
             packages/core/node_modules/.cache/tsc
             apps/web/node_modules/.cache/tsc
             apps/web/node_modules/.vite
-          key: build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
+          key: build-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}-${{ github.sha }}
           restore-keys: |
-            build-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}-
-            build-${{ runner.os }}-
+            build-${{ runner.os }}-node${{ matrix.node-version }}-${{ hashFiles('pnpm-lock.yaml') }}-
+            build-${{ runner.os }}-node${{ matrix.node-version }}-
 
       - name: Lint
         run: pnpm lint
