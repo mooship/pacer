@@ -5,6 +5,7 @@ import { DayPicker } from 'react-day-picker';
 import 'react-day-picker/style.css';
 import styles from './Field.module.css';
 
+/** Parses a `YYYY-MM-DD` field value into a local `Date` for `react-day-picker`, or `undefined` if invalid. */
 function parseIso(value: string): Date | undefined {
   const r = parseDate(value);
   if (!r.ok) return undefined;
@@ -12,6 +13,7 @@ function parseIso(value: string): Date | undefined {
   return new Date(y, m - 1, d);
 }
 
+/** Formats a `react-day-picker` selection back to the `YYYY-MM-DD` field format. */
 function toIso(date: Date): string {
   return fmtIso(daysFromCivil(date.getFullYear(), date.getMonth() + 1, date.getDate()));
 }
@@ -24,6 +26,11 @@ interface DatePopoverProps {
   onPicked?: () => void;
 }
 
+/**
+ * A calendar-icon button that opens a `react-day-picker` popover for
+ * picking a date into a {@link Field}. Closes on outside pointerdown or
+ * Escape (refocusing the trigger button), or when a date is picked.
+ */
 export function DatePopover({ label, value, onChange, min, onPicked }: DatePopoverProps) {
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLSpanElement>(null);

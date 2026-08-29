@@ -8,6 +8,7 @@ import { SettingsDialog } from './components/SettingsDialog.js';
 import { StatusMessage } from './components/StatusMessage.js';
 import { usePacerStore } from './store.js';
 
+/** The app root: header, the planner wizard (form or results), and the settings dialog. */
 export function App() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);

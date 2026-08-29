@@ -22,6 +22,7 @@ function checkedAdd(a: number, b: number): number | null {
   return Number.isSafeInteger(sum) ? sum : null;
 }
 
+/** Strictly parses `s` as a `YYYY-MM-DD` calendar date, validating the year/month/day ranges. */
 export function parseDate(s: string): Result<[number, number, number]> {
   const p = s.split('-');
   if (p.length !== 3) {
@@ -89,6 +90,13 @@ function resolveMonthDay(s: string, m: number, d: number, base: number): Result<
   return err(`day out of range in \`${s}\``);
 }
 
+/**
+ * Resolves a flexible date expression to a day number, relative to `base`
+ * (a day number): blank or `"today"` -> `base`; `+N`/`-N` -> `base` offset by
+ * N days; `MM-DD` -> the next occurrence of that month/day on or after
+ * `base` (searching up to {@link MAX_LEAP_GAP_YEARS} years ahead so a Feb 29
+ * `base` still resolves); a full `YYYY-MM-DD` -> that absolute date.
+ */
 export function resolveDate(s: string, base: number): Result<number> {
   const t = s.trim();
   if (t === '' || t.toLowerCase() === 'today') {
@@ -120,6 +128,13 @@ export function resolveDate(s: string, base: number): Result<number> {
   return parseDateDays(t);
 }
 
+/**
+ * Parses a money string (optional leading currency symbol, thousands
+ * separators `,`/`_`/space, optional decimal part) into a positive integer
+ * count of minor units. `digits` is the currency's decimal precision — pass
+ * `currencyDigits(currency)` for the target currency; defaults to 2 (cents)
+ * when omitted.
+ */
 export function parseAmount(s: string, digits = 2): Result<number> {
   let t = s.trim();
   const symbol = t.match(/^[^\d.\-+]+/);

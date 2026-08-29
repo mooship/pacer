@@ -8,10 +8,18 @@ import { parseAmount, resolveDate } from './parse.js';
 import { type Err, err, type Ok, ok, type Result } from './result.js';
 import type { PlanSnapshot } from './snapshot.js';
 
+/**
+ * The wizard's current screen. The three input steps run in order
+ * (`payDate` -> `lastDay` -> `amount`) into `results`; `settings` is an
+ * overlay reachable from any step, remembering where to return via
+ * {@link PlannerState.settingsReturn}.
+ */
 export type Step = 'payDate' | 'lastDay' | 'amount' | 'results' | 'settings';
 
+/** Shared label for the initial (non-recurring) payment, used by `text.ts` and `ics.ts` too. */
 export const BRIDGE_LABEL = 'Bridge';
 
+/** The framework-agnostic state of the planner wizard, driven by {@link reducer}. */
 export interface PlannerState {
   step: Step;
   payInput: string;
@@ -19,6 +27,7 @@ export interface PlannerState {
   amountInput: string;
   error: string | null;
   notice: string | null;
+  /** Day number treated as "today" — fixed at wizard start, not re-read live. */
   today: number;
   pay: number | null;
   last: number | null;
@@ -28,14 +37,18 @@ export interface PlannerState {
   quantumInput: string;
   intervalInput: string;
   currencyInput: string;
+  /** The step to return to when the settings overlay closes. */
   settingsReturn: Step;
 }
 
+/** Actions dispatched to {@link reducer} to drive the wizard. */
 export type Action =
   | { type: 'setPayInput'; value: string }
   | { type: 'setLastInput'; value: string }
   | { type: 'setAmountInput'; value: string }
+  /** Validates the current step's input and advances one step. */
   | { type: 'confirm' }
+  /** Validates all three input fields at once and jumps straight to results. */
   | { type: 'submit' }
   | { type: 'back' }
   | { type: 'reset' }
@@ -45,11 +58,14 @@ export type Action =
   | { type: 'setQuantumInput'; value: string }
   | { type: 'setIntervalInput'; value: string }
   | { type: 'setCurrencyInput'; value: string }
+  /** Dispatched by the app after it has persisted a settings save. */
   | { type: 'settingsSaved'; config: Config }
+  /** Dispatched by the app to load a persisted/shared plan straight into results. */
   | { type: 'restorePlan'; snap: PlanSnapshot }
   | { type: 'notice'; value: string | null }
   | { type: 'error'; value: string | null };
 
+/** A fresh {@link PlannerState} at the `payDate` step, with `config` and `today` fixed for the session. */
 export function initialState(config: Config, today: number): PlannerState {
   return {
     step: 'payDate',
@@ -75,6 +91,11 @@ function isOnResults(s: PlannerState): boolean {
   return (s.step === 'settings' ? s.settingsReturn : s.step) === 'results';
 }
 
+/**
+ * The current plan's `{pay, last, total}`, but only once results are
+ * actually showing — including while `settings` is open with
+ * `settingsReturn === 'results'`. `null` at every earlier step.
+ */
 export function planSnapshot(s: PlannerState): PlanSnapshot | null {
   if (!isOnResults(s) || s.pay === null || s.last === null || s.total === null) {
     return null;
@@ -95,10 +116,12 @@ function enterResults(s: PlannerState): void {
   recompute(s);
 }
 
+/** Why a "last day" input failed to resolve, for tailoring the field's error hint. */
 export type LastReason = 'before' | 'bad' | 'tooLong';
 
 type LastResult = Ok<number> | (Err & { reason: LastReason });
 
+/** Resolves the "last day" field against `pay`, additionally rejecting a day before `pay` or a span longer than {@link MAX_DAYS}. */
 function resolveLast(lastInput: string, pay: number): LastResult {
   const r = resolveDate(lastInput, pay);
   if (!r.ok) {
@@ -113,6 +136,11 @@ function resolveLast(lastInput: string, pay: number): LastResult {
   return ok(r.value);
 }
 
+/**
+ * Parses the settings form's raw string inputs into a sanitized {@link Config}.
+ * `payday` is taken as-is (already an in-range number from the picker, not
+ * a string field). Fails on an invalid amount or a non-positive integer interval.
+ */
 export function parseSettings(
   quantumInput: string,
   intervalInput: string,
@@ -131,6 +159,11 @@ export function parseSettings(
   return ok(sanitize({ quantum: quantum.value, payday, interval, currency: currencyInput }));
 }
 
+/**
+ * Parses the settings form via {@link parseSettings}, then calls `persist`
+ * with the result. Returns an {@link Action} to dispatch: `settingsSaved` on
+ * success, or `error` if parsing failed or `persist` threw.
+ */
 export function saveSettingsAction(
   quantumInput: string,
   intervalInput: string,
@@ -150,6 +183,7 @@ export function saveSettingsAction(
   }
 }
 
+/** The planner wizard's state transition function. Never touches storage or the DOM — the app dispatches `settingsSaved`/`restorePlan` after doing persistence itself. */
 export function reducer(state: PlannerState, action: Action): PlannerState {
   const s: PlannerState = { ...state, error: null, notice: null };
 
@@ -328,19 +362,27 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
   }
 }
 
+/** Validity of one form field, for styling/hint purposes. */
 export type FieldState = 'empty' | 'ok' | 'invalid';
 
+/** Live preview text and validity for each of the wizard's three input fields. */
 export interface Previews {
+  /** Formatted preview of the resolved pay date, or `''` if empty/invalid. */
   pay: string;
+  /** Formatted preview of the resolved last day plus day count, or `''` if empty/invalid. */
   last: string;
+  /** Formatted preview of the parsed amount, or `''` if empty/invalid. */
   amount: string;
+  /** The resolved pay date as a day number, or `null` if not yet resolved. */
   payDay: number | null;
   payState: FieldState;
   lastState: FieldState;
+  /** Why the last-day field is invalid, when `lastState === 'invalid'`. */
   lastReason: LastReason | null;
   amountState: FieldState;
 }
 
+/** Computes live preview text and per-field validity for the current form inputs, without mutating state. */
 export function previews(s: PlannerState): Previews {
   let pay = '';
   let payState: FieldState = 'empty';
@@ -389,8 +431,10 @@ export function previews(s: PlannerState): Previews {
   return { pay, last, amount, payDay, payState, lastState, lastReason, amountState };
 }
 
+/** The mascot/UI mood driven by wizard state. */
 export type Mood = 'idle' | 'success' | 'error';
 
+/** `'error'` when an error is showing outside settings, `'success'` once results are showing, otherwise `'idle'`. */
 export function mood(s: PlannerState): Mood {
   if (s.error && s.step !== 'settings') {
     return 'error';
@@ -398,8 +442,10 @@ export function mood(s: PlannerState): Mood {
   return isOnResults(s) ? 'success' : 'idle';
 }
 
+/** Status of one breadcrumb step relative to the current step. */
 export type StepStatus = 'done' | 'current' | 'todo';
 
+/** The three input-step breadcrumbs (Pay date/Last day/Amount) with their status relative to `step`. */
 export function breadcrumb(step: Step): { name: string; status: StepStatus }[] {
   const current = step === 'payDate' ? 0 : step === 'lastDay' ? 1 : step === 'amount' ? 2 : 3;
   const names = ['Pay date', 'Last day', 'Amount'];

@@ -1,3 +1,7 @@
+/**
+ * `@pacer/core` barrel — the only entry point `apps/web` imports from
+ * (never a package-internal path). Re-exports every module's public API.
+ */
 export * from './compute.js';
 export * from './config.js';
 export * from './constants.js';

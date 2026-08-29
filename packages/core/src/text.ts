@@ -3,6 +3,12 @@ import type { Config } from './config.js';
 import { fmtRange, fmtWdDmy } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
+/**
+ * The plain-language pace sentence, e.g. `"Spend about $50/day — $350 lands
+ * weekly until Wed 25 Jul."`. Uses singular per-day wording (no recurring
+ * segment mentioned) when there's only a bridge payment, or the recurring
+ * payouts sum to zero.
+ */
 export function summaryLine(result: ComputeResult, total: number, cfg: Config): string {
   const { dates, segDays, amounts } = result;
   const cur = cfg.currency;
@@ -22,6 +28,11 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
   return `Spend about ${steadyPerDay}/day — ${recurring} lands ${cadence} until ${fmtWdDmy(end)}.`;
 }
 
+/**
+ * Builds the full clipboard/"Copy" text for a plan: a header line, the
+ * bridge payment line (when there is one), and the {@link summaryLine} pace
+ * sentence, each on its own line.
+ */
 export function buildSummaryText(result: ComputeResult, total: number, cfg: Config): string {
   const { dates, segDays, amounts } = result;
   const pay = dates[0];

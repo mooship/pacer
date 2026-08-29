@@ -4,20 +4,34 @@ import { weekday } from './date.js';
 import { idiv, remEuclid } from './math.js';
 import { err, ok, type Result } from './result.js';
 
+/**
+ * The output of {@link compute}: parallel arrays, one entry per payout —
+ * index 0 is the initial bridge payment, the rest are recurring payouts.
+ */
 export interface ComputeResult {
+  /** Day number each payout lands on. */
   dates: number[];
+  /** Number of days each payout's amount is meant to cover. */
   segDays: number[];
+  /** Minor-units amount of each payout. */
   amounts: number[];
 }
 
+/** Last day number covered by a segment starting on `date` and spanning `days`. */
 export function coverEnd(date: number, days: number): number {
   return date + days - 1;
 }
 
+/** Amount per day for a segment (truncating division); 0 for a zero-length segment. */
 export function perDay(amount: number, days: number): number {
   return days > 0 ? idiv(amount, days) : 0;
 }
 
+/**
+ * Formats a minor-units amount as currency-symbol-prefixed text for
+ * `currency` (e.g. `"$12.34"`). If `currency` isn't a recognized ISO 4217
+ * code, it's treated as a literal string prefix instead of erroring.
+ */
 export function fmtMoney(units: number, currency: string = DEFAULT_CURRENCY): string {
   const formatter = formatterFor(currency);
   if (formatter) {
@@ -29,6 +43,7 @@ export function fmtMoney(units: number, currency: string = DEFAULT_CURRENCY): st
   return `${neg ? '-' : ''}${currency}${fmtAmount(Math.abs(units), currency)}`;
 }
 
+/** Formats a minor-units amount as a plain number (no currency symbol), at `currency`'s decimal precision. */
 export function fmtAmount(units: number, currency: string = DEFAULT_CURRENCY): string {
   const digits = currencyDigits(currency);
   return new Intl.NumberFormat(FORMAT_LOCALE, {
@@ -37,6 +52,7 @@ export function fmtAmount(units: number, currency: string = DEFAULT_CURRENCY): s
   }).format(units / 10 ** digits);
 }
 
+/** Index of the payout whose coverage span includes `today`, or `null` if none does. */
 export function currentSegment(result: ComputeResult, today: number): number | null {
   const { dates, segDays } = result;
   for (let i = 0; i < dates.length; i++) {
@@ -47,6 +63,7 @@ export function currentSegment(result: ComputeResult, today: number): number | n
   return null;
 }
 
+/** Days from `today` until the next payout strictly after `today`, or `null` if there isn't one. */
 export function nextPayout(result: ComputeResult, today: number): number | null {
   for (const date of result.dates) {
     if (date > today) {
@@ -56,11 +73,17 @@ export function nextPayout(result: ComputeResult, today: number): number | null 
   return null;
 }
 
+/** Each amount as a fraction (0-1) of the largest, for sizing the results bar chart's rows. */
 export function barFractions(amounts: number[]): number[] {
   const max = Math.max(...amounts, 1);
   return amounts.map((a) => a / max);
 }
 
+/**
+ * Splits `quanta` whole units across `weights` (one per segment) in
+ * proportion to `weights[i] / totalWeight`, using the largest-remainder
+ * method so the per-segment shares are integers that sum exactly to `quanta`.
+ */
 function distribute(quanta: number, weights: number[], totalWeight: number): number[] {
   const base = weights.map((w) => idiv(w * quanta, totalWeight));
   const fracs = weights.map((w, i): [number, number] => [(w * quanta) % totalWeight, i]);
@@ -76,6 +99,23 @@ function distribute(quanta: number, weights: number[], totalWeight: number): num
   return base;
 }
 
+/**
+ * Builds a payout schedule from `pay` (start day) to `end` (last covered
+ * day) that splits `total` minor units into an initial bridge payment plus
+ * recurring payouts on `cfg.payday`, spaced `cfg.interval` days apart.
+ *
+ * If `pay` already falls on `cfg.payday`, the first recurring payout is
+ * pushed a full `cfg.interval` days out (never same-day as the bridge);
+ * otherwise it lands on the next occurrence of `cfg.payday`. `total` is
+ * split into `quanta = idiv(total, cfg.quantum)` whole units, distributed
+ * across every segment by day-count (largest-remainder method), then the
+ * bridge's share is peeled back out and the remainder redistributed among
+ * only the recurring payouts — so those stay exact multiples of
+ * `cfg.quantum` among themselves, while the bridge absorbs whatever total
+ * doesn't evenly divide.
+ *
+ * Fails if `end` is before `pay`.
+ */
 export function compute(
   pay: number,
   end: number,
