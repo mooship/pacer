@@ -22,9 +22,12 @@ import {
 } from '@pacer/core';
 import { create } from 'zustand';
 
+/** `localStorage` key for the persisted {@link Config}. */
 export const STORAGE_KEY = 'pacer.config';
+/** `localStorage` key for the persisted {@link PlanSnapshot}. */
 export const PLAN_KEY = 'pacer.plan';
 
+/** Guesses a currency from the browser's locale region, via `Intl.Locale`; `null` if detection throws or the region has no mapped currency. */
 function detectLocaleCurrency(): string | null {
   try {
     const region = new Intl.Locale(navigator.language).maximize().region;
@@ -38,6 +41,13 @@ function detectLocaleCurrency(): string | null {
   }
 }
 
+/**
+ * Loads the persisted {@link Config} from `localStorage`. On a first-ever
+ * visit (no stored value at all), detects currency from the browser locale
+ * instead of using core's default. An invalid stored value (bad JSON, or a
+ * shape that fails Zod validation) does not re-run detection — it falls
+ * back to {@link defaultConfig} with `invalid: true`.
+ */
 export function loadStoredConfig(): ConfigLoad {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -56,6 +66,7 @@ function persistConfig(config: Config): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
 }
 
+/** Reads a plan from the current URL's query string, if it decodes to a valid {@link PlanSnapshot}. */
 function loadUrlPlan(): PlanSnapshot | null {
   try {
     const params = new URLSearchParams(window.location.search);
@@ -66,6 +77,7 @@ function loadUrlPlan(): PlanSnapshot | null {
   }
 }
 
+/** Reads the persisted plan from `localStorage`, if present and valid. */
 function loadStoredPlan(): PlanSnapshot | null {
   try {
     const raw = localStorage.getItem(PLAN_KEY);
@@ -75,6 +87,12 @@ function loadStoredPlan(): PlanSnapshot | null {
   }
 }
 
+/**
+ * Persists `snap` to `localStorage` and mirrors it into the URL query
+ * string. Returns a human-readable error message if either write fails
+ * (e.g. storage quota), or `null` on success; both writes are attempted
+ * even if the first fails.
+ */
 function persistPlan(snap: PlanSnapshot): string | null {
   let error: string | null = null;
   try {
@@ -90,6 +108,7 @@ function persistPlan(snap: PlanSnapshot): string | null {
   return error;
 }
 
+/** Removes the persisted plan and its URL query string, mirroring {@link persistPlan}'s error handling. */
 function clearStoredPlan(): string | null {
   let error: string | null = null;
   try {
@@ -105,6 +124,7 @@ function clearStoredPlan(): string | null {
   return error;
 }
 
+/** Triggers a browser download of `content` as a file named `filename`, via a throwaway object URL. */
 function downloadBlob(content: string, type: string, filename: string): void {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
@@ -117,6 +137,12 @@ function downloadBlob(content: string, type: string, filename: string): void {
   URL.revokeObjectURL(url);
 }
 
+/**
+ * Persists the plan snapshot after a state transition, but only when it
+ * actually changed — clears storage if the new state has no snapshot
+ * (stepped back out of results), persists it otherwise. Returns an error
+ * message from the underlying persist/clear call, or `null`.
+ */
 function syncPlan(prev: PlannerState, next: PlannerState): string | null {
   const prevSnap = planSnapshot(prev);
   const nextSnap = planSnapshot(next);
@@ -126,19 +152,33 @@ function syncPlan(prev: PlannerState, next: PlannerState): string | null {
   return nextSnap ? persistPlan(nextSnap) : clearStoredPlan();
 }
 
+/** The Zustand store shape: wraps core's {@link PlannerState}/{@link reducer} with persistence and side effects. */
 interface PacerStore {
   state: PlannerState;
+  /** Which async action (if any) is in flight, to prevent overlapping clipboard writes. */
   pendingAction: 'copy' | 'share' | null;
+  /** Runs `action` through the reducer and syncs the resulting plan to storage/URL. */
   dispatch: (action: Action) => void;
+  /** Parses and persists the settings form, then applies the resulting action. */
   saveSettings: () => void;
+  /** Downloads the current results as a CSV file. */
   exportCsv: () => void;
+  /** Downloads the current results as an `.ics` calendar file. */
   exportIcs: () => void;
+  /** Copies the plan summary text to the clipboard. */
   copyToClipboard: () => Promise<void>;
+  /** Copies the current shareable URL to the clipboard. */
   copyShareLink: () => Promise<void>;
 }
 
 const { config: initialConfig, invalid: invalidStoredConfig } = loadStoredConfig();
 
+/**
+ * Builds the store's initial state: starts from the persisted config (with
+ * an "invalid settings" notice if it failed validation), then restores a
+ * plan from the URL or `localStorage` if one is present — the URL always
+ * takes precedence, so a shared link overrides whatever's saved locally.
+ */
 function buildInitialState(): PlannerState {
   const base: PlannerState = {
     ...initialState(initialConfig, today()),
@@ -160,6 +200,7 @@ function buildInitialState(): PlannerState {
   return base;
 }
 
+/** The app's single Zustand store: `PlannerState` plus persistence-aware dispatch and export/copy actions. */
 export const usePacerStore = create<PacerStore>((set, get) => ({
   state: buildInitialState(),
   pendingAction: null,

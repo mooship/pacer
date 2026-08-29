@@ -2,11 +2,21 @@ import { z } from 'zod';
 import { isCurrencyCode } from './currency.js';
 import { clamp, remEuclid } from './math.js';
 
+/** Default recurring payout amount, in minor units (not scaled by currency). */
 export const DEFAULT_QUANTUM = 5000;
+/** Default recurring payout weekday: `WD[1]` = Monday. */
 export const DEFAULT_PAYDAY = 1;
+/** Default number of days between recurring payouts. */
 export const DEFAULT_INTERVAL = 7;
+/** Default ISO 4217 currency code. */
 export const DEFAULT_CURRENCY = 'USD';
 
+/**
+ * User-configurable planner settings, persisted independently of any one
+ * plan. `quantum` is a raw minor-units integer — it is not rescaled when
+ * `currency` changes, so switching currency reformats the same number at
+ * the new currency's decimal precision rather than converting its value.
+ */
 export interface Config {
   quantum: number;
   payday: number;
@@ -14,6 +24,7 @@ export interface Config {
   currency: string;
 }
 
+/** Builds a fresh {@link Config} from the `DEFAULT_*` constants. */
 export const defaultConfig = (): Config => ({
   quantum: DEFAULT_QUANTUM,
   payday: DEFAULT_PAYDAY,
@@ -26,6 +37,11 @@ function sanitizeCurrency(currency: string): string {
   return isCurrencyCode(upper) ? upper : DEFAULT_CURRENCY;
 }
 
+/**
+ * Clamps every field of `config` to a valid range: `quantum` to at least 1,
+ * `payday` folded into `[0, 6]`, `interval` to `[1, 366]`, and `currency` to
+ * a recognized uppercase ISO 4217 code (falling back to {@link DEFAULT_CURRENCY}).
+ */
 export function sanitize(config: Config): Config {
   return {
     quantum: Math.max(Math.trunc(config.quantum), 1),
@@ -52,11 +68,21 @@ const fill = (c: Partial<Config>): Config =>
 
 const StrictSchema = z.object(fields).partial().transform(fill);
 
+/** Result of validating a persisted config payload. */
 export interface ConfigLoad {
+  /** The usable config: either the parsed input (with defaults filled in), or a fresh default config if parsing failed. */
   config: Config;
+  /** Whether `input` failed validation entirely (bad JSON shape, not just a missing field). */
   invalid: boolean;
 }
 
+/**
+ * Validates a persisted (e.g. `localStorage`) config payload. Any
+ * missing or invalid individual field is filled from defaults rather than
+ * rejecting the whole object; only a payload that isn't a valid partial
+ * `Config` shape at all sets `invalid: true` and falls back entirely to
+ * {@link defaultConfig}.
+ */
 export function parseStoredConfig(input: unknown): ConfigLoad {
   const result = StrictSchema.safeParse(input);
   return result.success

@@ -20,6 +20,7 @@ interface FieldProps {
   inputRef?: RefObject<HTMLInputElement | null>;
 }
 
+/** A labeled text input with an optional hint, completion checkmark, and date-picker popover. */
 export function Field({
   id,
   label,

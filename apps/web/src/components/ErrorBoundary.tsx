@@ -10,6 +10,12 @@ interface ErrorBoundaryState {
   hasError: boolean;
 }
 
+/**
+ * Catches render errors in its subtree and shows a "Start over" fallback.
+ * The only class component in the codebase — React only supports error
+ * boundaries as classes. Reset clears both persisted config and plan and
+ * does a full page navigation, never a patched-up in-memory recovery.
+ */
 export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   override state: ErrorBoundaryState = { hasError: false };
 

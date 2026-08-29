@@ -1,7 +1,10 @@
+/** Locale used for all currency formatting and display names in this module. */
 export const FORMAT_LOCALE = 'en';
 
+/** Every ISO 4217 currency code the runtime's `Intl` implementation supports. */
 export const CURRENCY_CODES: readonly string[] = Object.freeze(Intl.supportedValuesOf('currency'));
 
+/** Whether `code` is a recognized ISO 4217 currency code. */
 export function isCurrencyCode(code: string): boolean {
   return CURRENCY_CODES.includes(code);
 }
@@ -10,6 +13,10 @@ const DEFAULT_DIGITS = 2;
 
 const formatterCache = new Map<string, Intl.NumberFormat>();
 
+/**
+ * A cached `Intl.NumberFormat` for `code` (narrow-symbol currency display),
+ * or `null` if `code` isn't a recognized currency.
+ */
 export function formatterFor(code: string): Intl.NumberFormat | null {
   if (!isCurrencyCode(code)) {
     return null;
@@ -26,10 +33,15 @@ export function formatterFor(code: string): Intl.NumberFormat | null {
   return formatter;
 }
 
+/**
+ * Number of minor-unit decimal digits for `code` (0 for JPY, 3 for KWD, 2 for
+ * most currencies). Falls back to 2 for an unrecognized code.
+ */
 export function currencyDigits(code: string): number {
   return formatterFor(code)?.resolvedOptions().maximumFractionDigits ?? DEFAULT_DIGITS;
 }
 
+/** The narrow currency symbol for `code` (e.g. `"$"` for USD), or `code` itself if unrecognized. */
 export function currencySymbol(code: string): string {
   const part = formatterFor(code)
     ?.formatToParts(0)
@@ -39,6 +51,7 @@ export function currencySymbol(code: string): string {
 
 const currencyDisplayNames = new Intl.DisplayNames([FORMAT_LOCALE], { type: 'currency' });
 
+/** The human-readable display name for `code` (e.g. `"US Dollar"`), or `code` itself if unrecognized. */
 export function currencyName(code: string): string {
   if (!isCurrencyCode(code)) {
     return code;
@@ -49,10 +62,12 @@ export function currencyName(code: string): string {
   return currencyDisplayNames.of(code) ?? code;
 }
 
-// ISO 3166-1 alpha-2 region -> the region's principal ISO 4217 currency.
-// Used to guess a visitor's currency from their locale; not exhaustive of
-// every territory, but covers the countries a browser locale is likely to
-// report.
+/**
+ * ISO 3166-1 alpha-2 region -> the region's principal ISO 4217 currency.
+ * Used to guess a visitor's currency from their locale; not exhaustive of
+ * every territory, but covers the countries a browser locale is likely to
+ * report.
+ */
 export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   // Africa
   DZ: 'DZD',
@@ -296,6 +311,7 @@ export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   IO: 'USD',
 };
 
+/** Looks up `region` (any case) in {@link REGION_CURRENCY}; `null` if it isn't mapped. */
 export function currencyForRegion(region: string): string | null {
   return REGION_CURRENCY[region.toUpperCase()] ?? null;
 }

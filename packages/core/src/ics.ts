@@ -3,9 +3,13 @@ import { DEFAULT_CURRENCY } from './config.js';
 import { civilFromDays, fmtRange } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
+/** Options for {@link buildIcs}. */
 export interface IcsOptions {
+  /** Day number used for every `DTSTAMP` (kept deterministic in tests instead of reading `Date.now()`). */
   now: number;
+  /** Hour of day (1-23) the reminder alarm fires; falls back to 9 if omitted or out of range. */
   reminderHour?: number;
+  /** ISO 4217 currency code used to format amounts; defaults to {@link DEFAULT_CURRENCY}. */
   currency?: string;
 }
 
@@ -28,6 +32,11 @@ function utf8Length(s: string): number {
   return utf8Encoder.encode(s).length;
 }
 
+/**
+ * RFC 5545 line-folds `line` at 75 UTF-8 bytes (not characters), so
+ * multibyte currency symbols don't get split mid-codepoint. Continuation
+ * lines are prefixed with a single space per the spec.
+ */
 function fold(line: string): string {
   if (utf8Length(line) <= 75) {
     return line;
@@ -51,6 +60,11 @@ function fold(line: string): string {
   return parts.map((p, i) => (i === 0 ? p : ` ${p}`)).join('\r\n');
 }
 
+/**
+ * Builds an RFC 5545 `.ics` calendar with one all-day `VEVENT` per payout in
+ * `result`, each with a `VALARM` reminder at `opts.reminderHour`. The bridge
+ * payment (index 0) is labeled with {@link BRIDGE_LABEL}.
+ */
 export function buildIcs(result: ComputeResult, total: number, opts: IcsOptions): string {
   const { dates, segDays, amounts } = result;
   const requested = opts.reminderHour ?? 9;

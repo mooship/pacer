@@ -12,6 +12,7 @@ import { usePacerStore } from '../store.js';
 import { Field } from './Field.js';
 import styles from './PlanForm.module.css';
 
+/** Picks a field's hint text: the invalid message, the required message (only once submission has been attempted), or the live preview. */
 const hintFor = (
   attempted: boolean,
   state: FieldState,
@@ -51,6 +52,7 @@ const LAST_CHIPS: { label: string; value: string }[] = [
   { label: '+60 days', value: '+60' },
 ];
 
+/** A row of quick-pick buttons that fill a field's value in one click. */
 function Chips({
   chips,
   onPick,
@@ -69,6 +71,7 @@ function Chips({
   );
 }
 
+/** The three-field wizard form (pay date, last day, amount) with live previews, quick-pick chips, and an example seed. */
 export function PlanForm() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);

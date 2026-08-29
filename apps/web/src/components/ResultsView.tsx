@@ -16,6 +16,11 @@ import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
 import styles from './ResultsView.module.css';
 
+/**
+ * The computed schedule: summary line, per-row bar chart, a sticky-scroll
+ * table, and the Copy/Share/Calendar/CSV/Start-over actions. "Start over"
+ * is a two-click confirm — the first click arms it for 3s and auto-disarms.
+ */
 export function ResultsView() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);

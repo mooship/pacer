@@ -4,6 +4,12 @@ import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
 import styles from './SettingsDialog.module.css';
 
+/**
+ * The quantum/currency/payday/interval settings form, rendered in a native
+ * `<dialog>` opened via `showModal()`. Its `onCancel` (triggered by the
+ * browser's native Escape dismissal) is intercepted to route through the
+ * reducer's `back` action instead of closing the dialog directly.
+ */
 export function SettingsDialog() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);

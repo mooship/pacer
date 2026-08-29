@@ -6,6 +6,7 @@ interface MascotProps {
   size?: number;
 }
 
+/** The turtle mascot, styled per the wizard's current {@link mood}. */
 export function Mascot({ size = 26 }: MascotProps) {
   const state = usePacerStore((s) => s.state);
 

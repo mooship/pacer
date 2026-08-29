@@ -7,6 +7,11 @@ function csvCell(value: string): string {
   return `"${value.replace(/"/g, '""')}"`;
 }
 
+/**
+ * Builds a CSV export of `result` — one quoted row per payout (pay date,
+ * covered range, days, amount, per-day rate) plus a trailing totals row.
+ * Fails if `result`'s parallel arrays aren't the same length.
+ */
 export function buildCsv(
   result: ComputeResult,
   total: number,

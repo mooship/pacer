@@ -4,6 +4,7 @@ function isLeap(y: number): boolean {
   return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 }
 
+/** Number of days in month `m` (1-12) of proleptic Gregorian year `y`. Returns 0 for an invalid month. */
 export function daysInMonth(y: number, m: number): number {
   switch (m) {
     case 1:
@@ -26,6 +27,11 @@ export function daysInMonth(y: number, m: number): number {
   }
 }
 
+/**
+ * Converts a proleptic Gregorian civil date to a day number (days since
+ * 1970-01-01, negative before it). Implements Howard Hinnant's
+ * `days_from_civil` algorithm.
+ */
 export function daysFromCivil(y0: number, m: number, d: number): number {
   const y = m <= 2 ? y0 - 1 : y0;
   const eraBase = y >= 0 ? y : y - 399;
@@ -37,6 +43,10 @@ export function daysFromCivil(y0: number, m: number, d: number): number {
   return era * 146097 + doe - 719468;
 }
 
+/**
+ * Converts a day number (days since 1970-01-01) back to a proleptic
+ * Gregorian `[year, month, day]` civil date. Inverse of {@link daysFromCivil}.
+ */
 export function civilFromDays(z0: number): [number, number, number] {
   const z = z0 + 719468;
   const eraBase = z >= 0 ? z : z - 146096;
@@ -52,16 +62,20 @@ export function civilFromDays(z0: number): [number, number, number] {
   return [yAdj, m, d];
 }
 
+/** Day of week for a day number: 0 = Sunday .. 6 = Saturday. */
 export function weekday(days: number): number {
   return remEuclid(days + 4, 7);
 }
 
+/** The current local calendar date, as a day number (days since 1970-01-01). */
 export function today(): number {
   const now = new Date();
   return daysFromCivil(now.getFullYear(), now.getMonth() + 1, now.getDate());
 }
 
+/** Weekday abbreviations, indexed as in {@link weekday} (0 = Sun). */
 export const WD = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+/** Month abbreviations, 1-indexed (index 0 is an unused placeholder). */
 export const MON = [
   '',
   'Jan',
@@ -78,21 +92,25 @@ export const MON = [
   'Dec',
 ] as const;
 
+/** Formats a day number as `"Wed 25 Jun"`. */
 export function fmtWdDm(days: number): string {
   const [, m, d] = civilFromDays(days);
   return `${WD[weekday(days)]} ${d} ${MON[m]}`;
 }
 
+/** Formats a day number as `"Wed 25 Jun 2026"`. */
 export function fmtWdDmy(days: number): string {
   const [y, m, d] = civilFromDays(days);
   return `${WD[weekday(days)]} ${d} ${MON[m]} ${y}`;
 }
 
+/** Formats a day number as `"25 Jun 2026"`. */
 export function fmtDmy(days: number): string {
   const [y, m, d] = civilFromDays(days);
   return `${d} ${MON[m]} ${y}`;
 }
 
+/** Formats a day number as zero-padded ISO 8601 `"2026-06-25"`. */
 export function fmtIso(days: number): string {
   const [y, m, d] = civilFromDays(days);
   return `${y.toString().padStart(4, '0')}-${m.toString().padStart(2, '0')}-${d
@@ -100,6 +118,12 @@ export function fmtIso(days: number): string {
     .padStart(2, '0')}`;
 }
 
+/**
+ * Formats a `[start, end]` day-number span as a compact human-readable
+ * range, collapsing shared context: same day -> `"25 Jun"`, same month ->
+ * `"25–28 Jun"`, same year -> `"29 Jun–5 Jul"`, otherwise both years are
+ * spelled out in full.
+ */
 export function fmtRange(start: number, end: number): string {
   const [sy, sm, sd] = civilFromDays(start);
   const [ey, em, ed] = civilFromDays(end);

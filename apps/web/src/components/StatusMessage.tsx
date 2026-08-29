@@ -3,6 +3,7 @@ import { CircleAlert, CircleCheck } from 'lucide-react';
 import { usePacerStore } from '../store.js';
 import styles from './StatusMessage.module.css';
 
+/** Single `aria-live` region showing the current error or notice (error takes priority, and is suppressed while settings is open). */
 export function StatusMessage() {
   const state = usePacerStore((s) => s.state);
   const showError = state.step !== 'settings' && Boolean(state.error);
