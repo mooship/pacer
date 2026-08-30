@@ -260,21 +260,6 @@ The root `package.json` pins `"pnpm": { "overrides": { "esbuild@<0.28.1":
 "^0.28.1" } }` — don't remove this override without checking why it was
 added (a transitive esbuild version floor); Dependabot bumps around it.
 
-## Stale documentation
-
-`docs/superpowers/plans/2026-06-17-paysplit-ratatui.md` and
-`docs/superpowers/specs/2026-06-17-paysplit-ratatui-design.md` describe a
-plan to convert a single-file Rust script (`paysplit.rs`) into a Cargo +
-Ratatui terminal UI. **This does not reflect the current or ever-shipped
-codebase**: there is no Rust anywhere in this repo (no `Cargo.toml`, no
-`.rs` files), and git history shows the opposite trajectory — a TUI existed
-at one point and was deliberately removed (`b7362b3 Remove the TUI app;
-detect currency from locale instead of defaulting to ZAR`) in favor of the
-current TypeScript-only web SPA. These two files are leftover planning
-artifacts from an abandoned/superseded direction, not a roadmap to
-implement. Left in place pending user confirmation they can be deleted —
-don't treat them as current design intent, and don't build against them.
-
 ## Code Style
 
 - No explanatory comments in source. `biome-ignore` pragmas are allowed where a
