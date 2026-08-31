@@ -16,6 +16,7 @@ import {
   parseStoredConfig,
   planSnapshot,
   reducer,
+  regionForTimeZone,
   samePlan,
   saveSettingsAction,
   today,
@@ -27,18 +28,41 @@ export const STORAGE_KEY = 'pacer.config';
 /** `localStorage` key for the persisted {@link PlanSnapshot}. */
 export const PLAN_KEY = 'pacer.plan';
 
-/** Guesses a currency from the browser's locale region, via `Intl.Locale`; `null` if detection throws or the region has no mapped currency. */
-function detectLocaleCurrency(): string | null {
+/** `region` mapped to its currency, or `null` if unset or unmapped. */
+function currencyOrNull(region: string | null | undefined): string | null {
+  return region ? currencyForRegion(region) : null;
+}
+
+/**
+ * Guesses a currency from the browser's IANA time zone (e.g.
+ * `Africa/Johannesburg` -> `ZA` -> `ZAR`); `null` if detection throws or the
+ * zone has no mapped region/currency. The time zone reflects the device's
+ * configured location, unlike the language preference `detectLocaleCurrency`
+ * falls back to — a browser's UI language (e.g. "English") is routinely set
+ * to a generic regional variant like `en-GB` regardless of where the device
+ * actually is, so language alone is an unreliable proxy for location.
+ */
+function detectTimeZoneCurrency(): string | null {
   try {
-    const region = new Intl.Locale(navigator.language).maximize().region;
-    // maximize() always fills in a region via CLDR likely-subtags data for
-    // any locale Intl.Locale accepts; the empty check only satisfies
-    // region's `string | undefined` type.
-    /* v8 ignore next */
-    return region ? currencyForRegion(region) : null;
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    return currencyOrNull(regionForTimeZone(timeZone));
   } catch {
     return null;
   }
+}
+
+/** Guesses a currency from the browser's locale region, via `Intl.Locale`; `null` if detection throws or the region has no mapped currency. */
+function detectLocaleCurrency(): string | null {
+  try {
+    return currencyOrNull(new Intl.Locale(navigator.language).maximize().region);
+  } catch {
+    return null;
+  }
+}
+
+/** Guesses the visitor's currency, preferring the device time zone (a location signal) over the browser's language preference. */
+function detectCurrency(): string | null {
+  return detectTimeZoneCurrency() ?? detectLocaleCurrency();
 }
 
 /**
@@ -53,7 +77,7 @@ export function loadStoredConfig(): ConfigLoad {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw === null) {
       const result = parseStoredConfig({});
-      const detected = detectLocaleCurrency();
+      const detected = detectCurrency();
       return detected ? { ...result, config: { ...result.config, currency: detected } } : result;
     }
     return parseStoredConfig(JSON.parse(raw));

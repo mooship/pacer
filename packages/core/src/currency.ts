@@ -72,6 +72,7 @@ export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   // Africa
   DZ: 'DZD',
   AO: 'AOA',
+  EH: 'MAD',
   BJ: 'XOF',
   BW: 'BWP',
   BF: 'XOF',
@@ -128,6 +129,9 @@ export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   // Americas
   US: 'USD',
   CA: 'CAD',
+  GF: 'EUR',
+  MQ: 'EUR',
+  PM: 'EUR',
   MX: 'MXN',
   BZ: 'BZD',
   CR: 'CRC',
@@ -285,6 +289,9 @@ export const REGION_CURRENCY: Readonly<Record<string, string>> = {
 
   // Oceania
   AU: 'AUD',
+  CX: 'AUD',
+  CC: 'AUD',
+  NF: 'AUD',
   FJ: 'FJD',
   KI: 'AUD',
   MH: 'USD',
@@ -304,6 +311,7 @@ export const REGION_CURRENCY: Readonly<Record<string, string>> = {
   AS: 'USD',
   GU: 'USD',
   MP: 'USD',
+  UM: 'USD',
   CK: 'NZD',
   NU: 'NZD',
   TK: 'NZD',

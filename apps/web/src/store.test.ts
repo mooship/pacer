@@ -315,8 +315,18 @@ describe('loadStoredConfig', () => {
   };
   const originalLanguage = navigator.language;
 
+  const setTimeZone = (timeZone: string) => {
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockReturnValue({
+      timeZone,
+      locale: 'en',
+      calendar: 'gregory',
+      numberingSystem: 'latn',
+    } as Intl.ResolvedDateTimeFormatOptions);
+  };
+
   afterEach(() => {
     setLanguage(originalLanguage);
+    vi.restoreAllMocks();
   });
 
   it('reads a persisted config back', () => {
@@ -352,6 +362,31 @@ describe('loadStoredConfig', () => {
     setLanguage('en-GB');
     localStorage.setItem('pacer.config', JSON.stringify({ currency: 'JPY' }));
     expect(loadStoredConfig().config.currency).toBe('JPY');
+  });
+
+  it('detects the currency from the device time zone on a first-ever visit', () => {
+    setTimeZone('Africa/Johannesburg');
+    expect(loadStoredConfig().config.currency).toBe('ZAR');
+  });
+
+  it('prefers the time zone over a language region that disagrees with it', () => {
+    setTimeZone('Africa/Johannesburg');
+    setLanguage('en-GB');
+    expect(loadStoredConfig().config.currency).toBe('ZAR');
+  });
+
+  it('falls back to language detection when the time zone has no known mapping', () => {
+    setTimeZone('Antarctica/Vostok');
+    setLanguage('en-GB');
+    expect(loadStoredConfig().config.currency).toBe('GBP');
+  });
+
+  it('falls back to language detection when reading the time zone throws', () => {
+    vi.spyOn(Intl.DateTimeFormat.prototype, 'resolvedOptions').mockImplementation(() => {
+      throw new Error('unsupported');
+    });
+    setLanguage('en-GB');
+    expect(loadStoredConfig().config.currency).toBe('GBP');
   });
 
   it('falls back to defaults for unparseable storage', () => {
