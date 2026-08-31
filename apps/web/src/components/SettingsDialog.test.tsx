@@ -84,14 +84,28 @@ describe('SettingsDialog', () => {
     expect(usePacerStore.getState().state.step).toBe('payDate');
   });
 
-  it('updates the currency field', async () => {
+  it('updates the currency field by typing a code', async () => {
     usePacerStore.getState().dispatch({ type: 'openSettings' });
     const user = userEvent.setup();
     render(<SettingsDialog />);
 
-    await user.selectOptions(screen.getByLabelText('Currency'), 'USD');
+    await user.clear(screen.getByLabelText('Currency'));
+    await user.type(screen.getByLabelText('Currency'), 'ZAR');
 
-    expect(usePacerStore.getState().state.currencyInput).toBe('USD');
+    expect(usePacerStore.getState().state.currencyInput).toBe('ZAR');
+  });
+
+  it('offers every currency as a searchable datalist option', () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const { container } = render(<SettingsDialog />);
+
+    const input = screen.getByLabelText('Currency');
+    expect(input).toHaveAttribute('list', 'currency-options');
+    const datalist = container.querySelector('#currency-options');
+    expect(datalist?.querySelector('option[value="USD"]')).toHaveTextContent('USD — US Dollar');
+    expect(datalist?.querySelector('option[value="ZAR"]')).toHaveTextContent(
+      'ZAR — South African Rand',
+    );
   });
 
   it('still renders its fields in a browser without <dialog> showModal support', () => {

@@ -70,18 +70,21 @@ export function SettingsDialog() {
           <label className={styles.label} htmlFor="currency">
             Currency
           </label>
-          <select
+          <input
             id="currency"
             className={styles.input}
+            list="currency-options"
             value={state.currencyInput}
+            autoComplete="off"
             onChange={(e) => dispatch({ type: 'setCurrencyInput', value: e.target.value })}
-          >
+          />
+          <datalist id="currency-options">
             {CURRENCY_CODES.map((code) => (
               <option key={code} value={code}>
                 {code} — {currencyName(code)}
               </option>
             ))}
-          </select>
+          </datalist>
           <p className={styles.help}>Used to format amounts throughout the plan.</p>
         </div>
 
