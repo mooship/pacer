@@ -14,9 +14,16 @@ import {
 import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { notifyIfDue } from '../notify.js';
 import { usePacerStore } from '../store.js';
+import { useNotifyOnPayoutDay } from '../useNotifyOnPayoutDay.js';
 import styles from './ResultsView.module.css';
+
+function paceSuffix(delta: number, money: (cents: number) => string): string {
+  if (delta === 0) {
+    return ' — right on track.';
+  }
+  return delta > 0 ? ` — ${money(delta)} over.` : ` — ${money(-delta)} under.`;
+}
 
 /**
  * The computed schedule: summary line, per-row bar chart, a sticky-scroll
@@ -33,7 +40,6 @@ export function ResultsView() {
   const pendingAction = usePacerStore((s) => s.pendingAction);
   const spent = usePacerStore((s) => s.spent);
   const toggleSpent = usePacerStore((s) => s.toggleSpent);
-  const notifyEnabled = usePacerStore((s) => s.notifyEnabled);
   const [resetArmed, setResetArmed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
@@ -48,20 +54,7 @@ export function ResultsView() {
     },
     [],
   );
-  const { results, today: currentDay, config } = state;
-  useEffect(() => {
-    if (!results) {
-      return;
-    }
-    const check = () => {
-      if (document.visibilityState === 'visible') {
-        notifyIfDue(results, currentDay, notifyEnabled, config.currency);
-      }
-    };
-    check();
-    document.addEventListener('visibilitychange', check);
-    return () => document.removeEventListener('visibilitychange', check);
-  }, [results, currentDay, notifyEnabled, config.currency]);
+  useNotifyOnPayoutDay();
   const handleResetClick = () => {
     if (resetArmed) {
       // resetTimer.current is always set alongside resetArmed becoming
@@ -83,13 +76,13 @@ export function ResultsView() {
     return null;
   }
   const { dates, segDays, amounts } = state.results;
-  const currency = config.currency;
+  const currency = state.config.currency;
   const money = (cents: number) => fmtMoney(cents, currency);
   const totalDays = segDays.reduce((a, b) => a + b, 0);
   const fractions = barFractions(amounts);
   const todayIdx = currentSegment(state.results, state.today);
   const daysToNext = nextPayout(state.results, state.today);
-  const pace = state.today >= state.pay ? paceStatus(state.results, state.today, spent) : null;
+  const pace = paceStatus(state.results, state.today, spent);
 
   return (
     <div className={styles.wrap}>
@@ -108,11 +101,7 @@ export function ResultsView() {
       {pace ? (
         <p className={styles.pace} aria-live="polite">
           You've marked {money(pace.actual)} spent, {money(pace.expected)} planned by today
-          {pace.delta === 0
-            ? ' — right on track.'
-            : pace.delta > 0
-              ? ` — ${money(pace.delta)} over.`
-              : ` — ${money(-pace.delta)} under.`}
+          {paceSuffix(pace.delta, money)}
         </p>
       ) : null}
       <div className={styles.tableScroll}>

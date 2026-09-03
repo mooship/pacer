@@ -23,6 +23,7 @@ import {
 } from '@pacer/core';
 import { create } from 'zustand';
 import { setNotifyEnabled as applyNotifyEnabled, loadNotifyEnabled } from './notify.js';
+import { readStorage, writeStorage } from './storage.js';
 
 /** `localStorage` key for the persisted {@link Config}. */
 export const STORAGE_KEY = 'pacer.config';
@@ -161,11 +162,11 @@ function loadStoredSpent(plan: PlanSnapshot | null): Set<number> {
   if (!plan) {
     return new Set();
   }
+  const raw = readStorage(SPENT_KEY);
+  if (!raw) {
+    return new Set();
+  }
   try {
-    const raw = localStorage.getItem(SPENT_KEY);
-    if (!raw) {
-      return new Set();
-    }
     const parsed = JSON.parse(raw) as Partial<SpentRecord>;
     if (!parsed.plan || !samePlan(parsed.plan, plan) || !Array.isArray(parsed.dates)) {
       return new Set();
@@ -178,25 +179,8 @@ function loadStoredSpent(plan: PlanSnapshot | null): Set<number> {
 
 /** Persists `dates` as spent against `plan`. Returns a human-readable error message on failure, or `null`. */
 function persistSpent(plan: PlanSnapshot, dates: Set<number>): string | null {
-  try {
-    localStorage.setItem(SPENT_KEY, JSON.stringify({ plan, dates: [...dates] }));
-    return null;
-  } catch (e) {
-    return `could not save your progress: ${String(e)}`;
-  }
-}
-
-/**
- * Reconciles the in-memory spent-dates set after a state transition: kept
- * as-is while the plan snapshot is unchanged, otherwise reloaded from
- * storage for the new plan (empty if nothing was marked against it).
- */
-function syncSpent(
-  prevSnap: PlanSnapshot | null,
-  nextSnap: PlanSnapshot | null,
-  current: Set<number>,
-): Set<number> {
-  return samePlan(prevSnap, nextSnap) ? current : loadStoredSpent(nextSnap);
+  const error = writeStorage(SPENT_KEY, JSON.stringify({ plan, dates: [...dates] }));
+  return error && `could not save your progress: ${error}`;
 }
 
 /** Triggers a browser download of `content` as a file named `filename`, via a throwaway object URL. */
@@ -213,17 +197,12 @@ function downloadBlob(content: string, type: string, filename: string): void {
 }
 
 /**
- * Persists the plan snapshot after a state transition, but only when it
- * actually changed — clears storage if the new state has no snapshot
- * (stepped back out of results), persists it otherwise. Returns an error
- * message from the underlying persist/clear call, or `null`.
+ * Persists `nextSnap`, clearing storage instead if it's `null` (stepped
+ * back out of results). Assumes the caller already checked it changed from
+ * the previous snapshot. Returns an error message from the underlying
+ * persist/clear call, or `null`.
  */
-function syncPlan(prev: PlannerState, next: PlannerState): string | null {
-  const prevSnap = planSnapshot(prev);
-  const nextSnap = planSnapshot(next);
-  if (samePlan(prevSnap, nextSnap)) {
-    return null;
-  }
+function persistPlanChange(nextSnap: PlanSnapshot | null): string | null {
   return nextSnap ? persistPlan(nextSnap) : clearStoredPlan();
 }
 
@@ -295,8 +274,11 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
   dispatch: (action) =>
     set((s) => {
       const next = reducer(s.state, action);
-      const syncError = syncPlan(s.state, next);
-      const spent = syncSpent(planSnapshot(s.state), planSnapshot(next), s.spent);
+      const prevSnap = planSnapshot(s.state);
+      const nextSnap = planSnapshot(next);
+      const planChanged = !samePlan(prevSnap, nextSnap);
+      const syncError = planChanged ? persistPlanChange(nextSnap) : null;
+      const spent = planChanged ? loadStoredSpent(nextSnap) : s.spent;
       if (syncError && !next.error) {
         return { state: { ...next, error: syncError }, spent };
       }

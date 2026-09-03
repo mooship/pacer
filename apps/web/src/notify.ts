@@ -1,4 +1,5 @@
 import { type ComputeResult, fmtMoney } from '@pacer/core';
+import { readStorage, writeStorage } from './storage.js';
 
 /** `localStorage` key for the "notify me on payout day" preference. */
 export const NOTIFY_KEY = 'pacer.notify';
@@ -7,23 +8,11 @@ const NOTIFIED_KEY = 'pacer.notifiedDate';
 
 /** Reads the persisted notification preference; `false` if unset or unreadable. */
 export function loadNotifyEnabled(): boolean {
-  try {
-    return localStorage.getItem(NOTIFY_KEY) === '1';
-  } catch {
-    return false;
-  }
+  return readStorage(NOTIFY_KEY) === '1';
 }
 
 function persistNotifyEnabled(enabled: boolean): void {
-  try {
-    if (enabled) {
-      localStorage.setItem(NOTIFY_KEY, '1');
-    } else {
-      localStorage.removeItem(NOTIFY_KEY);
-    }
-  } catch {
-    // Best-effort: a failed write just means the toggle won't survive a reload.
-  }
+  writeStorage(NOTIFY_KEY, enabled ? '1' : null);
 }
 
 /**
@@ -47,19 +36,11 @@ export async function setNotifyEnabled(enabled: boolean): Promise<boolean> {
 }
 
 function alreadyNotifiedToday(day: number): boolean {
-  try {
-    return localStorage.getItem(NOTIFIED_KEY) === String(day);
-  } catch {
-    return false;
-  }
+  return readStorage(NOTIFIED_KEY) === String(day);
 }
 
 function markNotifiedToday(day: number): void {
-  try {
-    localStorage.setItem(NOTIFIED_KEY, String(day));
-  } catch {
-    // Best-effort dedupe: a failed write just risks a repeat notification later today.
-  }
+  writeStorage(NOTIFIED_KEY, String(day));
 }
 
 /**

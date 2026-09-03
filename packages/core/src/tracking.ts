@@ -1,4 +1,4 @@
-import { type ComputeResult, coverEnd } from './compute.js';
+import { type ComputeResult, currentSegment } from './compute.js';
 import { idiv } from './math.js';
 
 /** Comparison of actual vs. planned spend as of a given day, for the results view's pace banner. */
@@ -13,25 +13,23 @@ export interface PaceStatus {
 
 /**
  * Minor-units amount the plan calls for having spent by `today`, prorating
- * linearly through whichever segment is currently in progress. Segments
- * that finish before `today` count in full; a segment starting after
- * `today` (and everything past it) isn't counted at all.
+ * linearly through whichever segment is currently in progress. A plan not
+ * yet started counts as 0; one that has finished counts as its full total.
  */
 export function expectedSpent(result: ComputeResult, today: number): number {
   const { dates, segDays, amounts } = result;
-  let total = 0;
-  for (let i = 0; i < dates.length; i++) {
-    if (today < dates[i]) {
-      break;
-    }
-    const end = coverEnd(dates[i], segDays[i]);
-    if (today >= end) {
-      total += amounts[i];
-    } else {
-      total += idiv(amounts[i] * (today - dates[i] + 1), segDays[i]);
-    }
+  if (today < dates[0]) {
+    return 0;
   }
-  return total;
+  const idx = currentSegment(result, today);
+  if (idx === null) {
+    return amounts.reduce((a, b) => a + b, 0);
+  }
+  let total = 0;
+  for (let i = 0; i < idx; i++) {
+    total += amounts[i];
+  }
+  return total + idiv(amounts[idx] * (today - dates[idx] + 1), segDays[idx]);
 }
 
 /** Sum of the amounts of every payout whose date is in `marked`. */
@@ -42,12 +40,18 @@ export function actualSpent(result: ComputeResult, marked: ReadonlySet<number>):
   );
 }
 
-/** Combines {@link expectedSpent} and {@link actualSpent} into one comparison. */
+/**
+ * Combines {@link expectedSpent} and {@link actualSpent} into one
+ * comparison, or `null` if the plan hasn't started yet (nothing to compare).
+ */
 export function paceStatus(
   result: ComputeResult,
   today: number,
   marked: ReadonlySet<number>,
-): PaceStatus {
+): PaceStatus | null {
+  if (today < result.dates[0]) {
+    return null;
+  }
   const expected = expectedSpent(result, today);
   const actual = actualSpent(result, marked);
   return { expected, actual, delta: actual - expected };

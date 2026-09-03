@@ -70,10 +70,17 @@ describe('actualSpent', () => {
 });
 
 describe('paceStatus', () => {
+  it('is null before the plan has started', () => {
+    expect(paceStatus(result(), pay - 1, new Set())).toBeNull();
+  });
+
   it('reports a positive delta when actual spend outruns the plan', () => {
     const r = result();
     const marked = new Set([r.dates[0]]);
     const status = paceStatus(r, pay, marked);
+    if (!status) {
+      throw new Error('expected a pace status');
+    }
     expect(status.actual).toBe(r.amounts[0]);
     expect(status.expected).toBeLessThan(status.actual);
     expect(status.delta).toBe(status.actual - status.expected);
@@ -83,6 +90,9 @@ describe('paceStatus', () => {
   it('reports a negative delta when nothing has been marked yet mid-plan', () => {
     const r = result();
     const status = paceStatus(r, r.dates[1], new Set());
+    if (!status) {
+      throw new Error('expected a pace status');
+    }
     expect(status.actual).toBe(0);
     expect(status.expected).toBeGreaterThan(0);
     expect(status.delta).toBeLessThan(0);
@@ -92,6 +102,6 @@ describe('paceStatus', () => {
     const r = result();
     const bridgeEnd = pay + r.segDays[0] - 1;
     const status = paceStatus(r, bridgeEnd, new Set([r.dates[0]]));
-    expect(status.delta).toBe(0);
+    expect(status?.delta).toBe(0);
   });
 });
