@@ -22,11 +22,15 @@ import {
   today,
 } from '@pacer/core';
 import { create } from 'zustand';
+import { setNotifyEnabled as applyNotifyEnabled, loadNotifyEnabled } from './notify.js';
+import { readStorage, writeStorage } from './storage.js';
 
 /** `localStorage` key for the persisted {@link Config}. */
 export const STORAGE_KEY = 'pacer.config';
 /** `localStorage` key for the persisted {@link PlanSnapshot}. */
 export const PLAN_KEY = 'pacer.plan';
+/** `localStorage` key for the payout dates marked as spent, tied to the plan they were marked against. */
+export const SPENT_KEY = 'pacer.spent';
 
 /** `region` mapped to its currency, or `null` if unset or unmapped. */
 function currencyOrNull(region: string | null | undefined): string | null {
@@ -148,6 +152,37 @@ function clearStoredPlan(): string | null {
   return error;
 }
 
+interface SpentRecord {
+  plan: PlanSnapshot;
+  dates: number[];
+}
+
+/** Reads the payout dates marked as spent, but only if they were marked against `plan` — otherwise empty. */
+function loadStoredSpent(plan: PlanSnapshot | null): Set<number> {
+  if (!plan) {
+    return new Set();
+  }
+  const raw = readStorage(SPENT_KEY);
+  if (!raw) {
+    return new Set();
+  }
+  try {
+    const parsed = JSON.parse(raw) as Partial<SpentRecord>;
+    if (!parsed.plan || !samePlan(parsed.plan, plan) || !Array.isArray(parsed.dates)) {
+      return new Set();
+    }
+    return new Set(parsed.dates);
+  } catch {
+    return new Set();
+  }
+}
+
+/** Persists `dates` as spent against `plan`. Returns a human-readable error message on failure, or `null`. */
+function persistSpent(plan: PlanSnapshot, dates: Set<number>): string | null {
+  const error = writeStorage(SPENT_KEY, JSON.stringify({ plan, dates: [...dates] }));
+  return error && `could not save your progress: ${error}`;
+}
+
 /** Triggers a browser download of `content` as a file named `filename`, via a throwaway object URL. */
 function downloadBlob(content: string, type: string, filename: string): void {
   const blob = new Blob([content], { type });
@@ -162,17 +197,12 @@ function downloadBlob(content: string, type: string, filename: string): void {
 }
 
 /**
- * Persists the plan snapshot after a state transition, but only when it
- * actually changed — clears storage if the new state has no snapshot
- * (stepped back out of results), persists it otherwise. Returns an error
- * message from the underlying persist/clear call, or `null`.
+ * Persists `nextSnap`, clearing storage instead if it's `null` (stepped
+ * back out of results). Assumes the caller already checked it changed from
+ * the previous snapshot. Returns an error message from the underlying
+ * persist/clear call, or `null`.
  */
-function syncPlan(prev: PlannerState, next: PlannerState): string | null {
-  const prevSnap = planSnapshot(prev);
-  const nextSnap = planSnapshot(next);
-  if (samePlan(prevSnap, nextSnap)) {
-    return null;
-  }
+function persistPlanChange(nextSnap: PlanSnapshot | null): string | null {
   return nextSnap ? persistPlan(nextSnap) : clearStoredPlan();
 }
 
@@ -181,10 +211,18 @@ interface PacerStore {
   state: PlannerState;
   /** Which async action (if any) is in flight, to prevent overlapping clipboard writes. */
   pendingAction: 'copy' | 'share' | null;
+  /** Payout dates the user has marked as spent, for the current plan. */
+  spent: Set<number>;
+  /** Whether payout-day browser notifications are enabled (and permitted). */
+  notifyEnabled: boolean;
   /** Runs `action` through the reducer and syncs the resulting plan to storage/URL. */
   dispatch: (action: Action) => void;
   /** Parses and persists the settings form, then applies the resulting action. */
   saveSettings: () => void;
+  /** Toggles whether `date` is marked spent, persisting against the current plan. */
+  toggleSpent: (date: number) => void;
+  /** Enables or disables payout-day notifications, requesting permission when turning on. */
+  setNotifyEnabled: (enabled: boolean) => Promise<void>;
   /** Downloads the current results as a CSV file. */
   exportCsv: () => void;
   /** Downloads the current results as an `.ics` calendar file. */
@@ -224,19 +262,27 @@ function buildInitialState(): PlannerState {
   return base;
 }
 
+const initialPlannerState = buildInitialState();
+
 /** The app's single Zustand store: `PlannerState` plus persistence-aware dispatch and export/copy actions. */
 export const usePacerStore = create<PacerStore>((set, get) => ({
-  state: buildInitialState(),
+  state: initialPlannerState,
   pendingAction: null,
+  spent: loadStoredSpent(planSnapshot(initialPlannerState)),
+  notifyEnabled: loadNotifyEnabled(),
 
   dispatch: (action) =>
     set((s) => {
       const next = reducer(s.state, action);
-      const syncError = syncPlan(s.state, next);
+      const prevSnap = planSnapshot(s.state);
+      const nextSnap = planSnapshot(next);
+      const planChanged = !samePlan(prevSnap, nextSnap);
+      const syncError = planChanged ? persistPlanChange(nextSnap) : null;
+      const spent = planChanged ? loadStoredSpent(nextSnap) : s.spent;
       if (syncError && !next.error) {
-        return { state: { ...next, error: syncError } };
+        return { state: { ...next, error: syncError }, spent };
       }
-      return { state: next };
+      return { state: next, spent };
     }),
 
   saveSettings: () => {
@@ -249,6 +295,36 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       state.currencyInput,
     );
     set((s) => ({ state: reducer(s.state, action) }));
+  },
+
+  toggleSpent: (date) => {
+    const { state, spent } = get();
+    const snap = planSnapshot(state);
+    if (!snap) {
+      return;
+    }
+    const next = new Set(spent);
+    if (next.has(date)) {
+      next.delete(date);
+    } else {
+      next.add(date);
+    }
+    const error = persistSpent(snap, next);
+    set((s) => ({
+      spent: next,
+      state: error ? reducer(s.state, { type: 'error', value: error }) : s.state,
+    }));
+  },
+
+  setNotifyEnabled: async (enabled) => {
+    const granted = await applyNotifyEnabled(enabled);
+    set((s) => ({
+      notifyEnabled: granted,
+      state:
+        enabled && !granted
+          ? reducer(s.state, { type: 'error', value: 'notifications were blocked by your browser' })
+          : s.state,
+    }));
   },
 
   exportCsv: () => {

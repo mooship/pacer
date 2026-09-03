@@ -14,6 +14,8 @@ export function SettingsDialog() {
   const state = usePacerStore((s) => s.state);
   const dispatch = usePacerStore((s) => s.dispatch);
   const saveSettings = usePacerStore((s) => s.saveSettings);
+  const notifyEnabled = usePacerStore((s) => s.notifyEnabled);
+  const setNotifyEnabled = usePacerStore((s) => s.setNotifyEnabled);
   const ref = useRef<HTMLDialogElement>(null);
   const open = state.step === 'settings';
 
@@ -125,6 +127,21 @@ export function SettingsDialog() {
             onChange={(e) => dispatch({ type: 'setIntervalInput', value: e.target.value })}
           />
           <p className={styles.help}>How many days between recurring allowance payouts.</p>
+        </div>
+
+        <div className={styles.field}>
+          <label className={styles.checkboxField}>
+            <input
+              type="checkbox"
+              checked={notifyEnabled}
+              onChange={(e) => setNotifyEnabled(e.target.checked)}
+            />
+            Notify me on payout day
+          </label>
+          <p className={styles.help}>
+            Shows a browser notification when you open Pacer on a day a payout is due. Only works
+            while this tab or app is open.
+          </p>
         </div>
 
         {state.error ? (

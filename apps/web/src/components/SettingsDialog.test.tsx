@@ -1,7 +1,7 @@
 import { daysFromCivil, defaultConfig, initialState } from '@pacer/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { usePacerStore } from '../store.js';
 import { SettingsDialog } from './SettingsDialog.js';
 
@@ -9,7 +9,7 @@ const TODAY = daysFromCivil(2026, 6, 17);
 
 beforeEach(() => {
   localStorage.clear();
-  usePacerStore.setState({ state: initialState(defaultConfig(), TODAY) });
+  usePacerStore.setState({ state: initialState(defaultConfig(), TODAY), notifyEnabled: false });
   HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
     this.setAttribute('open', '');
   };
@@ -130,5 +130,46 @@ describe('SettingsDialog', () => {
     dialog.dispatchEvent(new Event('cancel', { cancelable: true }));
 
     expect(usePacerStore.getState().state.step).toBe('payDate');
+  });
+});
+
+describe('notification toggle', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('reflects the current preference', () => {
+    usePacerStore.setState({ notifyEnabled: true });
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    render(<SettingsDialog />);
+    expect(screen.getByLabelText('Notify me on payout day')).toBeChecked();
+  });
+
+  it('enables notifications once permission is granted', async () => {
+    vi.stubGlobal('Notification', {
+      permission: 'default',
+      requestPermission: vi.fn().mockResolvedValue('granted'),
+    });
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.click(screen.getByLabelText('Notify me on payout day'));
+
+    expect(usePacerStore.getState().notifyEnabled).toBe(true);
+  });
+
+  it('surfaces an error when permission is denied', async () => {
+    vi.stubGlobal('Notification', {
+      permission: 'default',
+      requestPermission: vi.fn().mockResolvedValue('denied'),
+    });
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.click(screen.getByLabelText('Notify me on payout day'));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/blocked/i);
   });
 });

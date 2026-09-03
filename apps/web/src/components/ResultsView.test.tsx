@@ -20,7 +20,12 @@ function reachResults(): void {
 beforeEach(() => {
   localStorage.clear();
   window.history.replaceState(null, '', '/');
-  usePacerStore.setState({ state: initialState(defaultConfig(), TODAY), pendingAction: null });
+  usePacerStore.setState({
+    state: initialState(defaultConfig(), TODAY),
+    pendingAction: null,
+    spent: new Set(),
+    notifyEnabled: false,
+  });
   reachResults();
 });
 
@@ -156,5 +161,125 @@ describe('ResultsView', () => {
       expect(screen.getByRole('button', { name: /^start over$/i })).toBeInTheDocument();
       expect(usePacerStore.getState().state.step).toBe('results');
     });
+  });
+});
+
+describe('spend tracking checkboxes', () => {
+  it('marks a payout as spent via its checkbox', async () => {
+    const user = userEvent.setup();
+    render(<ResultsView />);
+    const date = usePacerStore.getState().state.results?.dates[0] as number;
+
+    await user.click(screen.getAllByRole('checkbox')[0]);
+
+    expect(usePacerStore.getState().spent.has(date)).toBe(true);
+  });
+
+  it('unmarks an already-spent payout', async () => {
+    const user = userEvent.setup();
+    render(<ResultsView />);
+    const date = usePacerStore.getState().state.results?.dates[0] as number;
+
+    const checkbox = screen.getAllByRole('checkbox')[0];
+    await user.click(checkbox);
+    await user.click(checkbox);
+
+    expect(usePacerStore.getState().spent.has(date)).toBe(false);
+  });
+});
+
+describe('pace banner', () => {
+  it('is hidden before the plan has started', () => {
+    render(<ResultsView />);
+    expect(screen.queryByText(/planned by today/)).toBeNull();
+  });
+
+  it('shows spending under pace when nothing has been marked yet', () => {
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 } });
+    render(<ResultsView />);
+    expect(screen.getByText(/under\.$/)).toBeInTheDocument();
+  });
+
+  it('shows right on track when marked spend exactly matches the plan', () => {
+    const s = usePacerStore.getState().state;
+    const bridgeEnd = (s.pay ?? 0) + (s.results?.segDays[0] ?? 0) - 1;
+    usePacerStore.setState({ state: { ...s, today: bridgeEnd } });
+    usePacerStore.getState().toggleSpent(s.results?.dates[0] as number);
+    render(<ResultsView />);
+    expect(screen.getByText(/right on track\.$/)).toBeInTheDocument();
+  });
+
+  it('shows spending over pace when marked spend outruns the plan', () => {
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 } });
+    usePacerStore.getState().toggleSpent(s.results?.dates[0] as number);
+    render(<ResultsView />);
+    expect(screen.getByText(/over\.$/)).toBeInTheDocument();
+  });
+});
+
+describe('payout-day notifications', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('fires a notification on mount when today is a payout day and notifications are enabled', () => {
+    const ctor = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(ctor, { permission: 'granted' }));
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 }, notifyEnabled: true });
+
+    render(<ResultsView />);
+
+    expect(ctor).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not notify while the tab is hidden', () => {
+    const ctor = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(ctor, { permission: 'granted' }));
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'hidden',
+    });
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 }, notifyEnabled: true });
+
+    render(<ResultsView />);
+
+    expect(ctor).not.toHaveBeenCalled();
+    Object.defineProperty(document, 'visibilityState', {
+      configurable: true,
+      get: () => 'visible',
+    });
+  });
+
+  it('does not notify when disabled', () => {
+    const ctor = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(ctor, { permission: 'granted' }));
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 }, notifyEnabled: false });
+
+    render(<ResultsView />);
+
+    expect(ctor).not.toHaveBeenCalled();
+  });
+
+  it('re-checks on visibilitychange and cleans up its listener on unmount', () => {
+    const ctor = vi.fn();
+    vi.stubGlobal('Notification', Object.assign(ctor, { permission: 'granted' }));
+    const s = usePacerStore.getState().state;
+    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 }, notifyEnabled: true });
+
+    const { unmount } = render(<ResultsView />);
+    expect(ctor).toHaveBeenCalledTimes(1);
+
+    document.dispatchEvent(new Event('visibilitychange'));
+    // Already notified today, so the dedupe keeps this from firing again.
+    expect(ctor).toHaveBeenCalledTimes(1);
+
+    unmount();
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(ctor).toHaveBeenCalledTimes(1);
   });
 });

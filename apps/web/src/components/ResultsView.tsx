@@ -7,6 +7,7 @@ import {
   fmtWdDm,
   fmtWdDmy,
   nextPayout,
+  paceStatus,
   perDay,
   summaryLine,
 } from '@pacer/core';
@@ -14,7 +15,15 @@ import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { usePacerStore } from '../store.js';
+import { useNotifyOnPayoutDay } from '../useNotifyOnPayoutDay.js';
 import styles from './ResultsView.module.css';
+
+function paceSuffix(delta: number, money: (cents: number) => string): string {
+  if (delta === 0) {
+    return ' — right on track.';
+  }
+  return delta > 0 ? ` — ${money(delta)} over.` : ` — ${money(-delta)} under.`;
+}
 
 /**
  * The computed schedule: summary line, per-row bar chart, a sticky-scroll
@@ -29,6 +38,8 @@ export function ResultsView() {
   const copyToClipboard = usePacerStore((s) => s.copyToClipboard);
   const copyShareLink = usePacerStore((s) => s.copyShareLink);
   const pendingAction = usePacerStore((s) => s.pendingAction);
+  const spent = usePacerStore((s) => s.spent);
+  const toggleSpent = usePacerStore((s) => s.toggleSpent);
   const [resetArmed, setResetArmed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
@@ -43,6 +54,7 @@ export function ResultsView() {
     },
     [],
   );
+  useNotifyOnPayoutDay();
   const handleResetClick = () => {
     if (resetArmed) {
       // resetTimer.current is always set alongside resetArmed becoming
@@ -70,6 +82,7 @@ export function ResultsView() {
   const fractions = barFractions(amounts);
   const todayIdx = currentSegment(state.results, state.today);
   const daysToNext = nextPayout(state.results, state.today);
+  const pace = paceStatus(state.results, state.today, spent);
 
   return (
     <div className={styles.wrap}>
@@ -83,6 +96,12 @@ export function ResultsView() {
       {daysToNext !== null ? (
         <p className={styles.next} aria-live="polite">
           Next payout in {daysToNext} day{daysToNext === 1 ? '' : 's'}.
+        </p>
+      ) : null}
+      {pace ? (
+        <p className={styles.pace} aria-live="polite">
+          You've marked {money(pace.actual)} spent, {money(pace.expected)} planned by today
+          {paceSuffix(pace.delta, money)}
         </p>
       ) : null}
       <div className={styles.tableScroll}>
@@ -102,6 +121,9 @@ export function ResultsView() {
               </th>
               <th scope="col" className={styles.num}>
                 Per day
+              </th>
+              <th scope="col" className={styles.checkboxCol}>
+                Spent
               </th>
             </tr>
           </thead>
@@ -132,6 +154,14 @@ export function ResultsView() {
                 <td className={clsx(styles.num, styles.soft)}>
                   {money(perDay(amounts[i], segDays[i]))}
                 </td>
+                <td className={styles.checkboxCol}>
+                  <input
+                    type="checkbox"
+                    checked={spent.has(d)}
+                    onChange={() => toggleSpent(d)}
+                    aria-label={`Mark ${fmtWdDm(d)} payout as spent`}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -144,6 +174,7 @@ export function ResultsView() {
               <td className={clsx(styles.num, styles.soft)}>
                 {money(perDay(state.total, totalDays))}
               </td>
+              <td />
             </tr>
           </tfoot>
         </table>
