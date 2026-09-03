@@ -1,5 +1,8 @@
 version: 2
 updates:
+  # Security/crypto-relevant deps get a faster, separate weekly PR: the
+  # Cloudflare deploy tool, the build tool, and the input-validation
+  # boundary (Zod) shared by @pacer/core and @pacer/web.
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -8,14 +11,31 @@ updates:
       time: "09:00"
       timezone: "Africa/Johannesburg"
     groups:
+      critical:
+        patterns:
+          - "*"
+    allow:
+      - dependency-name: "wrangler"
+      - dependency-name: "vite"
+      - dependency-name: "zod"
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      time: "09:00"
+      timezone: "Africa/Johannesburg"
+    groups:
       all:
         patterns:
           - "*"
+    ignore:
+      - dependency-name: "wrangler"
+      - dependency-name: "vite"
+      - dependency-name: "zod"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: "weekly"
-      day: "saturday"
+      interval: "monthly"
       time: "09:00"
       timezone: "Africa/Johannesburg"
     groups:
