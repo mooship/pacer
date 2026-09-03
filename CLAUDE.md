@@ -245,9 +245,11 @@ detail on triaging these, the 100%-coverage gate, and the merge convention
 `.claude/skills/babysit/SKILL.md` — read it before babysitting a PR here
 rather than re-deriving any of this.
 
-`.github/dependabot.yml` groups **all** npm and all GitHub Actions updates
-into one PR each, weekly (Saturday 09:00 Africa/Johannesburg) — expect
-occasional large, multi-dependency Dependabot PRs rather than one-per-package.
+`.github/dependabot.yml` groups every ecosystem's updates into one PR each.
+Most deps run monthly (first Saturday 09:00 Africa/Johannesburg); `wrangler`,
+`vite`, and `zod` (deploy toolchain + validation boundary) are split into
+their own weekly-grouped PR instead — expect occasional large,
+multi-dependency Dependabot PRs rather than one-per-package.
 
 `pnpm-workspace.yaml` restricts which dependencies' install scripts run
 (`onlyBuiltDependencies: [@biomejs/biome, esbuild, lefthook, workerd]`) and
