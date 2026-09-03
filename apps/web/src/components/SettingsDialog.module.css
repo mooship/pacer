@@ -63,6 +63,14 @@
   color: var(--text-soft);
 }
 
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
 .cycle {
   display: flex;
   align-items: center;

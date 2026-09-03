@@ -7,12 +7,14 @@ import {
   fmtWdDm,
   fmtWdDmy,
   nextPayout,
+  paceStatus,
   perDay,
   summaryLine,
 } from '@pacer/core';
 import { clsx } from 'clsx';
 import { CalendarPlus, Copy, Download, Link2, Pencil, RotateCcw } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { notifyIfDue } from '../notify.js';
 import { usePacerStore } from '../store.js';
 import styles from './ResultsView.module.css';
 
@@ -29,6 +31,9 @@ export function ResultsView() {
   const copyToClipboard = usePacerStore((s) => s.copyToClipboard);
   const copyShareLink = usePacerStore((s) => s.copyShareLink);
   const pendingAction = usePacerStore((s) => s.pendingAction);
+  const spent = usePacerStore((s) => s.spent);
+  const toggleSpent = usePacerStore((s) => s.toggleSpent);
+  const notifyEnabled = usePacerStore((s) => s.notifyEnabled);
   const [resetArmed, setResetArmed] = useState(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const summaryRef = useRef<HTMLParagraphElement>(null);
@@ -43,6 +48,20 @@ export function ResultsView() {
     },
     [],
   );
+  const { results, today: currentDay, config } = state;
+  useEffect(() => {
+    if (!results) {
+      return;
+    }
+    const check = () => {
+      if (document.visibilityState === 'visible') {
+        notifyIfDue(results, currentDay, notifyEnabled, config.currency);
+      }
+    };
+    check();
+    document.addEventListener('visibilitychange', check);
+    return () => document.removeEventListener('visibilitychange', check);
+  }, [results, currentDay, notifyEnabled, config.currency]);
   const handleResetClick = () => {
     if (resetArmed) {
       // resetTimer.current is always set alongside resetArmed becoming
@@ -64,12 +83,13 @@ export function ResultsView() {
     return null;
   }
   const { dates, segDays, amounts } = state.results;
-  const currency = state.config.currency;
+  const currency = config.currency;
   const money = (cents: number) => fmtMoney(cents, currency);
   const totalDays = segDays.reduce((a, b) => a + b, 0);
   const fractions = barFractions(amounts);
   const todayIdx = currentSegment(state.results, state.today);
   const daysToNext = nextPayout(state.results, state.today);
+  const pace = state.today >= state.pay ? paceStatus(state.results, state.today, spent) : null;
 
   return (
     <div className={styles.wrap}>
@@ -83,6 +103,16 @@ export function ResultsView() {
       {daysToNext !== null ? (
         <p className={styles.next} aria-live="polite">
           Next payout in {daysToNext} day{daysToNext === 1 ? '' : 's'}.
+        </p>
+      ) : null}
+      {pace ? (
+        <p className={styles.pace} aria-live="polite">
+          You've marked {money(pace.actual)} spent, {money(pace.expected)} planned by today
+          {pace.delta === 0
+            ? ' — right on track.'
+            : pace.delta > 0
+              ? ` — ${money(pace.delta)} over.`
+              : ` — ${money(-pace.delta)} under.`}
         </p>
       ) : null}
       <div className={styles.tableScroll}>
@@ -102,6 +132,9 @@ export function ResultsView() {
               </th>
               <th scope="col" className={styles.num}>
                 Per day
+              </th>
+              <th scope="col" className={styles.checkboxCol}>
+                Spent
               </th>
             </tr>
           </thead>
@@ -132,6 +165,14 @@ export function ResultsView() {
                 <td className={clsx(styles.num, styles.soft)}>
                   {money(perDay(amounts[i], segDays[i]))}
                 </td>
+                <td className={styles.checkboxCol}>
+                  <input
+                    type="checkbox"
+                    checked={spent.has(d)}
+                    onChange={() => toggleSpent(d)}
+                    aria-label={`Mark ${fmtWdDm(d)} payout as spent`}
+                  />
+                </td>
               </tr>
             ))}
           </tbody>
@@ -144,6 +185,7 @@ export function ResultsView() {
               <td className={clsx(styles.num, styles.soft)}>
                 {money(perDay(state.total, totalDays))}
               </td>
+              <td />
             </tr>
           </tfoot>
         </table>

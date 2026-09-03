@@ -28,6 +28,13 @@
   color: var(--sky);
 }
 
+.pace {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
 .tableScroll {
   overflow-x: auto;
   border: 2px solid var(--border);
@@ -132,6 +139,10 @@
 
 .soft {
   color: var(--text-soft);
+}
+
+.checkboxCol {
+  text-align: center;
 }
 
 .firstWeek {
