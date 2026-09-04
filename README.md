@@ -14,8 +14,8 @@ auto-detected from your browser locale on first visit.
 Pacer ships as a **monorepo**: a web front-end over one shared core.
 
 - **`@pacer/core`** — pure, framework-agnostic logic (date math, parsing, the
-  allocation algorithm, CSV export, and the step/settings state machine),
-  fully unit-tested.
+  allocation algorithm, CSV/calendar export, and the step/settings state
+  machine), fully unit-tested.
 - **`@pacer/web`** — a React single-page app, deployable to Cloudflare Workers.
 
 The web app is a thin layer over `@pacer/core`; all calculation logic lives
@@ -30,16 +30,20 @@ apps/web        # React SPA (@pacer/web)
 
 ## Getting started
 
-Requires Node 24+ and [pnpm](https://pnpm.io).
+Requires Node 22+ (Node 24 is used for local dev, see `.nvmrc`) and
+[pnpm](https://pnpm.io) (pinned to 10.33.0 via `packageManager`).
 
 ```bash
-pnpm install         # install the workspace
+pnpm install         # install the workspace (also installs the Lefthook git hooks)
 pnpm web             # run the web app (Vite dev server)
 pnpm test            # run every package's tests
 pnpm lint            # Biome lint + format check
 pnpm typecheck       # type-check every package
 pnpm build           # build core and web
 ```
+
+`pnpm test` runs the suites without a coverage check; CI runs `pnpm -r test
+--coverage` and enforces 100% coverage on both packages.
 
 ### Web app
 
@@ -49,10 +53,14 @@ pnpm --filter @pacer/web build      # production build to apps/web/dist
 pnpm --filter @pacer/web deploy     # deploy to Cloudflare Workers (needs auth)
 ```
 
-Mobile-first, keyboard-accessible, with a light/dark "sunny" theme. Settings
-(quantum, payout day, interval, and currency) and the plan are stored in
-`localStorage`; the schedule exports as a CSV download. Results lead with a
-plain-language pace, a per-segment bar, and a "today" marker.
+Mobile-first, keyboard-accessible, installable as a PWA, with a light/dark
+theme that follows your OS preference (no manual toggle). Settings (quantum,
+payout day, interval, and currency) persist to `localStorage`; the current
+plan persists there too and mirrors to the URL's query string, so a copied
+link reopens the same plan without needing storage. Results lead with a
+plain-language pace, a per-segment bar, and a "today" marker, with actions to
+copy the summary, copy a shareable link, add the schedule to your calendar
+(.ics), or download it as CSV.
 
 Deployment uses [Workers Static Assets](https://developers.cloudflare.com/workers/static-assets/)
 (see `apps/web/wrangler.jsonc`) — `wrangler deploy` serves the built `dist` with
