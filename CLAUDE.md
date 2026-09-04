@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Overview
+## About
 
 Pacer is a **pnpm-workspace monorepo** (`pnpm-workspace.yaml`: `packages/*`,
 `apps/*`). A shared core package holds all the logic; the web app renders it.
@@ -50,6 +50,10 @@ and 24** — a change that only works on one of those two is a CI failure, not
 a pass. On a Node version below 22, pnpm prints `WARN Unsupported engine`;
 every command still works, but that's a real floor now, not a harmless
 mismatch to ignore.
+
+## Safety
+
+- **Never run `pnpm --filter @pacer/web deploy` (wrangler deploy to Cloudflare Workers production) without explicit permission from the user.** Always ask first and wait for confirmation.
 
 ## Architecture
 
@@ -266,6 +270,9 @@ added (a transitive esbuild version floor); Dependabot bumps around it.
 
 - No explanatory comments in source. `biome-ignore` pragmas are allowed where a
   rule genuinely needs suppressing.
+- **British English spelling** in user-facing copy — UI strings, labels, and
+  error messages shown in the app use British English (e.g. "colour",
+  "organise") — code identifiers stay normal camelCase English.
 - Formatting and linting are enforced by **Biome** (`biome.json`: recommended
   + a11y rule presets, single quotes, trailing commas, 100-char lines) and
   checked in CI. A **Lefthook** pre-commit hook (`lefthook.yml`) runs `biome
