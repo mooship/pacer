@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://pacer.timothybrits.co.za/sitemap.xml
