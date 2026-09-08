@@ -1,0 +1,11 @@
+# Pacer
+
+> Pacer splits a salary into an initial bridge payment plus recurring
+> weekly (or custom-interval) allowances, so you can see exactly how a
+> lump sum stretches across a pay period.
+
+## Pages
+
+- [Pacer](https://pacer.timothybrits.co.za/): Enter a pay date, a last
+  day, and a total amount to get a day-by-day payout schedule, with
+  calendar export, CSV export, and a shareable link.
