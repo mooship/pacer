@@ -1,0 +1,4 @@
+Contact: https://github.com/mooship/pacer/security/advisories/new
+Expires: 2027-09-11T00:00:00.000Z
+Canonical: https://pacer.timothybrits.co.za/.well-known/security.txt
+Preferred-Languages: en
