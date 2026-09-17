@@ -63,7 +63,9 @@ export type Action =
   /** Dispatched by the app to load a persisted/shared plan straight into results. */
   | { type: 'restorePlan'; snap: PlanSnapshot }
   | { type: 'notice'; value: string | null }
-  | { type: 'error'; value: string | null };
+  | { type: 'error'; value: string | null }
+  /** Dispatched by the app when the wall-clock date has advanced past the day fixed at wizard start (e.g. a tab left open overnight). */
+  | { type: 'today'; value: number };
 
 /** A fresh {@link PlannerState} at the `payDate` step, with `config` and `today` fixed for the session. */
 export function initialState(config: Config, today: number): PlannerState {
@@ -358,6 +360,9 @@ export function reducer(state: PlannerState, action: Action): PlannerState {
       return s;
     case 'error':
       s.error = action.value;
+      return s;
+    case 'today':
+      s.today = action.value;
       return s;
   }
 }

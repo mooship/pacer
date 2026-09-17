@@ -708,6 +708,14 @@ describe('reducer: notice and error actions', () => {
   });
 });
 
+describe('reducer: today action', () => {
+  it('updates today to the given day number', () => {
+    const tomorrow = daysFromCivil(2026, 6, 18);
+    const s = reducer(start(), { type: 'today', value: tomorrow });
+    expect(s.today).toBe(tomorrow);
+  });
+});
+
 describe('reducer: no-op edges', () => {
   it('confirm on the results step is a no-op', () => {
     const s = resultsState();
