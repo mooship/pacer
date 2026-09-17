@@ -1,7 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "pacer",
-  "compatibility_date": "2025-01-01",
+  "compatibility_date": "2026-09-08",
+  "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"
@@ -12,13 +13,11 @@
     "head_sampling_rate": 1,
     "logs": {
       "enabled": true,
-      "head_sampling_rate": 1,
-      "persist": true,
-      "invocation_logs": true
+      "invocation_logs": true,
+      "head_sampling_rate": 1
     },
     "traces": {
-      "enabled": false,
-      "persist": true,
+      "enabled": true,
       "head_sampling_rate": 1
     }
   }
