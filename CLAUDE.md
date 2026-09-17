@@ -217,12 +217,15 @@ repo**, it's generated into `dist/` on build).
 ## Deployment (Cloudflare Workers)
 
 `apps/web/wrangler.jsonc`: static-assets Worker (`assets.directory:
-"./dist"`, `not_found_handling: "single-page-application"`, `binding:
-"ASSETS"`), custom domain `pacer.timothybrits.co.za`, `compatibility_date:
-"2026-09-08"` with `nodejs_compat`, Smart Placement, cross-version caching,
-and full observability (logs + traces enabled, `head_sampling_rate: 1`) —
-this shape is now shared across all three `timothybrits.co.za` Workers
-(karta, pacer, sumud). `pnpm --filter @pacer/web deploy` runs `wrangler
+"./dist"`, `not_found_handling: "single-page-application"`), custom domain
+`pacer.timothybrits.co.za`, `compatibility_date: "2026-09-08"` with
+`nodejs_compat`, and full observability (logs + traces enabled,
+`head_sampling_rate: 1`). Smart Placement, cross-version caching, and an
+explicit `ASSETS` binding — used on karta/sumud, which deploy a real
+Worker script (`main`) — were tried here too but broke Cloudflare's
+Workers Builds check on this pure assets-only deploy (no `main` at all),
+so this repo's config stops short of full parity with the other two.
+`pnpm --filter @pacer/web deploy` runs `wrangler
 deploy`, which needs a local `wrangler login` — this is not automated in
 CI; there is no deploy step in `.github/workflows/ci.yml`.
 

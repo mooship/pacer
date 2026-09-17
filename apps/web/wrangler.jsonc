@@ -5,17 +5,9 @@
   "compatibility_flags": ["nodejs_compat"],
   "assets": {
     "directory": "./dist",
-    "binding": "ASSETS",
     "not_found_handling": "single-page-application"
   },
   "routes": [{ "pattern": "pacer.timothybrits.co.za", "custom_domain": true }],
-  "placement": {
-    "mode": "smart"
-  },
-  "cache": {
-    "enabled": true,
-    "cross_version_cache": true
-  },
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1,
