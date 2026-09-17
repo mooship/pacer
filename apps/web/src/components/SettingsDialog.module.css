@@ -58,9 +58,18 @@
   border-color: var(--mango-deep);
 }
 
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+}
+
 .help {
   font-size: 0.82rem;
   color: var(--text-soft);
+}
+
+.helpError {
+  color: var(--danger);
+  font-weight: 700;
 }
 
 .checkboxField {

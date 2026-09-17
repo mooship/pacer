@@ -1,7 +1,7 @@
 import { type ComputeResult, compute, fmtAmount, fmtMoney } from './compute.js';
 import { type Config, DEFAULT_CURRENCY, sanitize } from './config.js';
 import { MAX_DAYS } from './constants.js';
-import { currencyDigits } from './currency.js';
+import { currencyDigits, currencyName, isCurrencyCode } from './currency.js';
 import { fmtIso, fmtWdDmy } from './date.js';
 import { remEuclid } from './math.js';
 import { parseAmount, resolveDate } from './parse.js';
@@ -138,10 +138,30 @@ function resolveLast(lastInput: string, pay: number): LastResult {
   return ok(r.value);
 }
 
+/** Parses a settings-form interval string into a whole number of days, at least 1. */
+function parseInterval(intervalInput: string): Result<number> {
+  const trimmed = intervalInput.trim();
+  const interval = /^[0-9]+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
+  return Number.isSafeInteger(interval) && interval >= 1
+    ? ok(interval)
+    : err('interval must be a whole number of days');
+}
+
+/** Parses a settings-form currency string into a recognized uppercase ISO 4217 code. */
+function parseCurrencyCode(currencyInput: string): Result<string> {
+  const trimmed = currencyInput.trim();
+  if (trimmed === '') {
+    return err('enter a currency code');
+  }
+  const code = trimmed.toUpperCase();
+  return isCurrencyCode(code) ? ok(code) : err(`"${trimmed}" isn't a recognized currency code`);
+}
+
 /**
  * Parses the settings form's raw string inputs into a sanitized {@link Config}.
  * `payday` is taken as-is (already an in-range number from the picker, not
- * a string field). Fails on an invalid amount or a non-positive integer interval.
+ * a string field). Fails on an unrecognized currency, an invalid amount, or
+ * a non-positive integer interval.
  */
 export function parseSettings(
   quantumInput: string,
@@ -149,16 +169,26 @@ export function parseSettings(
   payday: number,
   currencyInput = DEFAULT_CURRENCY,
 ): Result<Config> {
-  const quantum = parseAmount(quantumInput, currencyDigits(currencyInput));
+  const currency = parseCurrencyCode(currencyInput);
+  if (!currency.ok) {
+    return currency;
+  }
+  const quantum = parseAmount(quantumInput, currencyDigits(currency.value));
   if (!quantum.ok) {
     return quantum;
   }
-  const trimmed = intervalInput.trim();
-  const interval = /^[0-9]+$/.test(trimmed) ? Number(trimmed) : Number.NaN;
-  if (!Number.isSafeInteger(interval) || interval < 1) {
-    return err('interval must be a whole number of days');
+  const interval = parseInterval(intervalInput);
+  if (!interval.ok) {
+    return interval;
   }
-  return ok(sanitize({ quantum: quantum.value, payday, interval, currency: currencyInput }));
+  return ok(
+    sanitize({
+      quantum: quantum.value,
+      payday,
+      interval: interval.value,
+      currency: currency.value,
+    }),
+  );
 }
 
 /**
@@ -434,6 +464,62 @@ export function previews(s: PlannerState): Previews {
   }
 
   return { pay, last, amount, payDay, payState, lastState, lastReason, amountState };
+}
+
+/** Live preview text and validity for each of the settings form's three text inputs. */
+export interface SettingsPreviews {
+  /** Formatted preview of the parsed quantum, or `''` if empty/invalid. */
+  quantum: string;
+  quantumState: FieldState;
+  /** Display name of the resolved currency (e.g. `"US Dollar"`), or `''` if empty/invalid. */
+  currency: string;
+  currencyState: FieldState;
+  /** Preview of the resolved interval (e.g. `"every 14 days"`), or `''` if empty/invalid. */
+  interval: string;
+  intervalState: FieldState;
+}
+
+/** Computes live preview text and per-field validity for the current settings form inputs, without mutating state. */
+export function settingsPreviews(s: PlannerState): SettingsPreviews {
+  let currency = '';
+  let currencyState: FieldState = 'empty';
+  let currencyCode = s.config.currency;
+  if (s.currencyInput.trim() !== '') {
+    const r = parseCurrencyCode(s.currencyInput);
+    if (r.ok) {
+      currency = currencyName(r.value);
+      currencyState = 'ok';
+      currencyCode = r.value;
+    } else {
+      currencyState = 'invalid';
+    }
+  }
+
+  let quantum = '';
+  let quantumState: FieldState = 'empty';
+  if (s.quantumInput.trim() !== '') {
+    const r = parseAmount(s.quantumInput, currencyDigits(currencyCode));
+    if (r.ok) {
+      quantum = fmtMoney(r.value, currencyCode);
+      quantumState = 'ok';
+    } else {
+      quantumState = 'invalid';
+    }
+  }
+
+  let interval = '';
+  let intervalState: FieldState = 'empty';
+  if (s.intervalInput.trim() !== '') {
+    const r = parseInterval(s.intervalInput);
+    if (r.ok) {
+      interval = `every ${r.value} day${r.value === 1 ? '' : 's'}`;
+      intervalState = 'ok';
+    } else {
+      intervalState = 'invalid';
+    }
+  }
+
+  return { quantum, quantumState, currency, currencyState, interval, intervalState };
 }
 
 /** The mascot/UI mood driven by wizard state. */

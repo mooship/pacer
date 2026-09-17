@@ -1,8 +1,29 @@
-import { CURRENCY_CODES, currencyName, currencySymbol, WD } from '@pacer/core';
+import {
+  CURRENCY_CODES,
+  currencyName,
+  currencySymbol,
+  type FieldState,
+  settingsPreviews,
+  WD,
+} from '@pacer/core';
+import { clsx } from 'clsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { usePacerStore } from '../store.js';
 import styles from './SettingsDialog.module.css';
+
+/** Picks a settings field's help text: the invalid/empty message, or the live preview once valid. */
+const hintFor = (
+  fieldState: FieldState,
+  preview: string,
+  invalidMsg: string,
+  emptyMsg: string,
+): string => {
+  if (fieldState === 'ok') {
+    return preview;
+  }
+  return fieldState === 'invalid' ? invalidMsg : emptyMsg;
+};
 
 /**
  * The quantum/currency/payday/interval settings form, rendered in a native
@@ -18,6 +39,7 @@ export function SettingsDialog() {
   const setNotifyEnabled = usePacerStore((s) => s.setNotifyEnabled);
   const ref = useRef<HTMLDialogElement>(null);
   const open = state.step === 'settings';
+  const preview = settingsPreviews(state);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -63,9 +85,22 @@ export function SettingsDialog() {
             value={state.quantumInput}
             inputMode="decimal"
             autoComplete="off"
+            aria-invalid={preview.quantumState === 'invalid' || undefined}
+            aria-describedby="quantum-hint"
             onChange={(e) => dispatch({ type: 'setQuantumInput', value: e.target.value })}
           />
-          <p className={styles.help}>Rounding granularity for allowances.</p>
+          <p
+            id="quantum-hint"
+            className={clsx(styles.help, preview.quantumState === 'invalid' && styles.helpError)}
+            aria-live="polite"
+          >
+            {hintFor(
+              preview.quantumState,
+              preview.quantum,
+              'Enter an amount like 50 or 50.00.',
+              'Rounding granularity for allowances.',
+            )}
+          </p>
         </div>
 
         <div className={styles.field}>
@@ -78,6 +113,8 @@ export function SettingsDialog() {
             list="currency-options"
             value={state.currencyInput}
             autoComplete="off"
+            aria-invalid={preview.currencyState === 'invalid' || undefined}
+            aria-describedby="currency-hint"
             onChange={(e) => dispatch({ type: 'setCurrencyInput', value: e.target.value })}
           />
           <datalist id="currency-options">
@@ -87,7 +124,18 @@ export function SettingsDialog() {
               </option>
             ))}
           </datalist>
-          <p className={styles.help}>Used to format amounts throughout the plan.</p>
+          <p
+            id="currency-hint"
+            className={clsx(styles.help, preview.currencyState === 'invalid' && styles.helpError)}
+            aria-live="polite"
+          >
+            {hintFor(
+              preview.currencyState,
+              preview.currency,
+              `"${state.currencyInput.trim()}" isn't a recognized currency code.`,
+              'Used to format amounts throughout the plan.',
+            )}
+          </p>
         </div>
 
         <fieldset className={styles.field}>
@@ -124,9 +172,22 @@ export function SettingsDialog() {
             value={state.intervalInput}
             inputMode="numeric"
             autoComplete="off"
+            aria-invalid={preview.intervalState === 'invalid' || undefined}
+            aria-describedby="interval-hint"
             onChange={(e) => dispatch({ type: 'setIntervalInput', value: e.target.value })}
           />
-          <p className={styles.help}>How many days between recurring allowance payouts.</p>
+          <p
+            id="interval-hint"
+            className={clsx(styles.help, preview.intervalState === 'invalid' && styles.helpError)}
+            aria-live="polite"
+          >
+            {hintFor(
+              preview.intervalState,
+              preview.interval,
+              'Enter a whole number of days, like 7 or 14.',
+              'How many days between recurring allowance payouts.',
+            )}
+          </p>
         </div>
 
         <div className={styles.field}>
