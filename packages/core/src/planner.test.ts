@@ -14,6 +14,7 @@ import {
   previews,
   reducer,
   saveSettingsAction,
+  settingsPreviews,
 } from './planner.js';
 import { buildSummaryText, summaryLine } from './text.js';
 
@@ -313,14 +314,24 @@ describe('planner', () => {
     expect(!r.ok && r.error).toContain('number');
   });
 
-  it('parseSettings carries and sanitizes the currency', () => {
+  it('parseSettings trims and uppercases a valid currency', () => {
     const parsed = parseSettings('50', '7', 1, ' usd ');
     expect(parsed.ok).toBe(true);
     if (parsed.ok) {
       expect(parsed.value.currency).toBe('USD');
     }
-    const blank = parseSettings('50', '7', 1, '');
-    expect(blank.ok && blank.value.currency).toBe('USD');
+  });
+
+  it('parseSettings rejects a blank currency instead of silently defaulting', () => {
+    const r = parseSettings('50', '7', 1, '');
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toContain('enter a currency code');
+  });
+
+  it('parseSettings rejects an unrecognized currency code, quoting what was typed', () => {
+    const r = parseSettings('50', '7', 1, ' zzzz ');
+    expect(r.ok).toBe(false);
+    expect(!r.ok && r.error).toBe(`"zzzz" isn't a recognized currency code`);
   });
 });
 
@@ -415,6 +426,69 @@ describe('previews', () => {
     const v = previews(s);
     expect(v.amountState).toBe('ok');
     expect(v.amount).toBe('$5,000.00');
+  });
+});
+
+describe('settingsPreviews', () => {
+  const inSettings = (): PlannerState => reducer(resultsState(), { type: 'openSettings' });
+
+  it('reports ok with formatted previews for the settings loaded into the form', () => {
+    const v = settingsPreviews(inSettings());
+    expect(v.quantumState).toBe('ok');
+    expect(v.quantum).toBe('$50.00');
+    expect(v.currencyState).toBe('ok');
+    expect(v.currency).toBe('US Dollar');
+    expect(v.intervalState).toBe('ok');
+    expect(v.interval).toBe('every 7 days');
+  });
+
+  it('marks an unparseable quantum or interval as invalid', () => {
+    const s = run(
+      inSettings(),
+      { type: 'setQuantumInput', value: 'abc' },
+      { type: 'setIntervalInput', value: '0' },
+    );
+    const v = settingsPreviews(s);
+    expect(v.quantumState).toBe('invalid');
+    expect(v.quantum).toBe('');
+    expect(v.intervalState).toBe('invalid');
+    expect(v.interval).toBe('');
+  });
+
+  it('marks an unrecognized currency code as invalid instead of silently defaulting', () => {
+    const s = reducer(inSettings(), { type: 'setCurrencyInput', value: 'zzzz' });
+    const v = settingsPreviews(s);
+    expect(v.currencyState).toBe('invalid');
+    expect(v.currency).toBe('');
+  });
+
+  it('parses the quantum against the currency being typed, not the saved one', () => {
+    const s = run(
+      inSettings(),
+      { type: 'setCurrencyInput', value: 'JPY' },
+      { type: 'setQuantumInput', value: '50.00' },
+    );
+    const v = settingsPreviews(s);
+    expect(v.quantumState).toBe('invalid');
+  });
+
+  it('reports empty for blank inputs', () => {
+    const s: PlannerState = {
+      ...inSettings(),
+      quantumInput: '',
+      currencyInput: '',
+      intervalInput: '',
+    };
+    const v = settingsPreviews(s);
+    expect(v.quantumState).toBe('empty');
+    expect(v.currencyState).toBe('empty');
+    expect(v.intervalState).toBe('empty');
+  });
+
+  it('uses singular day wording for an interval of 1', () => {
+    const s = reducer(inSettings(), { type: 'setIntervalInput', value: '1' });
+    const v = settingsPreviews(s);
+    expect(v.interval).toBe('every 1 day');
   });
 });
 
@@ -705,6 +779,14 @@ describe('reducer: notice and error actions', () => {
   it('error sets an error message directly', () => {
     const s = reducer(start(), { type: 'error', value: 'oops' });
     expect(s.error).toBe('oops');
+  });
+});
+
+describe('reducer: today action', () => {
+  it('updates today to the given day number', () => {
+    const tomorrow = daysFromCivil(2026, 6, 18);
+    const s = reducer(start(), { type: 'today', value: tomorrow });
+    expect(s.today).toBe(tomorrow);
   });
 });
 

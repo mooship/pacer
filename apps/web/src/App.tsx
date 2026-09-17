@@ -7,6 +7,7 @@ import { ResultsView } from './components/ResultsView.js';
 import { SettingsDialog } from './components/SettingsDialog.js';
 import { StatusMessage } from './components/StatusMessage.js';
 import { usePacerStore } from './store.js';
+import { useLiveToday } from './useLiveToday.js';
 
 /** The app root: header, the planner wizard (form or results), and the settings dialog. */
 export function App() {
@@ -14,6 +15,7 @@ export function App() {
   const dispatch = usePacerStore((s) => s.dispatch);
   const baseStep = state.step === 'settings' ? state.settingsReturn : state.step;
   const onResults = baseStep === 'results';
+  useLiveToday();
 
   return (
     <div className={styles.page}>

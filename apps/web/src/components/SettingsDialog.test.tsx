@@ -71,6 +71,94 @@ describe('SettingsDialog', () => {
     expect(usePacerStore.getState().state.step).toBe('settings');
   });
 
+  it('shows live invalid feedback on the quantum field while typing, before Save', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText(/Quantum/));
+    await user.type(screen.getByLabelText(/Quantum/), 'abc');
+
+    const quantum = screen.getByLabelText(/Quantum/);
+    expect(quantum).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter an amount like 50 or 50.00.')).toBeInTheDocument();
+    expect(usePacerStore.getState().state.step).toBe('settings');
+  });
+
+  it('shows a live preview once the quantum is valid', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText(/Quantum/));
+    await user.type(screen.getByLabelText(/Quantum/), '100');
+
+    expect(screen.getByLabelText(/Quantum/)).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByText('$100.00')).toBeInTheDocument();
+  });
+
+  it('shows live invalid feedback on the interval field while typing', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Every (days)'));
+    await user.type(screen.getByLabelText('Every (days)'), 'abc');
+
+    expect(screen.getByLabelText('Every (days)')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('Enter a whole number of days, like 7 or 14.')).toBeInTheDocument();
+  });
+
+  it('names an unrecognized currency as invalid while typing, quoting what was typed', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Currency'));
+    await user.type(screen.getByLabelText('Currency'), 'ZZZZ');
+
+    expect(screen.getByLabelText('Currency')).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('"ZZZZ" isn\'t a recognized currency code.')).toBeInTheDocument();
+  });
+
+  it('shows the resolved currency name as a live preview once valid', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Currency'));
+    await user.type(screen.getByLabelText('Currency'), 'eur');
+
+    expect(screen.getByLabelText('Currency')).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByText('Euro')).toBeInTheDocument();
+  });
+
+  it('rejects an unrecognized currency on Save instead of silently falling back to a default', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Currency'));
+    await user.type(screen.getByLabelText('Currency'), 'ZZZZ');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/isn't a recognized currency code/i);
+    expect(usePacerStore.getState().state.config.currency).toBe('USD');
+    expect(usePacerStore.getState().state.step).toBe('settings');
+  });
+
+  it('rejects a blank currency on Save instead of silently defaulting to USD', async () => {
+    usePacerStore.getState().dispatch({ type: 'openSettings' });
+    const user = userEvent.setup();
+    render(<SettingsDialog />);
+
+    await user.clear(screen.getByLabelText('Currency'));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/enter a currency code/i);
+    expect(usePacerStore.getState().state.step).toBe('settings');
+  });
+
   it('cancels without saving', async () => {
     usePacerStore.getState().dispatch({ type: 'openSettings' });
     const user = userEvent.setup();
