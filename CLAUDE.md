@@ -217,12 +217,14 @@ repo**, it's generated into `dist/` on build).
 ## Deployment (Cloudflare Workers)
 
 `apps/web/wrangler.jsonc`: static-assets Worker (`assets.directory:
-"./dist"`, `not_found_handling: "single-page-application"`), custom domain
-`pacer.timothybrits.co.za`, `compatibility_date: "2025-01-01"`, full
-observability logging enabled (`head_sampling_rate: 1`). `pnpm --filter
-@pacer/web deploy` runs `wrangler deploy`, which needs a local `wrangler
-login` — this is not automated in CI; there is no deploy step in
-`.github/workflows/ci.yml`.
+"./dist"`, `not_found_handling: "single-page-application"`, `binding:
+"ASSETS"`), custom domain `pacer.timothybrits.co.za`, `compatibility_date:
+"2026-09-08"` with `nodejs_compat`, Smart Placement, cross-version caching,
+and full observability (logs + traces enabled, `head_sampling_rate: 1`) —
+this shape is now shared across all three `timothybrits.co.za` Workers
+(karta, pacer, sumud). `pnpm --filter @pacer/web deploy` runs `wrangler
+deploy`, which needs a local `wrangler login` — this is not automated in
+CI; there is no deploy step in `.github/workflows/ci.yml`.
 
 `apps/web/public/_headers` sets a **strict CSP** on every response:
 `script-src 'self'`, `style-src 'self' 'unsafe-inline'`, `connect-src 'self'`,
