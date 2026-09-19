@@ -15,10 +15,10 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "zod": "^4.5.4"
+    "zod": "^4.6.5"
   },
   "devDependencies": {
-    "@vitest/coverage-v8": "^5.0.0",
-    "vitest": "^5.0.0"
+    "@vitest/coverage-v8": "^5.0.1",
+    "vitest": "^5.0.1"
   }
 }
