@@ -150,6 +150,7 @@
   --row-bg-solid: color-mix(in srgb, var(--mango) 22%, var(--surface));
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: targets a tbody row's th, never overlaps .table thead th */
 .firstWeek th {
   color: var(--mango-deep);
   font-weight: 800;
@@ -179,6 +180,7 @@
   --row-bg-solid: color-mix(in srgb, var(--sky) 18%, var(--surface));
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: targets a tbody row's th, never overlaps .table thead th */
 .today th {
   font-weight: 800;
 }
@@ -204,6 +206,7 @@
   color: var(--mango-deep);
 }
 
+/* biome-ignore lint/style/noDescendingSpecificity: targets tfoot cells, never overlaps .firstWeek.today th */
 .table tfoot th,
 .table tfoot td {
   border-top: 2px solid var(--border);

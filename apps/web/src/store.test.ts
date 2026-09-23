@@ -509,6 +509,62 @@ describe('spend tracking', () => {
     store().dispatch({ type: 'restorePlan', snap: examplePlan(TODAY) });
     expect(store().spent.size).toBe(0);
   });
+
+  it('prunes marked dates that no longer match the schedule after a settings change', () => {
+    reachResults();
+    const shiftedDate = store().state.results?.dates[2] as number;
+    store().toggleSpent(shiftedDate);
+    expect(store().spent.has(shiftedDate)).toBe(true);
+
+    const { dispatch, saveSettings } = store();
+    dispatch({ type: 'openSettings' });
+    dispatch({ type: 'setIntervalInput', value: '14' });
+    saveSettings();
+
+    expect(store().state.results?.dates).not.toContain(shiftedDate);
+    expect(store().spent.size).toBe(0);
+    expect(store().state.notice).toBe(
+      'settings saved; some marked payouts no longer matched the new schedule',
+    );
+    const stored = JSON.parse(localStorage.getItem(SPENT_KEY) ?? '{}');
+    expect(stored.dates).toEqual([]);
+  });
+
+  it('surfaces an error instead of failing silently when persisting pruned dates fails', () => {
+    reachResults();
+    const shiftedDate = store().state.results?.dates[2] as number;
+    store().toggleSpent(shiftedDate);
+
+    const { dispatch, saveSettings } = store();
+    dispatch({ type: 'openSettings' });
+    dispatch({ type: 'setIntervalInput', value: '14' });
+    const original = localStorage.setItem.bind(localStorage);
+    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
+      if (key === SPENT_KEY) {
+        throw new Error('quota');
+      }
+      original(key, value);
+    });
+
+    saveSettings();
+
+    expect(store().state.error).toContain('could not save your progress');
+    setItem.mockRestore();
+  });
+
+  it('keeps marked dates that still match the schedule after a settings change', () => {
+    reachResults();
+    const date = store().state.results?.dates[0] as number;
+    store().toggleSpent(date);
+
+    const { dispatch, saveSettings } = store();
+    dispatch({ type: 'openSettings' });
+    dispatch({ type: 'setQuantumInput', value: '100' });
+    saveSettings();
+
+    expect(store().spent.has(date)).toBe(true);
+    expect(store().state.notice).toBe('settings saved');
+  });
 });
 
 describe('notifications', () => {
