@@ -1,7 +1,7 @@
-import { daysFromCivil, defaultConfig, examplePlan, initialState } from '@pacer/core';
+import { daysFromCivil, defaultConfig, initialState } from '@pacer/core';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { NOTIFY_KEY } from './notify.js';
-import { loadStoredConfig, SPENT_KEY, usePacerStore } from './store.js';
+import { loadStoredConfig, usePacerStore } from './store.js';
 
 const TODAY = daysFromCivil(2026, 6, 17);
 
@@ -9,7 +9,6 @@ beforeEach(() => {
   localStorage.clear();
   usePacerStore.setState({
     state: initialState(defaultConfig(), TODAY),
-    spent: new Set(),
     notifyEnabled: false,
     pendingAction: null,
   });
@@ -403,167 +402,6 @@ describe('loadStoredConfig', () => {
   it('falls back to defaults and flags invalid stored data', () => {
     localStorage.setItem('pacer.config', JSON.stringify({ quantum: 'bad' }));
     expect(loadStoredConfig()).toEqual({ config: defaultConfig(), invalid: true });
-  });
-});
-
-describe('spend tracking', () => {
-  beforeEach(() => {
-    window.history.replaceState(null, '', '/');
-  });
-
-  it('does nothing before a plan is showing results', () => {
-    store().toggleSpent(TODAY);
-    expect(store().spent.size).toBe(0);
-    expect(localStorage.getItem(SPENT_KEY)).toBeNull();
-  });
-
-  it('marks a payout date as spent and persists it against the plan', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-
-    store().toggleSpent(date);
-
-    expect(store().spent.has(date)).toBe(true);
-    const stored = JSON.parse(localStorage.getItem(SPENT_KEY) ?? '{}');
-    expect(stored.dates).toEqual([date]);
-    expect(stored.plan).toMatchObject({ total: 500000 });
-  });
-
-  it('unmarks a date that was already marked', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    store().toggleSpent(date);
-
-    store().toggleSpent(date);
-
-    expect(store().spent.has(date)).toBe(false);
-    const stored = JSON.parse(localStorage.getItem(SPENT_KEY) ?? '{}');
-    expect(stored.dates).toEqual([]);
-  });
-
-  it('surfaces an error instead of failing silently when persisting spent dates fails', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
-      throw new Error('quota');
-    });
-
-    store().toggleSpent(date);
-
-    expect(store().state.error).toContain('could not save your progress');
-    setItem.mockRestore();
-  });
-
-  it('resets marked dates when the plan changes', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    store().toggleSpent(date);
-    expect(store().spent.size).toBe(1);
-
-    store().dispatch({ type: 'reset' });
-
-    expect(store().spent.size).toBe(0);
-  });
-
-  it('keeps marked dates when re-entering the same results without changing the plan', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    store().toggleSpent(date);
-
-    store().dispatch({ type: 'back' });
-    store().dispatch({ type: 'confirm' });
-
-    expect(store().spent.has(date)).toBe(true);
-  });
-
-  it('restores marked dates for a plan matching what is already in storage', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    store().toggleSpent(date);
-    store().dispatch({ type: 'reset' });
-    expect(store().spent.size).toBe(0);
-
-    reachResults();
-
-    expect(store().spent.has(date)).toBe(true);
-  });
-
-  it('ignores a spent record left over from a different plan', () => {
-    localStorage.setItem(
-      SPENT_KEY,
-      JSON.stringify({ plan: { pay: 1, last: 2, total: 3 }, dates: [1] }),
-    );
-    reachResults();
-    expect(store().spent.size).toBe(0);
-  });
-
-  it('ignores a malformed spent record', () => {
-    localStorage.setItem(SPENT_KEY, 'not json');
-    reachResults();
-    expect(store().spent.size).toBe(0);
-  });
-
-  it('ignores a spent record with a non-array dates field', () => {
-    const { pay, last, total } = examplePlan(TODAY);
-    localStorage.setItem(SPENT_KEY, JSON.stringify({ plan: { pay, last, total }, dates: 'nope' }));
-    store().dispatch({ type: 'restorePlan', snap: examplePlan(TODAY) });
-    expect(store().spent.size).toBe(0);
-  });
-
-  it('prunes marked dates that no longer match the schedule after a settings change', () => {
-    reachResults();
-    const shiftedDate = store().state.results?.dates[2] as number;
-    store().toggleSpent(shiftedDate);
-    expect(store().spent.has(shiftedDate)).toBe(true);
-
-    const { dispatch, saveSettings } = store();
-    dispatch({ type: 'openSettings' });
-    dispatch({ type: 'setIntervalInput', value: '14' });
-    saveSettings();
-
-    expect(store().state.results?.dates).not.toContain(shiftedDate);
-    expect(store().spent.size).toBe(0);
-    expect(store().state.notice).toBe(
-      'settings saved; some marked payouts no longer matched the new schedule',
-    );
-    const stored = JSON.parse(localStorage.getItem(SPENT_KEY) ?? '{}');
-    expect(stored.dates).toEqual([]);
-  });
-
-  it('surfaces an error instead of failing silently when persisting pruned dates fails', () => {
-    reachResults();
-    const shiftedDate = store().state.results?.dates[2] as number;
-    store().toggleSpent(shiftedDate);
-
-    const { dispatch, saveSettings } = store();
-    dispatch({ type: 'openSettings' });
-    dispatch({ type: 'setIntervalInput', value: '14' });
-    const original = localStorage.setItem.bind(localStorage);
-    const setItem = vi.spyOn(localStorage, 'setItem').mockImplementation((key, value) => {
-      if (key === SPENT_KEY) {
-        throw new Error('quota');
-      }
-      original(key, value);
-    });
-
-    saveSettings();
-
-    expect(store().state.error).toContain('could not save your progress');
-    setItem.mockRestore();
-  });
-
-  it('keeps marked dates that still match the schedule after a settings change', () => {
-    reachResults();
-    const date = store().state.results?.dates[0] as number;
-    store().toggleSpent(date);
-
-    const { dispatch, saveSettings } = store();
-    dispatch({ type: 'openSettings' });
-    dispatch({ type: 'setQuantumInput', value: '100' });
-    saveSettings();
-
-    expect(store().spent.has(date)).toBe(true);
-    expect(store().state.notice).toBe('settings saved');
   });
 });
 

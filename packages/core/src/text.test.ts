@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type ComputeResult, compute } from './compute.js';
+import { type ComputeResult, compute, fmtMoney } from './compute.js';
 import { type Config, defaultConfig } from './config.js';
 import { daysFromCivil } from './date.js';
 import { buildSummaryText, summaryLine } from './text.js';
@@ -51,7 +51,7 @@ describe('summaryLine', () => {
 });
 
 describe('buildSummaryText', () => {
-  it('omits the bridge line for a single-payout plan', () => {
+  it('omits per-payout lines for a single-payout plan', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const cfg = defaultConfig();
     const result = computeOk(pay, pay, 100000, cfg);
@@ -59,5 +59,40 @@ describe('buildSummaryText', () => {
     const lines = text.split('\n');
     expect(lines.length).toBe(2);
     expect(text).not.toContain('Bridge');
+  });
+
+  it('lists every recurring payout on its own line with its exact amount', () => {
+    const pay = daysFromCivil(2026, 6, 19);
+    const end = daysFromCivil(2026, 7, 19);
+    const cfg = defaultConfig();
+    const result = computeOk(pay, end, 100000, cfg);
+    const text = buildSummaryText(result, 100000, cfg);
+    const lines = text.split('\n');
+
+    expect(lines[0]).toBe('Pacer plan: $1,000.00 starting Fri 19 Jun 2026');
+    expect(lines[1]).toContain('Bridge');
+    expect(lines).toHaveLength(2 + result.dates.length);
+
+    for (let i = 0; i < result.dates.length; i++) {
+      expect(lines[1 + i]).toContain(fmtMoney(result.amounts[i], cfg.currency));
+    }
+  });
+
+  it("doesn't overstate a later payout when the split isn't even across weeks", () => {
+    // 20 quanta of $50 split across a 3-day bridge plus four 7-day recurring
+    // payouts doesn't divide evenly (two payouts get $250, two get $200) —
+    // this is the exact scenario the per-payout breakdown exists to surface.
+    const pay = daysFromCivil(2026, 6, 19);
+    const end = daysFromCivil(2026, 7, 19);
+    const cfg = defaultConfig();
+    const result = computeOk(pay, end, 100000, cfg);
+    const recurring = result.amounts.slice(1);
+
+    expect(new Set(recurring).size).toBeGreaterThan(1);
+
+    const text = buildSummaryText(result, 100000, cfg);
+    for (const amount of recurring) {
+      expect(text).toContain(fmtMoney(amount, cfg.currency));
+    }
   });
 });

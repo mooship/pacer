@@ -16,4 +16,3 @@ export * from './result.js';
 export * from './snapshot.js';
 export * from './text.js';
 export * from './timezone.js';
-export * from './tracking.js';
