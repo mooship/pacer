@@ -23,7 +23,6 @@ beforeEach(() => {
   usePacerStore.setState({
     state: initialState(defaultConfig(), TODAY),
     pendingAction: null,
-    spent: new Set(),
     notifyEnabled: false,
   });
   reachResults();
@@ -161,61 +160,6 @@ describe('ResultsView', () => {
       expect(screen.getByRole('button', { name: /^start over$/i })).toBeInTheDocument();
       expect(usePacerStore.getState().state.step).toBe('results');
     });
-  });
-});
-
-describe('spend tracking checkboxes', () => {
-  it('marks a payout as spent via its checkbox', async () => {
-    const user = userEvent.setup();
-    render(<ResultsView />);
-    const date = usePacerStore.getState().state.results?.dates[0] as number;
-
-    await user.click(screen.getAllByRole('checkbox')[0]);
-
-    expect(usePacerStore.getState().spent.has(date)).toBe(true);
-  });
-
-  it('unmarks an already-spent payout', async () => {
-    const user = userEvent.setup();
-    render(<ResultsView />);
-    const date = usePacerStore.getState().state.results?.dates[0] as number;
-
-    const checkbox = screen.getAllByRole('checkbox')[0];
-    await user.click(checkbox);
-    await user.click(checkbox);
-
-    expect(usePacerStore.getState().spent.has(date)).toBe(false);
-  });
-});
-
-describe('pace banner', () => {
-  it('is hidden before the plan has started', () => {
-    render(<ResultsView />);
-    expect(screen.queryByText(/planned by today/)).toBeNull();
-  });
-
-  it('shows spending under pace when nothing has been marked yet', () => {
-    const s = usePacerStore.getState().state;
-    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 } });
-    render(<ResultsView />);
-    expect(screen.getByText(/under\.$/)).toBeInTheDocument();
-  });
-
-  it('shows right on track when marked spend exactly matches the plan', () => {
-    const s = usePacerStore.getState().state;
-    const bridgeEnd = (s.pay ?? 0) + (s.results?.segDays[0] ?? 0) - 1;
-    usePacerStore.setState({ state: { ...s, today: bridgeEnd } });
-    usePacerStore.getState().toggleSpent(s.results?.dates[0] as number);
-    render(<ResultsView />);
-    expect(screen.getByText(/right on track\.$/)).toBeInTheDocument();
-  });
-
-  it('shows spending over pace when marked spend outruns the plan', () => {
-    const s = usePacerStore.getState().state;
-    usePacerStore.setState({ state: { ...s, today: s.pay ?? 0 } });
-    usePacerStore.getState().toggleSpent(s.results?.dates[0] as number);
-    render(<ResultsView />);
-    expect(screen.getByText(/over\.$/)).toBeInTheDocument();
   });
 });
 

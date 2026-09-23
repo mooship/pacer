@@ -15,7 +15,6 @@ import {
   parsePlan,
   parseStoredConfig,
   planSnapshot,
-  pruneSpent,
   reducer,
   regionForTimeZone,
   samePlan,
@@ -24,14 +23,11 @@ import {
 } from '@pacer/core';
 import { create } from 'zustand';
 import { setNotifyEnabled as applyNotifyEnabled, loadNotifyEnabled } from './notify.js';
-import { readStorage, writeStorage } from './storage.js';
 
 /** `localStorage` key for the persisted {@link Config}. */
 export const STORAGE_KEY = 'pacer.config';
 /** `localStorage` key for the persisted {@link PlanSnapshot}. */
 export const PLAN_KEY = 'pacer.plan';
-/** `localStorage` key for the payout dates marked as spent, tied to the plan they were marked against. */
-export const SPENT_KEY = 'pacer.spent';
 
 /** `region` mapped to its currency, or `null` if unset or unmapped. */
 function currencyOrNull(region: string | null | undefined): string | null {
@@ -153,37 +149,6 @@ function clearStoredPlan(): string | null {
   return error;
 }
 
-interface SpentRecord {
-  plan: PlanSnapshot;
-  dates: number[];
-}
-
-/** Reads the payout dates marked as spent, but only if they were marked against `plan` — otherwise empty. */
-function loadStoredSpent(plan: PlanSnapshot | null): Set<number> {
-  if (!plan) {
-    return new Set();
-  }
-  const raw = readStorage(SPENT_KEY);
-  if (!raw) {
-    return new Set();
-  }
-  try {
-    const parsed = JSON.parse(raw) as Partial<SpentRecord>;
-    if (!parsed.plan || !samePlan(parsed.plan, plan) || !Array.isArray(parsed.dates)) {
-      return new Set();
-    }
-    return new Set(parsed.dates);
-  } catch {
-    return new Set();
-  }
-}
-
-/** Persists `dates` as spent against `plan`. Returns a human-readable error message on failure, or `null`. */
-function persistSpent(plan: PlanSnapshot, dates: Set<number>): string | null {
-  const error = writeStorage(SPENT_KEY, JSON.stringify({ plan, dates: [...dates] }));
-  return error && `could not save your progress: ${error}`;
-}
-
 /** Triggers a browser download of `content` as a file named `filename`, via a throwaway object URL. */
 function downloadBlob(content: string, type: string, filename: string): void {
   const blob = new Blob([content], { type });
@@ -212,16 +177,12 @@ interface PacerStore {
   state: PlannerState;
   /** Which async action (if any) is in flight, to prevent overlapping clipboard writes. */
   pendingAction: 'copy' | 'share' | null;
-  /** Payout dates the user has marked as spent, for the current plan. */
-  spent: Set<number>;
   /** Whether payout-day browser notifications are enabled (and permitted). */
   notifyEnabled: boolean;
   /** Runs `action` through the reducer and syncs the resulting plan to storage/URL. */
   dispatch: (action: Action) => void;
   /** Parses and persists the settings form, then applies the resulting action. */
   saveSettings: () => void;
-  /** Toggles whether `date` is marked spent, persisting against the current plan. */
-  toggleSpent: (date: number) => void;
   /** Enables or disables payout-day notifications, requesting permission when turning on. */
   setNotifyEnabled: (enabled: boolean) => Promise<void>;
   /** Downloads the current results as a CSV file. */
@@ -269,7 +230,6 @@ const initialPlannerState = buildInitialState();
 export const usePacerStore = create<PacerStore>((set, get) => ({
   state: initialPlannerState,
   pendingAction: null,
-  spent: loadStoredSpent(planSnapshot(initialPlannerState)),
   notifyEnabled: loadNotifyEnabled(),
 
   dispatch: (action) =>
@@ -279,15 +239,14 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       const nextSnap = planSnapshot(next);
       const planChanged = !samePlan(prevSnap, nextSnap);
       const syncError = planChanged ? persistPlanChange(nextSnap) : null;
-      const spent = planChanged ? loadStoredSpent(nextSnap) : s.spent;
       if (syncError && !next.error) {
-        return { state: { ...next, error: syncError }, spent };
+        return { state: { ...next, error: syncError } };
       }
-      return { state: next, spent };
+      return { state: next };
     }),
 
   saveSettings: () => {
-    const { state, spent } = get();
+    const { state } = get();
     const action = saveSettingsAction(
       state.quantumInput,
       state.intervalInput,
@@ -295,50 +254,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       persistConfig,
       state.currencyInput,
     );
-    const next = reducer(state, action);
-    if (next.step === 'results' && next.results) {
-      const pruned = pruneSpent(spent, next.results.dates);
-      if (pruned.size !== spent.size) {
-        const snap = planSnapshot(next);
-        // snap is never null here: next.results being set guarantees
-        // next.step === 'results', and planSnapshot is non-null exactly then.
-        /* v8 ignore next 3 */
-        if (!snap) {
-          return;
-        }
-        const error = persistSpent(snap, pruned);
-        set({
-          spent: pruned,
-          state: error
-            ? reducer(next, { type: 'error', value: error })
-            : {
-                ...next,
-                notice: 'settings saved; some marked payouts no longer matched the new schedule',
-              },
-        });
-        return;
-      }
-    }
-    set({ state: next });
-  },
-
-  toggleSpent: (date) => {
-    const { state, spent } = get();
-    const snap = planSnapshot(state);
-    if (!snap) {
-      return;
-    }
-    const next = new Set(spent);
-    if (next.has(date)) {
-      next.delete(date);
-    } else {
-      next.add(date);
-    }
-    const error = persistSpent(snap, next);
-    set((s) => ({
-      spent: next,
-      state: error ? reducer(s.state, { type: 'error', value: error }) : s.state,
-    }));
+    set({ state: reducer(state, action) });
   },
 
   setNotifyEnabled: async (enabled) => {

@@ -10,8 +10,8 @@ const CHECK_INTERVAL_MS = 60_000;
  * fixed in state at wizard start (see planner.ts) so a render stays
  * internally consistent, but a tab or installed PWA left open across
  * midnight would otherwise show yesterday's date indefinitely — stale
- * "today" highlighting, pace tracking, and payout-day notifications. A
- * fresh page load already gets an accurate `today` (the store reads it at
+ * "today" highlighting and payout-day notifications. A fresh page load
+ * already gets an accurate `today` (the store reads it at
  * creation), so this only needs to catch the date changing underneath an
  * already-running session: re-checks on `visibilitychange` and on a
  * lightweight interval while visible; a hidden/backgrounded tab does no work.

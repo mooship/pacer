@@ -574,7 +574,7 @@ describe('planSnapshot / restorePlan', () => {
 });
 
 describe('buildSummaryText', () => {
-  it('summarizes the plan as a short headline, bridge line, and cadence line', () => {
+  it('summarizes the plan as a headline, one line per payout, and a cadence line', () => {
     const s = resultsState();
     if (!s.results || s.total === null) {
       throw new Error('expected results');
@@ -583,7 +583,7 @@ describe('buildSummaryText', () => {
     const lines = text.split('\n');
     expect(text.startsWith('Pacer plan:')).toBe(true);
     expect(text).toContain(BRIDGE_LABEL);
-    expect(lines.length).toBe(3);
+    expect(lines.length).toBe(2 + s.results.dates.length);
   });
 
   it('respects a custom currency', () => {
@@ -596,7 +596,7 @@ describe('buildSummaryText', () => {
     expect(text).not.toContain('R5');
   });
 
-  it('stays a fixed length regardless of how many payouts the plan has', () => {
+  it('grows by one line per payout, each with its own amount', () => {
     const longPlan = run(
       start(daysFromCivil(2026, 1, 1)),
       { type: 'setPayInput', value: '2026-01-01' },
@@ -611,7 +611,8 @@ describe('buildSummaryText', () => {
     }
     expect(longPlan.results.dates.length).toBeGreaterThan(10);
     const text = buildSummaryText(longPlan.results, longPlan.total, longPlan.config);
-    expect(text.split('\n').length).toBe(3);
+    const lines = text.split('\n');
+    expect(lines.length).toBe(2 + longPlan.results.dates.length);
   });
 });
 
