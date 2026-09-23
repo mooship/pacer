@@ -4,21 +4,23 @@ import { fmtRange, fmtWdDmy } from './date.js';
 import { BRIDGE_LABEL } from './planner.js';
 
 /**
- * The plain-language pace sentence, e.g. `"Spend about $50/day — payouts
- * land weekly until Wed 25 Jul."`. Uses singular per-day wording (no
- * recurring segment mentioned) when there's only a bridge payment, or the
- * recurring payouts sum to zero. Deliberately doesn't quote a single
- * recurring amount: the largest-remainder split in `compute()` can give
- * different payouts different amounts, so a single figure here could
- * misstate some of them — see each payout's own line in
- * {@link buildSummaryText} or the results table for the exact amounts.
+ * The plain-language pace sentence, e.g. `"Spend about $50/day — $350 lands
+ * weekly until Wed 25 Jul."`. Uses singular per-day wording (no recurring
+ * segment mentioned) when there's only a bridge payment, or the recurring
+ * payouts sum to zero. Only quotes a specific recurring amount when every
+ * recurring payout actually gets the same one — the largest-remainder split
+ * in `compute()` can give different payouts different amounts, so a single
+ * figure would misstate some of them in that case; see each payout's own
+ * line in {@link buildSummaryText} or the results table for the exact
+ * amounts.
  */
 export function summaryLine(result: ComputeResult, total: number, cfg: Config): string {
   const { dates, segDays, amounts } = result;
   const cur = cfg.currency;
   const end = coverEnd(dates[dates.length - 1], segDays[segDays.length - 1]);
 
-  const steadyTotal = amounts.slice(1).reduce((a, b) => a + b, 0);
+  const recurring = amounts.slice(1);
+  const steadyTotal = recurring.reduce((a, b) => a + b, 0);
   if (dates.length === 1 || steadyTotal === 0) {
     const totalDays = segDays.reduce((a, b) => a + b, 0);
     return `Spend about ${fmtMoney(perDay(total, totalDays), cur)}/day to reach ${fmtWdDmy(end)}.`;
@@ -28,7 +30,10 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
   const steadyPerDay = fmtMoney(perDay(steadyTotal, steadyDays), cur);
   const cadence =
     cfg.interval === 7 ? 'weekly' : cfg.interval === 1 ? 'daily' : `every ${cfg.interval} days`;
-  return `Spend about ${steadyPerDay}/day — payouts land ${cadence} until ${fmtWdDmy(end)}.`;
+  const landing = recurring.every((a) => a === recurring[0])
+    ? `${fmtMoney(recurring[0], cur)} lands`
+    : 'payouts land';
+  return `Spend about ${steadyPerDay}/day — ${landing} ${cadence} until ${fmtWdDmy(end)}.`;
 }
 
 /**
@@ -40,16 +45,17 @@ export function summaryLine(result: ComputeResult, total: number, cfg: Config): 
  */
 export function buildSummaryText(result: ComputeResult, total: number, cfg: Config): string {
   const { dates, segDays, amounts } = result;
+  const cur = cfg.currency;
   const pay = dates[0];
 
-  const lines = [`Pacer plan: ${fmtMoney(total, cfg.currency)} starting ${fmtWdDmy(pay)}`];
+  const lines = [`Pacer plan: ${fmtMoney(total, cur)} starting ${fmtWdDmy(pay)}`];
 
   if (dates.length > 1) {
     dates.forEach((date, i) => {
-      const label = i === 0 ? BRIDGE_LABEL : fmtWdDmy(date);
-      const amount = fmtMoney(amounts[i], cfg.currency);
+      const [label, suffix] = i === 0 ? [BRIDGE_LABEL, ' now'] : [fmtWdDmy(date), ''];
+      const amount = fmtMoney(amounts[i], cur);
       const covers = fmtRange(date, coverEnd(date, segDays[i]));
-      lines.push(`${label}: ${amount}${i === 0 ? ' now' : ''}, covers ${covers}`);
+      lines.push(`${label}: ${amount}${suffix}, covers ${covers}`);
     });
   }
 

@@ -20,6 +20,33 @@ describe('summaryLine', () => {
     expect(summaryLine(result, 500000, defaultConfig())).toContain('weekly');
   });
 
+  it('quotes the recurring amount when every payout gets the same one', () => {
+    const pay = daysFromCivil(2026, 6, 22);
+    const end = daysFromCivil(2026, 7, 19);
+    const cfg = defaultConfig();
+    const result = computeOk(pay, end, 100000, cfg);
+    const recurring = result.amounts.slice(1);
+    expect(new Set(recurring).size).toBe(1);
+
+    const line = summaryLine(result, 100000, cfg);
+    expect(line).toContain(`${fmtMoney(recurring[0], cfg.currency)} lands weekly`);
+  });
+
+  it('falls back to generic wording when the split leaves payouts uneven', () => {
+    // 20 quanta of $50 split across a 3-day bridge plus four 7-day recurring
+    // payouts doesn't divide evenly (two payouts get $250, two get $200) —
+    // quoting either figure as "the" recurring amount would misstate the rest.
+    const pay = daysFromCivil(2026, 6, 19);
+    const end = daysFromCivil(2026, 7, 19);
+    const cfg = defaultConfig();
+    const result = computeOk(pay, end, 100000, cfg);
+    const recurring = result.amounts.slice(1);
+    expect(new Set(recurring).size).toBeGreaterThan(1);
+
+    const line = summaryLine(result, 100000, cfg);
+    expect(line).toContain('payouts land weekly');
+  });
+
   it('uses "daily" for a 1-day interval', () => {
     const pay = daysFromCivil(2026, 6, 25);
     const end = daysFromCivil(2026, 7, 1);
@@ -61,24 +88,7 @@ describe('buildSummaryText', () => {
     expect(text).not.toContain('Bridge');
   });
 
-  it('lists every recurring payout on its own line with its exact amount', () => {
-    const pay = daysFromCivil(2026, 6, 19);
-    const end = daysFromCivil(2026, 7, 19);
-    const cfg = defaultConfig();
-    const result = computeOk(pay, end, 100000, cfg);
-    const text = buildSummaryText(result, 100000, cfg);
-    const lines = text.split('\n');
-
-    expect(lines[0]).toBe('Pacer plan: $1,000.00 starting Fri 19 Jun 2026');
-    expect(lines[1]).toContain('Bridge');
-    expect(lines).toHaveLength(2 + result.dates.length);
-
-    for (let i = 0; i < result.dates.length; i++) {
-      expect(lines[1 + i]).toContain(fmtMoney(result.amounts[i], cfg.currency));
-    }
-  });
-
-  it("doesn't overstate a later payout when the split isn't even across weeks", () => {
+  it('lists every recurring payout on its own line with its exact amount, even when the split is uneven', () => {
     // 20 quanta of $50 split across a 3-day bridge plus four 7-day recurring
     // payouts doesn't divide evenly (two payouts get $250, two get $200) —
     // this is the exact scenario the per-payout breakdown exists to surface.
@@ -86,13 +96,16 @@ describe('buildSummaryText', () => {
     const end = daysFromCivil(2026, 7, 19);
     const cfg = defaultConfig();
     const result = computeOk(pay, end, 100000, cfg);
-    const recurring = result.amounts.slice(1);
-
-    expect(new Set(recurring).size).toBeGreaterThan(1);
-
     const text = buildSummaryText(result, 100000, cfg);
-    for (const amount of recurring) {
-      expect(text).toContain(fmtMoney(amount, cfg.currency));
+    const lines = text.split('\n');
+
+    expect(new Set(result.amounts.slice(1)).size).toBeGreaterThan(1);
+    expect(lines[0]).toBe('Pacer plan: $1,000.00 starting Fri 19 Jun 2026');
+    expect(lines[1]).toContain('Bridge');
+    expect(lines).toHaveLength(2 + result.dates.length);
+
+    for (let i = 0; i < result.dates.length; i++) {
+      expect(lines[1 + i]).toContain(fmtMoney(result.amounts[i], cfg.currency));
     }
   });
 });
