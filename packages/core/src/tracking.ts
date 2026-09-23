@@ -41,6 +41,16 @@ export function actualSpent(result: ComputeResult, marked: ReadonlySet<number>):
 }
 
 /**
+ * Drops any marked date that isn't one of `dates` — used after a schedule
+ * change (e.g. a payday/interval edit in Settings) leaves marks pointing at
+ * payout dates that no longer exist in the recomputed plan.
+ */
+export function pruneSpent(marked: ReadonlySet<number>, dates: readonly number[]): Set<number> {
+  const valid = new Set(dates);
+  return new Set([...marked].filter((d) => valid.has(d)));
+}
+
+/**
  * Combines {@link expectedSpent} and {@link actualSpent} into one
  * comparison, or `null` if the plan hasn't started yet (nothing to compare).
  */

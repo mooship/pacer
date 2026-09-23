@@ -15,6 +15,7 @@ import {
   parsePlan,
   parseStoredConfig,
   planSnapshot,
+  pruneSpent,
   reducer,
   regionForTimeZone,
   samePlan,
@@ -286,7 +287,7 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
     }),
 
   saveSettings: () => {
-    const { state } = get();
+    const { state, spent } = get();
     const action = saveSettingsAction(
       state.quantumInput,
       state.intervalInput,
@@ -294,7 +295,31 @@ export const usePacerStore = create<PacerStore>((set, get) => ({
       persistConfig,
       state.currencyInput,
     );
-    set((s) => ({ state: reducer(s.state, action) }));
+    const next = reducer(state, action);
+    if (next.step === 'results' && next.results) {
+      const pruned = pruneSpent(spent, next.results.dates);
+      if (pruned.size !== spent.size) {
+        const snap = planSnapshot(next);
+        // snap is never null here: next.results being set guarantees
+        // next.step === 'results', and planSnapshot is non-null exactly then.
+        /* v8 ignore next 3 */
+        if (!snap) {
+          return;
+        }
+        const error = persistSpent(snap, pruned);
+        set({
+          spent: pruned,
+          state: error
+            ? reducer(next, { type: 'error', value: error })
+            : {
+                ...next,
+                notice: 'settings saved; some marked payouts no longer matched the new schedule',
+              },
+        });
+        return;
+      }
+    }
+    set({ state: next });
   },
 
   toggleSpent: (date) => {

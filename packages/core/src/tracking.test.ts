@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { type ComputeResult, compute } from './compute.js';
 import { defaultConfig } from './config.js';
 import { daysFromCivil } from './date.js';
-import { actualSpent, expectedSpent, paceStatus } from './tracking.js';
+import { actualSpent, expectedSpent, paceStatus, pruneSpent } from './tracking.js';
 
 function computeOk(...args: Parameters<typeof compute>): ComputeResult {
   const r = compute(...args);
@@ -103,5 +103,23 @@ describe('paceStatus', () => {
     const bridgeEnd = pay + r.segDays[0] - 1;
     const status = paceStatus(r, bridgeEnd, new Set([r.dates[0]]));
     expect(status?.delta).toBe(0);
+  });
+});
+
+describe('pruneSpent', () => {
+  it('keeps only marked dates that are still payout dates', () => {
+    const r = result();
+    const marked = new Set([r.dates[0], r.dates[1], r.dates[0] - 50]);
+    expect(pruneSpent(marked, r.dates)).toEqual(new Set([r.dates[0], r.dates[1]]));
+  });
+
+  it('returns an empty set when nothing overlaps', () => {
+    const r = result();
+    expect(pruneSpent(new Set([r.dates[0] - 50]), r.dates)).toEqual(new Set());
+  });
+
+  it('returns an empty set unchanged', () => {
+    const r = result();
+    expect(pruneSpent(new Set(), r.dates)).toEqual(new Set());
   });
 });

@@ -9,6 +9,7 @@ export * from './csv.js';
 export * from './currency.js';
 export * from './date.js';
 export * from './ics.js';
+export * from './math.js';
 export * from './parse.js';
 export * from './planner.js';
 export * from './result.js';
