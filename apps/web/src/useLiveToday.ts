@@ -8,8 +8,8 @@ const CHECK_INTERVAL_MS = 60_000;
 /**
  * Keeps the store's `today` in sync with the wall-clock date. `today` is
  * fixed in state at wizard start (see planner.ts) so a render stays
- * internally consistent, but a tab or installed PWA left open across
- * midnight would otherwise show yesterday's date indefinitely — stale
+ * internally consistent, but a tab left open across midnight would
+ * otherwise show yesterday's date indefinitely — stale
  * "today" highlighting and payout-day notifications. A fresh page load
  * already gets an accurate `today` (the store reads it at
  * creation), so this only needs to catch the date changing underneath an
