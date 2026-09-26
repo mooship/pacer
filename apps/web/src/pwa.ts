@@ -10,6 +10,7 @@ export const THEME_COLOR = '#ffb703';
  */
 export const pwaOptions: Partial<VitePWAOptions> = {
   registerType: 'autoUpdate',
+  injectRegister: 'script-defer',
   includeAssets: ['favicon.svg'],
   pwaAssets: {
     image: 'public/favicon.svg',

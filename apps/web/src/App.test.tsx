@@ -84,7 +84,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
     const dialog = screen.getByRole('dialog', { name: /pay date calendar/i });
 
-    await user.click(within(dialog).getByText('20'));
+    await user.click(await within(dialog).findByText('20'));
 
     expect(payInput).toHaveValue('2026-06-20');
     expect(screen.queryByRole('dialog', { name: /pay date calendar/i })).toBeNull();
