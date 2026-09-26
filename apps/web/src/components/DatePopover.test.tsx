@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { DatePopover } from './DatePopover.js';
@@ -20,6 +20,7 @@ describe('DatePopover', () => {
     await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
 
     const dialog = screen.getByRole('dialog', { name: /pay date calendar/i });
+    await within(dialog).findByRole('grid');
     expect(dialog.querySelector('[aria-selected="true"]')).toBeNull();
   });
 
@@ -56,7 +57,7 @@ describe('DatePopover', () => {
     // Clicking the already-selected day asks react-day-picker to deselect,
     // which calls onSelect(undefined) rather than a Date.
     await user.click(
-      screen.getByRole('gridcell', { name: '25' }).querySelector('button') as HTMLElement,
+      (await screen.findByRole('gridcell', { name: '25' })).querySelector('button') as HTMLElement,
     );
 
     expect(onChange).not.toHaveBeenCalled();
@@ -86,7 +87,7 @@ describe('DatePopover', () => {
 
     await user.click(screen.getByRole('button', { name: /pick last day from a calendar/i }));
 
-    const day24 = screen.getByRole('gridcell', { name: '24' }).querySelector('button');
+    const day24 = (await screen.findByRole('gridcell', { name: '24' })).querySelector('button');
     const day25 = screen.getByRole('gridcell', { name: '25' }).querySelector('button');
     expect(day24).toBeDisabled();
     expect(day25).not.toBeDisabled();
@@ -102,7 +103,7 @@ describe('DatePopover', () => {
 
     await user.click(screen.getByRole('button', { name: /pick pay date from a calendar/i }));
     await user.click(
-      screen.getByRole('gridcell', { name: '20' }).querySelector('button') as HTMLElement,
+      (await screen.findByRole('gridcell', { name: '20' })).querySelector('button') as HTMLElement,
     );
 
     expect(onChange).toHaveBeenCalledWith('2026-06-20');

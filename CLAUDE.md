@@ -193,13 +193,6 @@ is pure CSS custom properties in `theme.css`, switched by
 `prefers-color-scheme` (no JS toggle); `index.css` also handles
 `prefers-reduced-motion` and a `.visually-hidden` utility.
 
-Installable PWA via `vite-plugin-pwa` (`pwa.ts` exports `pwaOptions` used by
-both `vite.config.ts` and the manifest; `registerType: 'autoUpdate'`, icons
-generated at build time from `public/favicon.svg` by
-`@vite-pwa/assets-generator` — the `pwa-512x512.png` referenced in
-`index.html`'s `og:image`/`twitter:image` meta tags **does not exist in the
-repo**, it's generated into `dist/` on build).
-
 ## Persistence & sharing — the full data flow
 
 1. `Config` (quantum/payday/interval/currency) → `localStorage['pacer.config']`,
@@ -261,11 +254,9 @@ their own weekly-grouped PR instead — expect occasional large,
 multi-dependency Dependabot PRs rather than one-per-package.
 
 `pnpm-workspace.yaml` restricts which dependencies' install scripts run
-(`onlyBuiltDependencies: [@biomejs/biome, esbuild, lefthook, workerd]`) and
-explicitly ignores `sharp`'s build script (`ignoredBuiltDependencies`, needed
-transitively by `@vite-pwa/assets-generator`). **Adding a new dependency
-with a postinstall/build script will silently not run it** unless added
-here — pnpm approve-builds gates this by default.
+(`onlyBuiltDependencies: [@biomejs/biome, esbuild, lefthook, workerd]`).
+**Adding a new dependency with a postinstall/build script will silently not
+run it** unless added here — pnpm approve-builds gates this by default.
 
 The root `package.json` pins `"pnpm": { "overrides": { "esbuild@<0.28.1":
 "^0.28.1" } }` — don't remove this override without checking why it was

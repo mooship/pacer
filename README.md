@@ -53,8 +53,8 @@ pnpm --filter @pacer/web build      # production build to apps/web/dist
 pnpm --filter @pacer/web deploy     # deploy to Cloudflare Workers (needs auth)
 ```
 
-Mobile-first, keyboard-accessible, installable as a PWA, with a light/dark
-theme that follows your OS preference (no manual toggle). Settings (quantum,
+Mobile-first, keyboard-accessible, with a light/dark theme that follows your
+OS preference (no manual toggle). Settings (quantum,
 payout day, interval, and currency) persist to `localStorage`; the current
 plan persists there too and mirrors to the URL's query string, so a copied
 link reopens the same plan without needing storage. Results lead with a

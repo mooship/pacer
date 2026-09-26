@@ -1,9 +1,11 @@
 import { daysFromCivil, fmtIso, parseDate } from '@pacer/core';
 import { Calendar } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
-import { DayPicker } from 'react-day-picker';
-import 'react-day-picker/style.css';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import styles from './Field.module.css';
+
+const DayPickerCalendar = lazy(() =>
+  import('./DayPickerCalendar.js').then((m) => ({ default: m.DayPickerCalendar })),
+);
 
 /** Parses a `YYYY-MM-DD` field value into a local `Date` for `react-day-picker`, or `undefined` if invalid. */
 function parseIso(value: string): Date | undefined {
@@ -75,20 +77,21 @@ export function DatePopover({ label, value, onChange, min, onPicked }: DatePopov
       </button>
       {open ? (
         <div className={styles.popover} role="dialog" aria-label={`${label} calendar`}>
-          <DayPicker
-            mode="single"
-            selected={selected}
-            defaultMonth={selected ?? minDate}
-            startMonth={minDate}
-            disabled={minDate ? { before: minDate } : undefined}
-            onSelect={(date) => {
-              if (date) {
-                onChange(toIso(date));
-                setOpen(false);
-                onPicked?.();
-              }
-            }}
-          />
+          <Suspense fallback={null}>
+            <DayPickerCalendar
+              selected={selected}
+              defaultMonth={selected ?? minDate}
+              startMonth={minDate}
+              disabled={minDate ? { before: minDate } : undefined}
+              onSelect={(date) => {
+                if (date) {
+                  onChange(toIso(date));
+                  setOpen(false);
+                  onPicked?.();
+                }
+              }}
+            />
+          </Suspense>
         </div>
       ) : null}
     </span>
